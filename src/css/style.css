@@ -1,0 +1,37 @@
+svg {
+  page-break-after: always;
+}
+
+/* getElementDimension()でのサイズが2回目以降で異なる場合の為のworkaround */
+.node-text_selected {
+  background: #cfcfcf;
+}
+
+foreignObject {
+  overflow: visible;
+}
+
+/* textのspanに適用 */
+.disable-select {
+  -ms-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+
+/* input file style */
+textarea {
+  padding: 5px;
+  font-size: 1.0em;
+  color: #777;
+  border: 1px solid #999999;
+  margin: 0 0 5px;
+  
+  font-family: "ヒラギノ角ゴ Pro W3","Hiragino Kaku Gothic Pro",sans-serif;
+  resize: none;
+  display: block;
+}
+
+textarea:focus {
+  outline: none;
+}

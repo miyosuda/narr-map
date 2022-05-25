@@ -88,26 +88,6 @@ export class MapData {
     pageData.removeNode(nodeData)
   }
 
-  moveNextPage() {
-    if( this.currentPage < this.pages.length-1 ) {
-      // 次ページへ移動
-      this.currentPage += 1
-      return false
-    } else {
-      // 新規にページを作成
-      const pageData = new PageData()
-      this.pages.push(pageData)
-      this.currentPage += 1
-      return true
-    }
-  }
-
-  movePreviousPage() {
-    if( this.currentPage > 0 ) {
-      this.currentPage -= 1
-    }
-  }
-
   clone() {
     const clonedMapData = new MapData()
     
@@ -127,10 +107,6 @@ export class MapData {
   getNodeDatas(page) {
     const pageData = this.pages[page]
     return pageData.getNodeDatas()
-  }
-
-  getPageSize() {
-    return this.pages.length
   }
 
   toJson() {

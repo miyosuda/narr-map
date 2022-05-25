@@ -4,9 +4,9 @@ import {TextInput} from './text-input'
 import {TextNode} from './node/text'
 
 
-const createNode = (data, parentNode) => {
+const createNode = (data, container) => {
   if( data.type == NODE_TYPE_TEXT ) {
-    return new TextNode(data, parentNode)
+    return new TextNode(data, container)
   } else {
     return null
   }
@@ -29,7 +29,7 @@ export class MapManager {
     this.selectedNodes = []
     this.nodes = []
     this.mapData = new MapData()
-    this.nodeEditied = false
+    this.nodeEdited = false
     this.lastNode = null
   }
 
@@ -160,7 +160,7 @@ export class MapManager {
     const x = pos.x
     const y = pos.y
     
-    this.nodeEditied = false
+    this.nodeEdited = false
 
     // マウスが乗ったnodeをpick対象として選ぶ
     let pickNode = this.findPickNode(x, y)
@@ -260,8 +260,8 @@ export class MapManager {
     
     this.isDragging = false
 
-    if( this.nodeEditied ) {
-      this.nodeEditied = false
+    if( this.nodeEdited ) {
+      this.nodeEdited = false
     }
   }
 
@@ -283,7 +283,7 @@ export class MapManager {
         // ノードを移動
         node.onDrag(dx, dy)
         // mouseUp時にundoバッファ対応
-        this.nodeEditied = true
+        this.nodeEdited = true
       })
     }
   }
@@ -360,18 +360,6 @@ export class MapManager {
       node.setSelected(false)
     })
     this.selectedNodes = []
-  }
-
-  cut() {
-    if( this.textInput.isShown() ) {
-      document.execCommand("cut")
-      return
-    }
-    
-    if( this.selectedNodes.length > 0 ) {
-      this.copy()
-      this.deleteSelectedNodes()
-    }
   }
 
   clearAllNodes() {

@@ -2,7 +2,7 @@ import {getElementDimension, render} from '../text-utils'
 
 
 export class TextNode {
-  constructor(data, parentNode) {
+  constructor(data, container) {
     this.data = data
     
     let ns = 'http://www.w3.org/2000/svg'
@@ -10,7 +10,9 @@ export class TextNode {
     foreignObject.x.baseVal.value = this.data.x
     foreignObject.y.baseVal.value = this.data.y
 
-    parentNode.appendChild(foreignObject)
+    foreignObject.classList.add("node-text")
+
+    container.appendChild(foreignObject)
     
     this.foreignObject = foreignObject
     
@@ -26,7 +28,7 @@ export class TextNode {
     render(this.data.text, this.foreignObject)
 
     // TODO: refactor
-    let className = null
+    let className = 'node-text'
     const dims = getElementDimension(this.foreignObject.innerHTML, className)
     this.foreignObject.width.baseVal.value = dims.width
     this.foreignObject.height.baseVal.value = dims.height

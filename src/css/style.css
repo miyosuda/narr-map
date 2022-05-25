@@ -2,6 +2,10 @@ svg {
   page-break-after: always;
 }
 
+.node-text {
+  border-bottom: solid 1px #7f7f7f;
+}
+
 /* getElementDimension()でのサイズが2回目以降で異なる場合の為のworkaround */
 .node-text_selected {
   background: #cfcfcf;

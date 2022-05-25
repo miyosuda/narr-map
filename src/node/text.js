@@ -1,4 +1,4 @@
-import {getElementDimension, render} from '../text-utils'
+import {getElementDimension} from '../text-utils'
 
 
 export class TextNode {
@@ -25,7 +25,11 @@ export class TextNode {
   }
 
   prepare() {
-    render(this.data.text, this.foreignObject)
+    let span = document.createElement('span')
+    // テキスト選択無効のクラスを指定
+    span.className = 'disable-select';
+    span.textContent = this.data.text
+    this.foreignObject.appendChild(span)
 
     // TODO: refactor
     let className = 'node-text'

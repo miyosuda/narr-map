@@ -22,11 +22,3 @@ export const getElementDimension = (html, className=null) => {
   return dims
 }
 
-
-export const render = (text, element) => {
-  let span = document.createElement('span')
-  // テキスト選択無効のクラスを指定
-  span.className = 'disable-select';
-  span.textContent = text
-  element.appendChild(span)
-}

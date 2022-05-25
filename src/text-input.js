@@ -44,8 +44,8 @@ const getStringLengthAndRow = (str, minSize=5) => {
 
 
 export class TextInput {
-  constructor(noteManager) {
-    this.noteManager = noteManager
+  constructor(mapManager) {
+    this.mapManager = mapManager
     this.foreignObject = document.getElementById('textInputObj')
     
     const input = document.getElementById('textInput')
@@ -95,7 +95,7 @@ export class TextInput {
     this.hide()
   }
 
-  show(data, initialCaretPos=0) {
+  show(data) {
     this.data = data
     this.input.value = this.data.text
 
@@ -111,9 +111,6 @@ export class TextInput {
     this.updateOuterSize()
     
     this.input.focus()
-    if( initialCaretPos != 0 ) {
-      this.input.setSelectionRange(initialCaretPos, initialCaretPos)
-    }
     
     this.textChanged = false
     this.shown = true
@@ -156,7 +153,7 @@ export class TextInput {
     // テキスト入力が完了した
     this.data.setText(value)
     const textChanged = this.textOnShown != value
-    this.noteManager.onTextDecided(this.data, textChanged)
+    this.mapManager.onTextDecided(this.data, textChanged)
     this.hide()
   }
 

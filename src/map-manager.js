@@ -29,7 +29,6 @@ export class MapManager {
     this.selectedNodes = []
     this.nodes = []
     this.mapData = new MapData()
-    this.nodeEdited = false
     this.lastNode = null
   }
 
@@ -54,9 +53,8 @@ export class MapManager {
   showInputAt(x, y) {
     this.clearSelection()
     let initialText = ""
-    let initialCaretPos = 0
     const data = new NodeData(x, y, initialText)
-    this.textInput.show(data, initialCaretPos)
+    this.textInput.show(data)
   }
 
   showInput(asSibling) {
@@ -156,8 +154,6 @@ export class MapManager {
     const x = pos.x
     const y = pos.y
     
-    this.nodeEdited = false
-
     // マウスが乗ったnodeをpick対象として選ぶ
     let pickNode = this.findPickNode(x, y)
 
@@ -254,10 +250,6 @@ export class MapManager {
     }
     
     this.isDragging = false
-
-    if( this.nodeEdited ) {
-      this.nodeEdited = false
-    }
   }
 
   onMouseMove(e) {
@@ -277,8 +269,6 @@ export class MapManager {
       this.selectedNodes.forEach(node => {
         // ノードを移動
         node.onDrag(dx, dy)
-        // mouseUp時にundoバッファ対応
-        this.nodeEdited = true
       })
     }
   }
@@ -356,35 +346,4 @@ export class MapManager {
     })
     this.selectedNodes = []
   }
-
-  /*
-  clearAllNodes() {
-    for(let i=this.nodes.length-1; i>=0; i--) {
-      const node = this.nodes[i]
-      // TODO: 整理
-      this.removeNode(node, false) // noteにはremoveを反映しない
-    }
-    this.lastNode = null
-  }  
-
-  applyMapData(mapData) {
-    this.clearAllNodes()
-    const nodeDatas = mapData.getCurretNodeDatas()
-    nodeDatas.forEach(nodeData => {
-      // TODO: 整理
-      this.addNode(nodeData, false)
-    })
-    this.mapData = mapData
-
-    this.forceSetLastNode()
-  }
-
-  newFile() {
-    // TODO: loadSub()と共通化
-    const mapData = new MapData()
-    this.clearAllNodes()
-    this.init()
-    this.applyMapData(mapData)
-  }
-  */
 }

@@ -51,14 +51,10 @@ export class MapManager {
     this.textInput = new TextInput(this)
   }
 
-  showInputAt(x, y, displayMath=false) {
+  showInputAt(x, y) {
     this.clearSelection()
     let initialText = ""
     let initialCaretPos = 0
-    if( displayMath ) {
-      initialText = "$$\n\n$$"
-      initialCaretPos = 3
-    }
     const data = new NodeData(x, y, initialText)
     this.textInput.show(data, initialCaretPos)
   }
@@ -253,8 +249,7 @@ export class MapManager {
       const pos = this.getLocalPos(e)
       const x = pos.x
       const y = pos.y
-      const displayMath = e.ctrlKey
-      this.showInputAt(x, y, displayMath)
+      this.showInputAt(x, y)
       return
     }
     
@@ -362,6 +357,7 @@ export class MapManager {
     this.selectedNodes = []
   }
 
+  /*
   clearAllNodes() {
     for(let i=this.nodes.length-1; i>=0; i--) {
       const node = this.nodes[i]
@@ -390,4 +386,5 @@ export class MapManager {
     this.init()
     this.applyMapData(mapData)
   }
+  */
 }

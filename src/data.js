@@ -1,12 +1,8 @@
 import {clone, cloneArray} from './utils'
 
-export const NODE_TYPE_NONE  = 0
-export const NODE_TYPE_TEXT  = 1
-
 
 export class NodeData {
   constructor(x, y, text) {
-    this.type = NODE_TYPE_NONE
     this.x = x
     this.y = y
     this.text = text
@@ -21,7 +17,6 @@ export class NodeData {
 
   setText(text) {
     this.text = text
-    this.type = NODE_TYPE_TEXT
   }
 }
 

@@ -1,15 +1,11 @@
-import {NODE_TYPE_NONE, NODE_TYPE_TEXT, NodeData, MapData} from './data'
+import {NodeData, MapData} from './data'
 import {clone} from './utils'
 import {TextInput} from './text-input'
 import {TextNode} from './node/text'
 
 
 const createNode = (data, container) => {
-  if( data.type == NODE_TYPE_TEXT ) {
-    return new TextNode(data, container)
-  } else {
-    return null
-  }
+  return new TextNode(data, container)
 }
 
 const DRAG_NONE = 0

@@ -25,28 +25,17 @@ export class NodeData {
   }
 }
 
+const DATA_VERSION = 1
 
-class PageData {
+export class MapData {
   constructor() {
+    this.version = DATA_VERSION
+
     this.nodes = [] // NodeData[]
   }
 
-  getNodeDatas() {
-    return this.nodes
-  }
-
-  fromRaw(rawData) {
-    this.nodes = []
-    const rawNodeDatas = rawData.nodes 
-    rawNodeDatas.forEach(rawNodeData => {
-      const nodeData = new NodeData()
-      nodeData.fromRaw(rawNodeData)
-      this.nodes.push(nodeData)
-    })
-  }
-
   addNode(nodeData) {
-    this.nodes.push(nodeData)
+    this.nodes.push(nodeData)    
   }
 
   removeNode(nodeData) {
@@ -59,54 +48,13 @@ class PageData {
   }
 
   clone() {
-    const clonedPageData = new PageData()
-    clonedPageData.nodes = cloneArray(this.nodes)
-    return clonedPageData
-  }
-}
-
-
-const DATA_VERSION = 1
-
-export class MapData {
-  constructor() {
-    this.version = DATA_VERSION
-    
-    this.pages = []
-    const pageData = new PageData()
-    this.pages.push(pageData)
-    this.currentPage = 0
-  }
-
-  addNode(nodeData) {
-    const pageData = this.pages[this.currentPage]
-    pageData.addNode(nodeData)
-  }
-
-  removeNode(nodeData) {
-    const pageData = this.pages[this.currentPage]
-    pageData.removeNode(nodeData)
-  }
-
-  clone() {
     const clonedMapData = new MapData()
-    
-    clonedMapData.currentPage = this.currentPage
-    clonedMapData.pages = []
-    
-    this.pages.forEach(pageData => {
-      clonedMapData.pages.push(pageData.clone())
-    })
+    clonedMapData.nodes = cloneArray(this.nodes)
     return clonedMapData
   }
 
   getCurretNodeDatas() {
-    return this.getNodeDatas(this.currentPage)
-  }
-
-  getNodeDatas(page) {
-    const pageData = this.pages[page]
-    return pageData.getNodeDatas()
+    return this.nodes
   }
 
   toJson() {
@@ -118,15 +66,13 @@ export class MapData {
     this.version = DATA_VERSION // vesionは現在のバージョンを利用する
     
     const rawData = JSON.parse(json)
-    this.currentPage = rawData.currentPage
+    this.nodes = []
     
-    const rawPageDatas = rawData.pages
-    this.pages = []
-    
-    rawPageDatas.forEach(rawPageData => {
-      const pageData = new PageData()
-      pageData.fromRaw(rawPageData)
-      this.pages.push(pageData)
+    const rawNodeDatas = rawData.nodes 
+    rawNodeDatas.forEach(rawNodeData => {
+      const nodeData = new NodeData()
+      nodeData.fromRaw(rawNodeData)
+      this.nodes.push(nodeData)
     })
   }
 }

@@ -23,11 +23,6 @@ export class NodeData {
     this.text = text
     this.type = NODE_TYPE_TEXT
   }
-
-  shiftPosForCopy() {
-    this.x += 10
-    this.y += 10
-  }
 }
 
 

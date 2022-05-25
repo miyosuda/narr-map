@@ -1,4 +1,3 @@
-import {Area} from '../area'
 import {getElementDimension, render} from '../text-utils'
 
 
@@ -21,14 +20,6 @@ export class TextNode {
 
   containsPos(x, y) {
     return (x >= this.left) && (x <= this.right) && (y >= this.top) && (y <= this.bottom)
-  }
-
-  containsPosOnAnchor(x, y) {
-    return null
-  }
-
-  overlaps(area) {
-    return area.overlapsWithArea(this.area)
   }
 
   prepare() {
@@ -86,20 +77,11 @@ export class TextNode {
     return this.foreignObject.height.baseVal.value
   }
 
-  get area() {
-    return new Area(this.left, this.top, this.width, this.height)
-  }
-
   remove() {
     this.foreignObject.remove()
   }
 
   isSelected() {
     return this.selected
-  }
-
-  areaSize() {
-    // 面積を返す
-    return this.width * this.height
   }
 }

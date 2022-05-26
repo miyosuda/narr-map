@@ -1,7 +1,7 @@
 import './css/reset.css'
 import './css/style.css'
 
-import {MapManager} from './map-manager2'
+import {MapManager} from './map-manager'
 
 const mapManager = new MapManager()
 

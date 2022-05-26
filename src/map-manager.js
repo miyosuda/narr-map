@@ -1,17 +1,68 @@
-import {NodeData, MapData} from './data'
-import {clone} from './utils'
-import {TextInput} from './text-input'
-import {TextNode} from './node/text'
+//import {TextInput} from './text-input'
+
+import {getElementDimension} from './text-utils'
 
 
-const createNode = (data, container) => {
-  return new TextNode(data, container)
+class NodeData {
+  constructor(text, parent) {
+    this.text = text
+    this.parent = parent
+  }
+
+  isRoot() {
+    return parent == null
+  }
 }
 
-const DRAG_NONE = 0
-const DRAG_NODE = 1
-const DRAG_AREA = 2
+class NodeView {
+  constructor(data, container) {
+    this.data = data
 
+    let ns = 'http://www.w3.org/2000/svg'
+    let foreignObject = document.createElementNS(ns, 'foreignObject')
+    
+    foreignObject.classList.add("node-text")
+
+    container.appendChild(foreignObject)
+    
+    this.foreignObject = foreignObject
+
+    this.prepare()
+  }
+
+  prepare() {
+    let span = document.createElement('span')
+    // テキスト選択無効のクラスを指定
+    span.className = 'disable-select';
+    span.textContent = this.data.text
+    this.foreignObject.appendChild(span)
+    
+    // TODO: refactor
+    let className = 'node-text'
+    const dims = getElementDimension(this.foreignObject.innerHTML, className)
+    this.foreignObject.width.baseVal.value = dims.width
+    this.foreignObject.height.baseVal.value = dims.height
+
+    this.foreignObject.x.baseVal.value = this.x - dims.width / 2
+    this.foreignObject.y.baseVal.value = this.x - dims.height / 2
+  }
+
+  get x() {
+    if(this.data.isRoot()) {
+      return 0
+    } else {
+      return 0 //..
+    }
+  }
+
+  get y() {
+    if(this.data.isRoot()) {
+      return 0
+    } else {
+      return 0 //..
+    }
+  }
+}
 
 export class MapManager {
   constructor() {
@@ -19,277 +70,25 @@ export class MapManager {
   }
 
   init() {
-    this.isDragging = false
-    this.dragStartX = 0
-    this.dragStartY = 0
-    this.selectedNodes = []
-    this.nodes = []
-    this.mapData = new MapData()
-    this.lastNode = null
+    this.nodeViews = []
   }
 
   prepare() {
     this.svg = document.getElementById('svg')
     
     this.onResize()
-    
-    document.onmousedown = event => this.onMouseDown(event)
-    document.onmouseup   = event => this.onMouseUp(event)
-    document.onmousemove = event => this.onMouseMove(event)
+
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
-    document.body.addEventListener('dblclick', evenet => this.onDoubleClick(event))
+    //this.textInput = new TextInput(this)
 
-    document.ondragover = document.ondrop = event => {
-      event.preventDefault()
-    }
-
-    this.textInput = new TextInput(this)
+    this.addRootNode()
   }
 
-  showInputAt(x, y) {
-    this.clearSelection()
-    let initialText = ""
-    const data = new NodeData(x, y, initialText)
-    this.textInput.show(data)
-  }
-
-  showInput(asSibling) {
-    let x = 10
-    let y = 10
-    
-    if(this.lastNode != null) {
-      if(asSibling) {
-        x = this.lastNode.right + 30
-        y = this.lastNode.top
-      } else {
-        x = this.lastNode.left
-        y = this.lastNode.bottom + 10
-      }
-    }
-    
-    this.showInputAt(x, y)
-  }
-
-  forceSetLastNode() {
-    // 一番下のnodeをlastNodeとする
-    this.lastNode = null
-
-    this.nodes.forEach(node => {
-      if( this.lastNode == null ) {
-        this.lastNode = node
-      } else {
-        // bottomではなくtopで比較している
-        if( node.top > this.lastNode.top ) {
-          this.lastNode = node
-        }
-      }
-    })
-  }
-
-  deleteSelectedNodes() {
-    let deleted = false
-    let lastNodeDeleted = false
-    
-    this.selectedNodes.forEach(node => {
-      // ノードを削除
-      this.removeNode(node)
-      deleted = true
-      if( node == this.lastNode ) {
-        lastNodeDeleted = true
-      }
-    })
-    this.seletedNodes = []
-
-    if( lastNodeDeleted ) {
-      this.forceSetLastNode()
-    }
-  }
-
-  onKeyDown(e) {
-    if( e.target != document.body ) {
-      // input入力時のkey押下は無視する
-      return
-    }
-
-    if(e.key === 'Tab' ) {
-      this.showInput(true)
-      e.preventDefault()
-    } else if(e.key === 'Enter' ) {
-      this.showInput(false)
-      e.preventDefault()
-    } else if(e.key === 'Backspace' ) {
-      this.deleteSelectedNodes()
-    }
-  }
-
-  findPickNode(x, y) {
-    let pickNode = null
-    
-    for(let i=0; i<this.nodes.length; i++) {
-      const node = this.nodes[i]
-      if( node.containsPos(x, y) ) {
-        pickNode = node
-        break
-      }
-    }
-    return pickNode
-  }
-
-  onMouseDown(e) {
-    if(e.which == 3) {
-      // 右クリックの場合
-      return
-    }
-    
-    if( this.textInput.isShown() ) {
-      // textInput表示中なら何もしない
-      return
-    }
-    
-    const pos = this.getLocalPos(e)
-    const x = pos.x
-    const y = pos.y
-    
-    // マウスが乗ったnodeをpick対象として選ぶ
-    let pickNode = this.findPickNode(x, y)
-
-    let dragMode = DRAG_NONE
-    const shitDown = e.shiftKey
-    let clearSelection = false
-    
-    // selected nodesを一旦クリア
-    this.selectedNodes = []
-    
-    if(pickNode != null) {
-      // pickNodeがあった場合
-      if(shitDown) {
-        if(pickNode.isSelected()) {
-          // shift押下でselectedなnodeをpick.
-          // pickNodeを選択済みでなくす.
-          pickNode.setSelected(false)
-          // ドラッグは開始しない. エリア選択も開始しない.
-          // 他のnodeのselected状態はそのままキープ.
-          dragMode = DRAG_NONE
-        } else {
-          // shift押下で、pickNodeがselectedでなかった場合
-          // pickNodeをselectedにして、
-          // 他のselectedの物も含めて全selected nodeをdrag
-          pickNode.setSelected(true)
-          pickNode.onDragStart()
-          this.lastNode = pickNode
-          this.selectedNodes.push(pickNode)
-          dragMode = DRAG_NODE
-          // 他のnodeのselected状態はそのままキープ
-        }
-      } else {
-        if(pickNode.isSelected()) {
-          // 他のselectedの物も含めて全selected nodeをdrag
-          pickNode.onDragStart()
-          this.lastNode = pickNode
-          this.selectedNodes.push(pickNode)
-          dragMode = DRAG_NODE
-          // 他のnodeのselected状態はそのままキープ
-        } else {
-          pickNode.setSelected(true)
-          pickNode.onDragStart()
-          this.lastNode = pickNode
-          this.selectedNodes.push(pickNode)
-          dragMode = DRAG_NODE
-          // 他のnodeのselected状態はクリア
-          clearSelection = true
-        }
-      }
-    } else {
-      // pickNodeがない場合
-      if(shitDown) {
-        dragMode = DRAG_AREA
-        // Nodeドラッグは開始しない.
-        // エリア選択も開始.
-        // 全nodeのselected状態はそのままキープ
-      } else {
-        dragMode = DRAG_AREA
-        // エリア選択開始
-        // 全nodeのselected状態はクリア
-        clearSelection = true
-      }
-    }
-    
-    for(let i=0; i<this.nodes.length; i++) {
-      const node = this.nodes[i]
-      if( node != pickNode ) {
-        if( node.isSelected() ) {
-          if(clearSelection) {
-            node.setSelected(false)
-          } else {
-            node.onDragStart()
-            this.selectedNodes.push(node)
-          }
-        }
-      }
-    }
-
-    if( dragMode == DRAG_NODE ) {
-      this.isDragging = true
-      this.dragStartX = x
-      this.dragStartY = y
-    }
-  }
-
-  onMouseUp(e) {
-    if(e.which == 3) {
-      // 右クリックの場合
-      const pos = this.getLocalPos(e)
-      const x = pos.x
-      const y = pos.y
-      this.showInputAt(x, y)
-      return
-    }
-    
-    this.isDragging = false
-  }
-
-  onMouseMove(e) {
-    if(e.which == 3) {
-      // 右クリックの場合
-      return
-    }
-    
-    if(this.isDragging == true) {
-      const pos = this.getLocalPos(e)
-      const x = pos.x
-      const y = pos.y
-      
-      const dx = x - this.dragStartX
-      const dy = y - this.dragStartY
-
-      this.selectedNodes.forEach(node => {
-        // ノードを移動
-        node.onDrag(dx, dy)
-      })
-    }
-  }
-
-  onDoubleClick(e) {
-    const pos = this.getLocalPos(e)
-    const x = pos.x
-    const y = pos.y
-    
-    const pickNode = this.findPickNode (x, y)
-    if( pickNode != null ) {
-      // text input表示
-      this.textInput.show(pickNode.data)
-      // ノードを削除
-      this.removeNode(pickNode)
-      // ここではundoバッファに反映しない
-    }
-  }
-  
-  onTextDecided(data, changed=true) {
-    // テキストが空文字ならばノードを追加しない
-    if( data.text != "" ) {
-      // TODO: 要refactor
-      this.addNode(data)
-    }
+  addRootNode() {
+    let rootNodeData = new NodeData('root', null)
+    const g = document.getElementById('nodes')    
+    let nodeView = new NodeView(rootNodeData, g)
+    this.nodeViews.push(nodeView)
   }
 
   onResize() {
@@ -299,47 +98,34 @@ export class MapManager {
     this.svg.setAttribute('width', window.innerWidth - margin)
     this.svg.setAttribute('height', window.innerHeight - margin)
   }
-
-  getLocalPos(e) {
-    const rect = document.getElementById('svg').getBoundingClientRect()
+  
+  onKeyDown(e) {
+    if( e.target != document.body ) {
+      // input入力時のkey押下は無視する
+      return
+    }
     
-    const x = e.clientX
-    const y = e.clientY
-
-    const pos = {}
-    pos.x = x - rect.left
-    pos.y = y - rect.top
-    return pos
-  }
-
-  addNode(nodeData, applyToNote=true) {
-    // TODO: 整理
-    const g = document.getElementById('nodes')
-    const node = createNode(nodeData, g)
-    this.nodes.push(node)
-    this.lastNode = node
-    if( applyToNote ) {
-      this.mapData.addNode(nodeData)
-    }
-    return node
-  }
-
-  removeNode(node, applyToNote=true) {
-    // TODO: 整理
-    const nodeIndex = this.nodes.indexOf(node)
-    if(nodeIndex >= 0) {
-      this.nodes.splice(nodeIndex, 1)
-    }
-    node.remove()
-    if( applyToNote ) {
-      this.mapData.removeNode(node.data)
+    if(e.key === 'Tab' ) {
+      this.addChildNode()
+      e.preventDefault()
+    } else if(e.key === 'Enter' ) {
+      this.addSiblingNode()
+      e.preventDefault()
+    } else if(e.key === 'Backspace' ) {
+      //this.deleteSelectedNodes()
     }
   }
-
-  clearSelection() {
-    this.selectedNodes.forEach(node => {
-      node.setSelected(false)
-    })
-    this.selectedNodes = []
+  
+  addChildNode() {
+    const rootNodeData = this.nodeViews[0].data
+    
+    let nodeData = new NodeData('child' + this.nodeViews.length,
+                                rootNodeData)
+    const g = document.getElementById('nodes')    
+    let nodeView = new NodeView(nodeData, g)
+    this.nodeViews.push(nodeView)
+  }
+  
+  addSiblingNode() {
   }
 }

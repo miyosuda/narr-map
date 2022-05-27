@@ -11,7 +11,10 @@ class NodeView {
     let ns = 'http://www.w3.org/2000/svg'
     let foreignObject = document.createElementNS(ns, 'foreignObject')
     
-    foreignObject.classList.add("node-text")
+    foreignObject.classList.add('node')
+    if(this.isRoot) {
+      foreignObject.classList.add('root-node')
+    }
 
     container.appendChild(foreignObject)
     
@@ -81,7 +84,7 @@ class NodeView {
   }
 
   updateWidthHeight() {
-    let className = 'node-text'
+    let className = 'node'
     const dims = getElementDimension(this.foreignObject.innerHTML, className)
 
     this.width = dims.width

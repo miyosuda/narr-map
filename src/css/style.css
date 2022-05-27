@@ -2,12 +2,17 @@ svg {
   page-break-after: always;
 }
 
-.node-text {
+.root-node {
+  border-radius: 5px;
+  background : orange;
+}
+
+.node {
   border-bottom: solid 1px #7f7f7f;
 }
 
 /* getElementDimension()でのサイズが2回目以降で異なる場合の為のworkaround */
-.node-text_selected {
+.node_selected {
   background: #cfcfcf;
 }
 
@@ -20,6 +25,7 @@ foreignObject {
   -ms-user-select: none;
   -webkit-user-select: none;
   user-select: none;
+  padding: 5px;
 }
 
 

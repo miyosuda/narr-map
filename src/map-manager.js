@@ -3,10 +3,10 @@
 import {getElementDimension} from './text-utils'
 
 
-class NodeView {
-  constructor(text, parentNodeView, container) {
+class Node {
+  constructor(text, parentNode, container) {
     this.text = text
-    this.parentNodeView = parentNodeView
+    this.parentNode = parentNode
 
     let ns = 'http://www.w3.org/2000/svg'
     let foreignObject = document.createElementNS(ns, 'foreignObject')
@@ -35,7 +35,8 @@ class NodeView {
     if( !this.isRoot ) {
       let lineElement = document.createElementNS(ns, 'line')
       this.lineElement = lineElement
-      
+
+      // ラインの位置後ほどupdateLayout()で設定
       lineElement.setAttribute('x1', 0)
       lineElement.setAttribute('y1', 0)
       lineElement.setAttribute('x2', 0)
@@ -47,10 +48,15 @@ class NodeView {
       container.appendChild(lineElement)
       this.lineElement = lineElement
     }
+
+    this.selected = false
+    
+    this.shiftX = 0
+    this.shiftY = 0
   }
   
-  addChildNodeView(nodeView) {
-    this.children.push(nodeView)
+  addChildNode(node) {
+    this.children.push(node)
   }
 
   updateLayout(baseX, baseY) {
@@ -65,17 +71,18 @@ class NodeView {
     if( this.children.length == 1 ) {
       childYOffset = -3.0
     }
-    const childBaseX = baseX + this.width + 20
-    const childBaseStartY = baseY + childYOffset - (this.children.length-1) / 2 * shiftYPerNode
+
+    const childBaseX = this.x + this.width + 20
+    const childBaseStartY = this.y + childYOffset - (this.children.length-1) / 2 * shiftYPerNode
     
     for(let i=0; i<this.children.length; i++) {
-      const nodeView = this.children[i]
-      nodeView.updateLayout(childBaseX, childBaseStartY + i * shiftYPerNode)
+      const node = this.children[i]
+      node.updateLayout(childBaseX, childBaseStartY + i * shiftYPerNode)
     }
   }
 
   get parent() {
-    return this.parentNodeView
+    return this.parentNode
   }
   
   setText(text) {
@@ -95,14 +102,14 @@ class NodeView {
     this.foreignObject.width.baseVal.value = this.width
     this.foreignObject.height.baseVal.value = this.height
 
-    this.foreignObject.x.baseVal.value = baseX
-    this.foreignObject.y.baseVal.value = baseY
+    this.x = baseX + this.shiftX
+    this.y = baseY + this.shiftY
 
-    this.x = baseX
-    this.y = baseY
+    this.foreignObject.x.baseVal.value = this.x
+    this.foreignObject.y.baseVal.value = this.y
 
     if(!this.isRoot) {
-      const edgeStartPos = this.parentNodeView.edgeOutPos
+      const edgeStartPos = this.parentNode.edgeOutPos
       this.lineElement.setAttribute('x1', edgeStartPos.x)
       this.lineElement.setAttribute('y1', edgeStartPos.y)
       this.lineElement.setAttribute('x2', this.x)
@@ -111,7 +118,7 @@ class NodeView {
   }
 
   get isRoot() {
-    return this.parentNodeView == null
+    return this.parentNode == null
   }
 
   get edgeOutPos() {
@@ -127,7 +134,63 @@ class NodeView {
     
     return pos
   }
+
+  get left() {
+    return this.x
+  }
+
+  get top() {
+    return this.y
+  }
+
+  get right() {
+    return this.x + this.width
+  }
+
+  get bottom() {
+    return this.y + this.height
+  }
+
+  onDragStart() {
+    this.startElementX = this.shiftX
+    this.startElementY = this.shiftY
+  }
+
+  onDrag(dx, dy) {
+    this.shiftX = this.startElementX + dx
+    this.shiftY = this.startElementY + dy
+    //this.foreignObject.x.baseVal.value = this.data.x
+    //this.foreignObject.y.baseVal.value = this.data.y
+  }
+
+  containsPos(x, y) {
+    return (x >= this.left) && (x <= this.right) && (y >= this.top) && (y <= this.bottom)
+  }
+
+  setSelected(selected) {
+    if(selected) {
+      this.foreignObject.classList.add("node_selected")
+    } else {
+      this.foreignObject.classList.remove("node_selected")
+    }
+    this.selected = selected
+  }
+
+  isSelected() {
+    return this.selected
+  }
+
+  /*
+  remove() {
+    this.foreignObject.remove()
+  }
+  */
 }
+
+
+const DRAG_NONE = 0
+const DRAG_NODE = 1
+const DRAG_BACK = 1
 
 
 export class MapManager {
@@ -136,8 +199,12 @@ export class MapManager {
   }
 
   init() {
-    this.lastNodeView = null
-    this.nodeViews = []
+    this.isDragging = false
+    this.dragStartX = 0
+    this.dragStartY = 0
+    this.selectedNodes = []
+    this.nodes = []
+    this.lastNode = null    
   }
 
   prepare() {
@@ -145,6 +212,9 @@ export class MapManager {
     
     this.onResize()
 
+    document.onmousedown = event => this.onMouseDown(event)
+    document.onmouseup   = event => this.onMouseUp(event)
+    document.onmousemove = event => this.onMouseMove(event)    
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
     //this.textInput = new TextInput(this)
 
@@ -153,9 +223,9 @@ export class MapManager {
 
   addRootNode() {
     const g = document.getElementById('nodes') 
-    let nodeView = new NodeView('root', null, g)
-    this.nodeViews.push(nodeView)
-    this.lastNodeView = nodeView
+    let node = new Node('root', null, g)
+    this.nodes.push(node)
+    this.lastNode = node
 
     this.updateLayout()
   }
@@ -167,6 +237,151 @@ export class MapManager {
     this.svg.setAttribute('width', window.innerWidth - margin)
     this.svg.setAttribute('height', window.innerHeight - margin)
   }
+
+  findPickNode(x, y) {
+    let pickNode = null
+    
+    for(let i=0; i<this.nodes.length; i++) {
+      const node = this.nodes[i]
+      if( node.containsPos(x, y) ) {
+        pickNode = node
+        break
+      }
+    }
+    return pickNode
+  }
+
+  onMouseDown(e) {
+    if(e.which == 3) {
+      // 右クリックの場合
+      return
+    }
+
+    /*
+    if( this.textInput.isShown() ) {
+      // textInput表示中なら何もしない
+      return
+    }
+    */
+    
+    const pos = this.getLocalPos(e)
+    const x = pos.x
+    const y = pos.y
+    
+    // マウスが乗ったnodeをpick対象として選ぶ
+    let pickNode = this.findPickNode(x, y)
+
+    let dragMode = DRAG_NONE
+    const shitDown = e.shiftKey
+    let clearSelection = false
+    
+    // selected nodesを一旦クリア
+    this.selectedNodes = []
+    
+    if(pickNode != null) {
+      // pickNodeがあった場合
+      if(shitDown) {
+        if(pickNode.isSelected()) {
+          // shift押下でselectedなnodeをpick.
+          // pickNodeを選択済みでなくす.
+          pickNode.setSelected(false)
+          // ドラッグは開始しない. エリア選択も開始しない.
+          // 他のnodeのselected状態はそのままキープ.
+          dragMode = DRAG_NONE
+        } else {
+          // shift押下で、pickNodeがselectedでなかった場合
+          // pickNodeをselectedにして、
+          // 他のselectedの物も含めて全selected nodeをdrag
+          pickNode.setSelected(true)
+          pickNode.onDragStart()
+          this.lastNode = pickNode
+          this.selectedNodes.push(pickNode)
+          dragMode = DRAG_NODE
+          // 他のnodeのselected状態はそのままキープ
+        }
+      } else {
+        if(pickNode.isSelected()) {
+          // 他のselectedの物も含めて全selected nodeをdrag
+          pickNode.onDragStart()
+          this.lastNode = pickNode
+          this.selectedNodes.push(pickNode)
+          dragMode = DRAG_NODE
+          // 他のnodeのselected状態はそのままキープ
+        } else {
+          pickNode.setSelected(true)
+          pickNode.onDragStart()
+          this.lastNode = pickNode
+          this.selectedNodes.push(pickNode)
+          dragMode = DRAG_NODE
+          // 他のnodeのselected状態はクリア
+          clearSelection = true
+        }
+      }
+    } else {
+      dragMode = DRAG_BACK
+      // エリア選択開始
+      // 全nodeのselected状態はクリア
+      clearSelection = true
+    }
+    
+    for(let i=0; i<this.nodes.length; i++) {
+      const node = this.nodes[i]
+      if( node != pickNode ) {
+        if( node.isSelected() ) {
+          if(clearSelection) {
+            node.setSelected(false)
+          } else {
+            node.onDragStart()
+            this.selectedNodes.push(node)
+          }
+        }
+      }
+    }
+
+    if( dragMode == DRAG_NODE ) {
+      this.isDragging = true
+      this.dragStartX = x
+      this.dragStartY = y
+    }
+  }
+
+  onMouseUp(e) {
+    if(e.which == 3) {
+      // 右クリックの場合
+      return
+    }
+    
+    this.isDragging = false
+  }
+
+  onMouseMove(e) {
+    if(e.which == 3) {
+      // 右クリックの場合
+      return
+    }
+    
+    if(this.isDragging == true) {
+      const pos = this.getLocalPos(e)
+      const x = pos.x
+      const y = pos.y
+      
+      const dx = x - this.dragStartX
+      const dy = y - this.dragStartY
+
+      /*
+      this.selectedNodes.forEach(node => {
+        // ノードを移動
+        node.onDrag(dx, dy)
+      })
+      */
+
+      // 1つのノードだけを動かす
+      const dragTargetNode = this.selectedNodes[0]
+      dragTargetNode.onDrag(dx, dy)
+
+      this.updateLayout()
+    }
+  }  
   
   onKeyDown(e) {
     if( e.target != document.body ) {
@@ -184,40 +399,49 @@ export class MapManager {
       //this.deleteSelectedNodes()
     }
   }
+
+  getLocalPos(e) {
+    const rect = this.svg.getBoundingClientRect()
+    const pos = this.svg.createSVGPoint()
+    pos.x = e.clientX - rect.left
+    pos.y = e.clientY - rect.top
+    const canvasLocalPos = pos.matrixTransform(canvas.getScreenCTM().inverse())
+    return canvasLocalPos
+  }
   
   addChildNode() {
     const g = document.getElementById('nodes')
-    const text = 'child' + this.nodeViews.length
+    const text = 'child' + this.nodes.length
     
-    let nodeView = new NodeView(text, this.lastNodeView, g)
-    this.nodeViews.push(nodeView)
-    this.lastNodeView.addChildNodeView(nodeView)
+    let node = new Node(text, this.lastNode, g)
+    this.nodes.push(node)
+    this.lastNode.addChildNode(node)
     
-    this.lastNodeView = nodeView
+    this.lastNode = node
 
     this.updateLayout()
   }
   
   addSiblingNode() {
-    if(this.lastNodeView.isRoot) {
+    if(this.lastNode.isRoot) {
       this.addChildNode()
     } else {
       const g = document.getElementById('nodes')
-      const text = 'child' + this.nodeViews.length
+      const text = 'child' + this.nodes.length
 
-      const parentNodeView = this.lastNodeView.parent
-      let nodeView = new NodeView(text, parentNodeView, g)
-      this.nodeViews.push(nodeView)
-      parentNodeView.addChildNodeView(nodeView)
+      const parentNode = this.lastNode.parent
+      let node = new Node(text, parentNode, g)
+      this.nodes.push(node)
+      parentNode.addChildNode(node)
 
-      this.lastNodeView = nodeView
+      this.lastNode = node
 
       this.updateLayout()
     }
   }
   
   updateLayout() {
-    const rootNodeView = this.nodeViews[0]
-    rootNodeView.updateLayout(null, null)
+    const rootNode = this.nodes[0]
+    rootNode.updateLayout(null, null)
   }
 }

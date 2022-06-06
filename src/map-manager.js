@@ -61,24 +61,74 @@ class Node {
 
   updateLayout(baseX, baseY) {
     if(this.isRoot) {
+      // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく.
       baseX = -this.width / 2
       baseY = -this.height / 2
     }
+    // baseX,YにshirtX,Yを足してx,yとする
     this.updatePos(baseX, baseY)
 
+    // 1ノードの高さは30とする
     const shiftYPerNode = 30.0
     let childYOffset = 0.0
     if( this.children.length == 1 ) {
+      // 子が1ノードしかない場合は少し上に上げておく
       childYOffset = -3.0
     }
 
     const childBaseX = this.x + this.width + 20
-    const childBaseStartY = this.y + childYOffset - (this.children.length-1) / 2 * shiftYPerNode
-    
+    // 子ノードのY方向の開始位置
+    let childBaseStartY = this.y + childYOffset - (this.children.length-1) / 2 * shiftYPerNode
+
     for(let i=0; i<this.children.length; i++) {
       const node = this.children[i]
+      // 各ノードのx,yを更新する
       node.updateLayout(childBaseX, childBaseStartY + i * shiftYPerNode)
     }
+  }
+
+  calcYBounds() {
+    // TODO: 共通化
+    
+    // 1ノードの高さは30とする
+    const shiftYPerNode = 30.0
+    let childYOffset = 0.0
+    if( this.children.length == 1 ) {
+      // 子が1ノードしかない場合は少し上に上げておく
+      childYOffset = -3.0
+    }
+
+    // 子ノードのY方向の開始位置
+    let offsetY = childYOffset - (this.children.length-1) / 2 * shiftYPerNode
+    
+    let top = Number.POSITIVE_INFINITY
+    let bottom = Number.NEGATIVE_INFINITY
+    
+    if(this.children.length == 0) {
+      top = 0
+      bottom = shiftYPerNode
+    } else {
+      for(let i=0; i<this.children.length; i++) {
+        const node = this.children[i]
+        const childYBounds = node.calcYBounds()
+        const childTop = childYBounds.top + offsetY + node.shiftY
+        const childBottom = childYBounds.bottom + offsetY + node.shiftY
+        
+        if(childTop < top) {
+          top = childTop
+        }
+        if(childBottom > bottom) {
+          bottom = childBottom
+        }
+        
+        offsetY += shiftYPerNode
+      }
+    }
+
+    const bounds = {}
+    bounds.top = top
+    bounds.bottom = bottom
+    return bounds
   }
 
   get parent() {
@@ -214,7 +264,7 @@ export class MapManager {
 
     document.onmousedown = event => this.onMouseDown(event)
     document.onmouseup   = event => this.onMouseUp(event)
-    document.onmousemove = event => this.onMouseMove(event)    
+    document.onmousemove = event => this.onMouseMove(event)
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
     //this.textInput = new TextInput(this)
 
@@ -368,18 +418,11 @@ export class MapManager {
       const dx = x - this.dragStartX
       const dy = y - this.dragStartY
 
-      /*
-      this.selectedNodes.forEach(node => {
-        // ノードを移動
-        node.onDrag(dx, dy)
-      })
-      */
-
       // 1つのノードだけを動かす
       const dragTargetNode = this.selectedNodes[0]
       dragTargetNode.onDrag(dx, dy)
 
-      this.updateLayout()
+      this.adjustLayout(dragTargetNode)
     }
   }  
   
@@ -443,5 +486,85 @@ export class MapManager {
   updateLayout() {
     const rootNode = this.nodes[0]
     rootNode.updateLayout(null, null)
+  }
+  
+  adjustLayout(targetNode) {
+    this.updateLayout()
+    
+    const targetParentNode = targetNode.parentNode
+    
+    if(targetParentNode != null) {
+      const upNodes = []
+      const downNodes = []
+      let targetNodeIndex = -1
+
+      // 1ノードの高さは30とする
+      const shiftYPerNode = 30.0
+      let childYOffset = 0.0
+      if( targetParentNode.children.length == 1 ) {
+        // 子が1ノードしかない場合は少し上に上げておく
+        childYOffset = -3.0
+      }
+
+      // 子ノードのY方向の開始位置
+      let offsetY = childYOffset - (targetParentNode.children.length-1) / 2 * shiftYPerNode
+
+      const offsetYs = []
+      
+      for(let i=0; i<targetParentNode.children.length; i++) {
+        const child = targetParentNode.children[i]
+        
+        if(child == targetNode) {
+          targetNodeIndex = i
+        } else {
+          if(targetNodeIndex == -1) {
+            upNodes.unshift(child)
+          } else {
+            downNodes.push(child)
+          }
+        }
+        
+        offsetY += shiftYPerNode
+        offsetYs.push(offsetY)
+      }
+
+      const targetNodeBounds = targetNode.calcYBounds()
+      const targetNodeOffsetY = offsetYs[targetNodeIndex]
+
+      let lastNodeTop = targetNodeOffsetY + targetNode.shiftY + targetNodeBounds.top
+      let lastNodeBottom = targetNodeOffsetY + targetNode.shiftY + targetNodeBounds.bottom
+
+      // 上方向に持ち上げ
+      for(let i=0; i<upNodes.length; ++i) {
+        const node = upNodes[i]
+        const bounds = node.calcYBounds()
+        const offsetY = offsetYs[targetNodeIndex - 1 - i]
+        const nodeTop = offsetY + node.shiftY + bounds.top
+        const nodeBottom = offsetY + node.shiftY + bounds.bottom
+
+        if(nodeBottom > lastNodeTop) {
+          node.shiftY -= (nodeBottom - lastNodeTop)
+        }
+        
+        lastNodeTop = nodeTop
+      }
+
+      // 下方向に持ち下げ
+      for(let i=0; i<downNodes.length; ++i) {
+        const node = downNodes[i]
+        const bounds = node.calcYBounds()
+        const offsetY = offsetYs[targetNodeIndex + 1 + i]
+        const nodeTop = offsetY + node.shiftY + bounds.top
+        const nodeBottom = offsetY + node.shiftY + bounds.bottom
+
+        if(nodeTop < lastNodeBottom) {
+          node.shiftY += (lastNodeBottom - nodeTop)
+        }
+        
+        lastNodeBottom = nodeBottom
+      }
+      
+      this.updateLayout()
+    }
   }
 }

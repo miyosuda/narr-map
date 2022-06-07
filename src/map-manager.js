@@ -493,78 +493,83 @@ export class MapManager {
     
     const targetParentNode = targetNode.parentNode
     
-    if(targetParentNode != null) {
-      const upNodes = []
-      const downNodes = []
-      let targetNodeIndex = -1
-
-      // 1ノードの高さは30とする
-      const shiftYPerNode = 30.0
-      let childYOffset = 0.0
-      if( targetParentNode.children.length == 1 ) {
-        // 子が1ノードしかない場合は少し上に上げておく
-        childYOffset = -3.0
-      }
-
-      // 子ノードのY方向の開始位置
-      let offsetY = childYOffset - (targetParentNode.children.length-1) / 2 * shiftYPerNode
-
-      const offsetYs = []
-      
-      for(let i=0; i<targetParentNode.children.length; i++) {
-        const child = targetParentNode.children[i]
-        
-        if(child == targetNode) {
-          targetNodeIndex = i
-        } else {
-          if(targetNodeIndex == -1) {
-            upNodes.unshift(child)
-          } else {
-            downNodes.push(child)
-          }
-        }
-        
-        offsetY += shiftYPerNode
-        offsetYs.push(offsetY)
-      }
-
-      const targetNodeBounds = targetNode.calcYBounds()
-      const targetNodeOffsetY = offsetYs[targetNodeIndex]
-
-      let lastNodeTop = targetNodeOffsetY + targetNode.shiftY + targetNodeBounds.top
-      let lastNodeBottom = targetNodeOffsetY + targetNode.shiftY + targetNodeBounds.bottom
-
-      // 上方向に持ち上げ
-      for(let i=0; i<upNodes.length; ++i) {
-        const node = upNodes[i]
-        const bounds = node.calcYBounds()
-        const offsetY = offsetYs[targetNodeIndex - 1 - i]
-        const nodeTop = offsetY + node.shiftY + bounds.top
-        const nodeBottom = offsetY + node.shiftY + bounds.bottom
-
-        if(nodeBottom > lastNodeTop) {
-          node.shiftY -= (nodeBottom - lastNodeTop)
-        }
-        
-        lastNodeTop = nodeTop
-      }
-
-      // 下方向に持ち下げ
-      for(let i=0; i<downNodes.length; ++i) {
-        const node = downNodes[i]
-        const bounds = node.calcYBounds()
-        const offsetY = offsetYs[targetNodeIndex + 1 + i]
-        const nodeTop = offsetY + node.shiftY + bounds.top
-        const nodeBottom = offsetY + node.shiftY + bounds.bottom
-
-        if(nodeTop < lastNodeBottom) {
-          node.shiftY += (lastNodeBottom - nodeTop)
-        }
-        
-        lastNodeBottom = nodeBottom
-      }
-      
-      this.updateLayout()
+    if(targetParentNode == null) {
+      return
     }
+    
+    const upNodes = []
+    const downNodes = []
+    let targetNodeIndex = -1
+
+    // 1ノードの高さは30とする
+    const shiftYPerNode = 30.0
+    let childYOffset = 0.0
+    if( targetParentNode.children.length == 1 ) {
+      // 子が1ノードしかない場合は少し上に上げておく
+      childYOffset = -3.0
+    }
+
+    // 子ノードのY方向の開始位置
+    let offsetY = childYOffset - (targetParentNode.children.length-1) / 2 * shiftYPerNode
+
+    const offsetYs = []
+    
+    for(let i=0; i<targetParentNode.children.length; i++) {
+      const child = targetParentNode.children[i]
+      
+      if(child == targetNode) {
+        targetNodeIndex = i
+      } else {
+        if(targetNodeIndex == -1) {
+          upNodes.unshift(child)
+        } else {
+          downNodes.push(child)
+        }
+      }
+      
+      offsetY += shiftYPerNode
+      offsetYs.push(offsetY)
+    }
+
+    const targetNodeBounds = targetNode.calcYBounds()
+    const targetNodeOffsetY = offsetYs[targetNodeIndex]
+
+    let lastNodeTop = targetNodeOffsetY + targetNode.shiftY + targetNodeBounds.top
+    let lastNodeBottom = targetNodeOffsetY + targetNode.shiftY + targetNodeBounds.bottom
+
+    // 上方向に持ち上げ
+    for(let i=0; i<upNodes.length; ++i) {
+      const node = upNodes[i]
+      const bounds = node.calcYBounds()
+      const offsetY = offsetYs[targetNodeIndex - 1 - i]
+      const nodeTop = offsetY + node.shiftY + bounds.top
+      const nodeBottom = offsetY + node.shiftY + bounds.bottom
+
+      if(nodeBottom > lastNodeTop) {
+        node.shiftY -= (nodeBottom - lastNodeTop)
+      }
+      
+      lastNodeTop = nodeTop
+    }
+
+    // 下方向に持ち下げ
+    for(let i=0; i<downNodes.length; ++i) {
+      const node = downNodes[i]
+      const bounds = node.calcYBounds()
+      const offsetY = offsetYs[targetNodeIndex + 1 + i]
+      const nodeTop = offsetY + node.shiftY + bounds.top
+      const nodeBottom = offsetY + node.shiftY + bounds.bottom
+
+      if(nodeTop < lastNodeBottom) {
+        node.shiftY += (lastNodeBottom - nodeTop)
+      }
+      
+      lastNodeBottom = nodeBottom
+    }
+    
+    this.updateLayout()
+
+    // 上の階層に上がる
+    this.adjustLayout(targetParentNode)
   }
 }

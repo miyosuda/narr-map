@@ -462,7 +462,7 @@ export class MapManager {
     
     this.lastNode = node
 
-    this.updateLayout()
+    this.adjustLayout(node)
   }
   
   addSiblingNode() {
@@ -479,7 +479,7 @@ export class MapManager {
 
       this.lastNode = node
 
-      this.updateLayout()
+      this.adjustLayout(node)
     }
   }
   
@@ -542,13 +542,14 @@ export class MapManager {
       const node = upNodes[i]
       const bounds = node.calcYBounds()
       const offsetY = offsetYs[targetNodeIndex - 1 - i]
-      const nodeTop = offsetY + node.shiftY + bounds.top
+
       const nodeBottom = offsetY + node.shiftY + bounds.bottom
 
       if(nodeBottom > lastNodeTop) {
         node.shiftY -= (nodeBottom - lastNodeTop)
       }
       
+      const nodeTop = offsetY + node.shiftY + bounds.top      
       lastNodeTop = nodeTop
     }
 
@@ -557,16 +558,16 @@ export class MapManager {
       const node = downNodes[i]
       const bounds = node.calcYBounds()
       const offsetY = offsetYs[targetNodeIndex + 1 + i]
-      const nodeTop = offsetY + node.shiftY + bounds.top
-      const nodeBottom = offsetY + node.shiftY + bounds.bottom
+      const nodeTop = offsetY + node.shiftY + bounds.top     
 
       if(nodeTop < lastNodeBottom) {
         node.shiftY += (lastNodeBottom - nodeTop)
       }
-      
+
+      const nodeBottom = offsetY + node.shiftY + bounds.bottom
       lastNodeBottom = nodeBottom
     }
-    
+
     this.updateLayout()
 
     // 上の階層に上がる

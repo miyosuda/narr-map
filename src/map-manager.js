@@ -547,9 +547,16 @@ export class MapManager {
 
       if(nodeBottom > lastNodeTop) {
         node.shiftY -= (nodeBottom - lastNodeTop)
+      } else {
+        // これだとダメ
+        /*
+        if(node.shiftY < 0) {
+          node.shiftY = lastNodeTop - offsetY - bounds.bottom
+        }
+        */
       }
       
-      const nodeTop = offsetY + node.shiftY + bounds.top      
+      const nodeTop = offsetY + node.shiftY + bounds.top
       lastNodeTop = nodeTop
     }
 
@@ -558,10 +565,17 @@ export class MapManager {
       const node = downNodes[i]
       const bounds = node.calcYBounds()
       const offsetY = offsetYs[targetNodeIndex + 1 + i]
-      const nodeTop = offsetY + node.shiftY + bounds.top     
+      const nodeTop = offsetY + node.shiftY + bounds.top
 
       if(nodeTop < lastNodeBottom) {
         node.shiftY += (lastNodeBottom - nodeTop)
+      } else {
+        // これだとダメ
+        /*
+        if(node.shiftY > 0) {
+          node.shiftY = lastNodeBottom - offsetY - bounds.top
+        }
+        */
       }
 
       const nodeBottom = offsetY + node.shiftY + bounds.bottom

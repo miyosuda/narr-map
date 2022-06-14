@@ -118,12 +118,13 @@ class Node {
         const node = this.children[i]
         // 子Nodeのboundsを算出する
         const childYBounds = node.calcYBounds()
-        const childTop    = childYBounds.top    + offsetY + node.shiftY + node.adjustY
-        const childBottom = childYBounds.bottom + offsetY + node.shiftY + node.adjustY
+        const childTop    = offsetY + childYBounds.top    + node.adjustY
+        const childBottom = offsetY + childYBounds.bottom + node.adjustY
         
         if(childTop < top) {
           top = childTop
         }
+        
         if(childBottom > bottom) {
           bottom = childBottom
         }
@@ -133,14 +134,21 @@ class Node {
     }
     
     const bounds = {}
-    //..
+
     if(top > 0) {
       top = 0
     }
     if(bottom < spanYPerNode) {
       bottom = spanYPerNode
     }
-    //..
+
+    if(this.shiftY <= 0) {
+      // 上にシフトされているのでtopを上に移動 (上にスペースを作る)
+      top += this.shiftY
+    } else {
+      // 下にシフト. bottomを下に移動 (下にスペースを作る)
+      bottom += this.shiftY
+    }
     
     bounds.top = top
     bounds.bottom = bottom
@@ -554,22 +562,8 @@ export class MapManager {
     const targetNodeBounds = targetNode.calcYBounds()
     const targetNodeOffsetY = defaultYs[targetNodeIndex]
 
-    // TODO: これでOKなのかどうか検討
-    let lastNodeTop = targetNodeOffsetY + targetNode.shiftY + targetNode.adjustY + targetNodeBounds.top
-    let lastNodeBottom = targetNodeOffsetY + targetNode.shiftY + targetNode.adjustY + targetNodeBounds.bottom
-
-    /*
     let lastNodeTop    = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.top
     let lastNodeBottom = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.bottom
-
-    if(targetNode.shiftY <= 0) {
-      // 上にシフト. topを上に
-      lastNodeTop += targetNode.shiftY
-    } else {
-      // 下にシフト. bottomを下に
-      lastNodeBottom += targetNode.shiftY
-    }
-    */
 
     // 上方向に持ち上げ
     for(let i=0; i<upNodes.length; ++i) {
@@ -577,27 +571,17 @@ export class MapManager {
       const bounds = node.calcYBounds()
       const offsetY = defaultYs[targetNodeIndex - 1 - i]
 
-      let boundsBottom = bounds.bottom
-      let boundsTop = bounds.top
-
-      if(node.shiftY <= 0) {
-        // 上にシフト. topを上に
-        boundsTop += node.shiftY
-      } else {
-        // 下にシフト. bottomを下に
-        boundsBottom += node.shiftY
-      }
-
-      const nodeBottom = offsetY + boundsBottom
-        
+      const nodeBottom = offsetY + bounds.bottom
+      
       if(nodeBottom > lastNodeTop) {
         // nodeの下端が下Nodeと被っているので上げる(y値を小さくする)必要がある
         node.adjustY = -(nodeBottom - lastNodeTop)
       } else {
         node.adjustY = 0.0
       }
-      
-      const newNodeTop = offsetY + boundsTop + node.adjustY
+
+      // TODO: ここのnode.bottomはこれでいいのか?
+      const newNodeTop = offsetY + bounds.top + node.adjustY
       lastNodeTop = newNodeTop
     }
 
@@ -607,19 +591,7 @@ export class MapManager {
       const bounds = node.calcYBounds()
       const offsetY = defaultYs[targetNodeIndex + 1 + i]
 
-      let boundsBottom = bounds.bottom
-      let boundsTop = bounds.top
-
-      if(node.shiftY <= 0) {
-        // 上にシフト. topを上に
-        boundsTop += node.shiftY
-      } else {
-        // 下にシフト. bottomを下に
-        boundsBottom += node.shiftY
-      }      
-
-      //const nodeTop = offsetY + bounds.top
-      const nodeTop = offsetY + boundsTop
+      const nodeTop = offsetY + bounds.top
       
       if(nodeTop < lastNodeBottom) {
         // nodeの上端が上Nodeに被っているので下に下げる(y値を大きくする)必要がある
@@ -628,7 +600,7 @@ export class MapManager {
         node.adjustY = 0.0
       }
       
-      const newNodeBottom = offsetY + boundsBottom + node.adjustY
+      const newNodeBottom = offsetY + bounds.bottom + node.adjustY
       lastNodeBottom = newNodeBottom
     }
 

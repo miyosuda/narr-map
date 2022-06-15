@@ -505,14 +505,17 @@ export class MapManager {
       const g = document.getElementById('nodes')
       const text = 'child' + this.nodes.length
 
+      const oldLastNode = this.lastNode
       const parentNode = this.lastNode.parent
+      
       let node = new Node(text, parentNode, g)
       this.nodes.push(node)
       parentNode.addChildNode(node)
 
       this.lastNode = node
-
-      this.adjustLayout(node)
+      
+      // 前のsiblingをtargetとしてadjustとしている
+      this.adjustLayout(oldLastNode)
     }
   }
   
@@ -540,6 +543,7 @@ export class MapManager {
     // 1ノードの高さは30とする
     const spanYPerNode = 30.0
 
+    // TODO: 整理可能
     const defaultYs = []
     
     for(let i=0; i<targetParentNode.children.length; i++) {
@@ -565,7 +569,7 @@ export class MapManager {
     let lastNodeTop    = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.top
     let lastNodeBottom = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.bottom
 
-    // 上方向に持ち上げ
+    // target nodeよりも上のNodeに対して
     for(let i=0; i<upNodes.length; ++i) {
       const node = upNodes[i]
       const bounds = node.calcYBounds()
@@ -573,36 +577,28 @@ export class MapManager {
 
       const nodeBottom = offsetY + bounds.bottom + node.adjustY
       
-      if(nodeBottom > lastNodeTop) {
-        // nodeの下端が下Nodeと被っているので上げる(y値を小さくする)必要がある
+      if(nodeBottom > lastNodeTop || node.adjustY < 0) {
+        // a) nodeの下端が下Nodeと被っているので上げる(y値を小さくする)必要がある
+        // b) nodeが上方向にadjustされているのでlastNodeの上端にnodeの下端(それぞれshiftを含む)に合わせる
         node.adjustY = lastNodeTop - (offsetY + bounds.bottom)
-      } else {
-        // TODO: 整理可能
-        if(node.adjustY < 0) {
-            node.adjustY = lastNodeTop - (offsetY + bounds.bottom)
-        }
       }
 
       const newNodeTop = offsetY + bounds.top + node.adjustY
       lastNodeTop = newNodeTop
     }
 
-    // 下方向に持ち下げ
+    // target nodeよりも下のNodeに対して
     for(let i=0; i<downNodes.length; ++i) {
       const node = downNodes[i]
       const bounds = node.calcYBounds()
       const offsetY = defaultYs[targetNodeIndex + 1 + i]
-
+      
       const nodeTop = offsetY + node.adjustY + bounds.top
       
-      if(nodeTop < lastNodeBottom) {
-        // nodeの上端が上Nodeに被っているので下に下げる(y値を大きくする)必要がある
+      if(nodeTop < lastNodeBottom || node.adjustY > 0) {
+        // a) nodeの上端が上Nodeに被っているので下に下げる(y値を大きくする)必要がある
+        // b) nodeが下方向にadjustされているのでlastNodeの下端にnodeの上端(それぞれshiftを含む)に合わせる
         node.adjustY = lastNodeBottom - (offsetY + bounds.top)
-      } else {
-        // TODO: 整理可能
-        if(node.adjustY > 0) {
-          node.adjustY = lastNodeBottom - (offsetY + bounds.top)
-        }
       }
       
       const newNodeBottom = offsetY + bounds.bottom + node.adjustY
@@ -614,9 +610,7 @@ export class MapManager {
     // 上の階層に上がる
     this.adjustLayout(targetParentNode)
 
-    //..
-    this.debugDump()
-    //..
+    //this.debugDump()
   }
 
   debugDump() {

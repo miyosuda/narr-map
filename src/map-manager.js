@@ -1,6 +1,7 @@
 //import {TextInput} from './text-input'
 
 import {getElementDimension} from './text-utils'
+const { nmapi } = window
 
 
 class Node {
@@ -301,6 +302,12 @@ export class MapManager {
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
     //this.textInput = new TextInput(this)
 
+    nmapi.onReceiveMessage((arg) => {
+      if( arg == 'cut' ) {
+        this.cut()
+      }
+    })
+    
     this.addRootNode()
   }
 
@@ -611,6 +618,10 @@ export class MapManager {
     this.adjustLayout(targetParentNode)
 
     //this.debugDump()
+  }
+
+  cut() {
+    console.log('cut')
   }
 
   debugDump() {

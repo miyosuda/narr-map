@@ -3,6 +3,9 @@
 import {getElementDimension} from './text-utils'
 const { nmapi } = window
 
+// 1ノードの取る縦幅
+const SPAN_Y_PER_NODE = 30.0
+
 
 class Node {
   constructor(text, parentNode, container) {
@@ -71,8 +74,6 @@ class Node {
     // baseX,YにshirtX,Yを足してx,yとする
     this.updatePos(baseX, baseY)
 
-    // 1ノードの高さは30とする
-    const spanYPerNode = 30.0
     let childYOffset = 0.0
     if( this.children.length == 1 ) {
       // 子が1ノードしかない場合は少し上に上げておく
@@ -81,12 +82,12 @@ class Node {
 
     const childBaseX = this.x + this.width + 20
     // 子ノードのY方向の開始位置
-    const childDefaultStartY = this.y + childYOffset - (this.children.length-1) / 2 * spanYPerNode
+    const childDefaultStartY = this.y + childYOffset - (this.children.length-1) / 2 * SPAN_Y_PER_NODE
 
     for(let i=0; i<this.children.length; i++) {
       const node = this.children[i]
       // 各ノードのx,yを更新する
-      const nodeDefaultY = childDefaultStartY + i * spanYPerNode
+      const nodeDefaultY = childDefaultStartY + i * SPAN_Y_PER_NODE
       node.updateLayout(childBaseX, nodeDefaultY)
     }
   }
@@ -94,16 +95,13 @@ class Node {
   calcYBounds() {
     // TODO: 共通化
     
-    // 1ノードの高さは30とする
-    const spanYPerNode = 30.0
-
     let top = Number.POSITIVE_INFINITY
     let bottom = Number.NEGATIVE_INFINITY
 
     if(this.children.length == 0) {
       // 子Nodeが無い場合
       top = 0
-      bottom = spanYPerNode
+      bottom = SPAN_Y_PER_NODE
     } else {
       // 子Nodeがある場合      
       let childYOffset = 0.0
@@ -113,7 +111,7 @@ class Node {
       }
       
       // 子ノードのY方向の開始位置
-      let offsetY = childYOffset - (this.children.length-1) / 2 * spanYPerNode
+      let offsetY = childYOffset - (this.children.length-1) / 2 * SPAN_Y_PER_NODE
       
       for(let i=0; i<this.children.length; i++) {
         const node = this.children[i]
@@ -130,7 +128,7 @@ class Node {
           bottom = childBottom
         }
         
-        offsetY += spanYPerNode
+        offsetY += SPAN_Y_PER_NODE
       }
     }
     
@@ -139,8 +137,8 @@ class Node {
     if(top > 0) {
       top = 0
     }
-    if(bottom < spanYPerNode) {
-      bottom = spanYPerNode
+    if(bottom < SPAN_Y_PER_NODE) {
+      bottom = SPAN_Y_PER_NODE
     }
 
     if(this.shiftY <= 0) {
@@ -302,7 +300,8 @@ export class MapManager {
     this.dragStartY = 0
     this.selectedNodes = []
     this.nodes = []
-    this.lastNode = null    
+
+    this.setLastNode(null)
   }
 
   prepare() {
@@ -329,7 +328,8 @@ export class MapManager {
     const g = document.getElementById('nodes') 
     let node = new Node('root', null, g)
     this.nodes.push(node)
-    this.lastNode = node
+
+    this.setLastNode(node)
 
     this.updateLayout()
   }
@@ -380,7 +380,7 @@ export class MapManager {
     let clearSelection = false
     
     // selected nodesを一旦クリア
-    this.selectedNodes = []
+    //this.selectedNodes = []
     
     if(pickNode != null) {
       // pickNodeがあった場合
@@ -388,7 +388,7 @@ export class MapManager {
         if(pickNode.isSelected()) {
           // shift押下でselectedなnodeをpick.
           // pickNodeを選択済みでなくす.
-          pickNode.setSelected(false)
+          this.setNodeSelected(pickNode, false)
           // ドラッグは開始しない. エリア選択も開始しない.
           // 他のnodeのselected状態はそのままキープ.
           dragMode = DRAG_NONE
@@ -396,10 +396,10 @@ export class MapManager {
           // shift押下で、pickNodeがselectedでなかった場合
           // pickNodeをselectedにして、
           // 他のselectedの物も含めて全selected nodeをdrag
-          pickNode.setSelected(true)
+          this.setNodeSelected(pickNode, true)
           pickNode.onDragStart()
-          this.lastNode = pickNode
-          this.selectedNodes.push(pickNode)
+          this.setLastNode(pickNode, clearSelected=false)
+          //this.selectedNodes.push(pickNode)
           dragMode = DRAG_NODE
           // 他のnodeのselected状態はそのままキープ
         }
@@ -407,15 +407,15 @@ export class MapManager {
         if(pickNode.isSelected()) {
           // 他のselectedの物も含めて全selected nodeをdrag
           pickNode.onDragStart()
-          this.lastNode = pickNode
-          this.selectedNodes.push(pickNode)
+          this.setLastNode(pickNode)          
+          //this.selectedNodes.push(pickNode)
           dragMode = DRAG_NODE
           // 他のnodeのselected状態はそのままキープ
         } else {
-          pickNode.setSelected(true)
+          this.setNodeSelected(pickNode, true)
           pickNode.onDragStart()
-          this.lastNode = pickNode
-          this.selectedNodes.push(pickNode)
+          this.setLastNode(pickNode)
+          //this.selectedNodes.push(pickNode)
           dragMode = DRAG_NODE
           // 他のnodeのselected状態はクリア
           clearSelection = true
@@ -433,10 +433,11 @@ export class MapManager {
       if( node != pickNode ) {
         if( node.isSelected() ) {
           if(clearSelection) {
-            node.setSelected(false)
+            this.setNodeSelected(node, false)
           } else {
             node.onDragStart()
-            this.selectedNodes.push(node)
+            // TODO: ここの対応を検討
+            //this.selectedNodes.push(node)
           }
         }
       }
@@ -513,9 +514,9 @@ export class MapManager {
     let node = new Node(text, this.lastNode, g)
     this.nodes.push(node)
     this.lastNode.addChildNode(node)
-    
-    this.lastNode = node
 
+    this.setLastNode(node)
+    
     this.adjustLayout(node)
   }
   
@@ -533,13 +534,13 @@ export class MapManager {
       this.nodes.push(node)
       parentNode.addChildNode(node)
 
-      this.lastNode = node
+      this.setLastNode(node)
       
       // 前のsiblingをtargetとしてadjustとしている
       this.adjustLayout(oldLastNode)
     }
   }
-  
+
   updateLayout() {
     const rootNode = this.nodes[0]
     rootNode.updateLayout(null, null)
@@ -561,9 +562,6 @@ export class MapManager {
     const downNodes = []
     let targetNodeIndex = -1
 
-    // 1ノードの高さは30とする
-    const spanYPerNode = 30.0
-
     for(let i=0; i<targetParentNode.children.length; i++) {
       const child = targetParentNode.children[i]
       
@@ -580,7 +578,7 @@ export class MapManager {
     }
 
     const targetNodeBounds = targetNode.calcYBounds()
-    const targetNodeOffsetY = spanYPerNode * targetNodeIndex 
+    const targetNodeOffsetY = SPAN_Y_PER_NODE * targetNodeIndex 
 
     let lastNodeTop    = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.top
     let lastNodeBottom = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.bottom
@@ -589,8 +587,8 @@ export class MapManager {
     for(let i=0; i<upNodes.length; ++i) {
       const node = upNodes[i]
       const bounds = node.calcYBounds()
-      const offsetY = spanYPerNode * (targetNodeIndex - 1 - i)
-
+      const offsetY = SPAN_Y_PER_NODE * (targetNodeIndex - 1 - i)
+      
       const nodeBottom = offsetY + bounds.bottom + node.adjustY
       
       if(nodeBottom > lastNodeTop || node.adjustY < 0) {
@@ -607,7 +605,7 @@ export class MapManager {
     for(let i=0; i<downNodes.length; ++i) {
       const node = downNodes[i]
       const bounds = node.calcYBounds()
-      const offsetY = spanYPerNode * (targetNodeIndex + 1 + i)
+      const offsetY = SPAN_Y_PER_NODE * (targetNodeIndex + 1 + i)
       
       const nodeTop = offsetY + node.adjustY + bounds.top
       
@@ -629,7 +627,40 @@ export class MapManager {
     //this.debugDump()
   }
 
+  adjustLayoutWithReset(targetParentNode) {
+    this.updateLayout()
+    
+    if(targetParentNode == null) {
+      return
+    }
+    
+    let lastNodeBottom = null
+    
+    for(let i=0; i<targetParentNode.children.length; i++) {
+      const node = targetParentNode.children[i]
+      const bounds = node.calcYBounds()
+      const offsetY = SPAN_Y_PER_NODE * i
+
+      if(lastNodeBottom == null) {
+        node.adjustY = 0.0
+      } else {
+        node.adjustY = lastNodeBottom - (offsetY + bounds.top)
+      }
+
+      const newNodeBottom = offsetY + bounds.bottom + node.adjustY
+      lastNodeBottom = newNodeBottom
+    }
+    
+    // 上の階層に上がる
+    // (ここはadjustLayoutWithReset()ではなくadjustLayout()を利用)
+    this.adjustLayout(targetParentNode)
+
+    this.updateLayout()
+  }
+
   removeNode(node) {
+    const parentNode = node.parent
+    
     node.remove()
     
     // TODO: 整理
@@ -637,11 +668,40 @@ export class MapManager {
     if(nodeIndex >= 0) {
       this.nodes.splice(nodeIndex, 1)
     }
+
+    this.adjustLayoutWithReset(parentNode)
+  }
+  
+  forceSetLastNode() {
+    this.setLastNode(this.nodes[this.nodes.length-1])
   }
 
-  forceSetLastNode() {
-    this.lastNode = this.nodes[this.nodes.length-1]
-  }  
+  setLastNode(node, clearSelected=true) {
+    if(this.lastNode != null && clearSelected) {
+      this.setNodeSelected(this.lastNode, false)
+    }
+    
+    this.lastNode = node
+    
+    if(this.lastNode != null) {
+      this.setNodeSelected(this.lastNode, true)
+    }
+  }
+
+  setNodeSelected(node, selected) {
+    if(node.isSelected != selected) {
+      node.setSelected(selected)
+      
+      if(selected) {
+        this.selectedNodes.push(node)
+      } else {
+        const nodeIndex = this.selectedNodes.indexOf(node)
+        if(nodeIndex >= 0) {
+          this.selectedNodes.splice(nodeIndex, 1)
+        }
+      }
+    }
+  }
 
   deleteSelectedNodes() {
     let lastNodeDeleted = false
@@ -654,16 +714,18 @@ export class MapManager {
           lastNodeDeleted = true
         }
       } else {
-        node.setSelected(false)
+        // ルートノードだった場合
+        this.setNodeSelected(node, false)
       }
     })
-    this.seletedNodes = []
     
     if( lastNodeDeleted ) {
       this.forceSetLastNode()
     }
 
     this.updateLayout()
+
+    //this.debugDump()
   }
 
   cut() {

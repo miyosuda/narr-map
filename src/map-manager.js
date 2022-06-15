@@ -255,11 +255,25 @@ class Node {
     return this.selected
   }
 
-  /*
   remove() {
+    for(let i=this.children.length-1; i>=0; i-=1) {
+      this.children[i].remove()
+    }
+    
+    if( this.parent != null ) {
+      this.parent.removeChild(this)
+    }
+    
     this.foreignObject.remove()
+    this.lineElement.remove()
   }
-  */
+
+  removeChild(node) {
+    const nodeIndex = this.children.indexOf(node)
+    if(nodeIndex >= 0) {
+      this.children.splice(nodeIndex, 1)
+    }
+  }
 
   debugDump() {
     console.log('[node ' + this.text + ']')
@@ -479,7 +493,7 @@ export class MapManager {
       this.addSiblingNode()
       e.preventDefault()
     } else if(e.key === 'Backspace' ) {
-      //this.deleteSelectedNodes()
+      this.deleteSelectedNodes()
     }
   }
 
@@ -550,9 +564,6 @@ export class MapManager {
     // 1ノードの高さは30とする
     const spanYPerNode = 30.0
 
-    // TODO: 整理可能
-    const defaultYs = []
-    
     for(let i=0; i<targetParentNode.children.length; i++) {
       const child = targetParentNode.children[i]
       
@@ -566,12 +577,10 @@ export class MapManager {
           downNodes.push(child)
         }
       }
-      
-      defaultYs.push(spanYPerNode * i)
     }
 
     const targetNodeBounds = targetNode.calcYBounds()
-    const targetNodeOffsetY = defaultYs[targetNodeIndex]
+    const targetNodeOffsetY = spanYPerNode * targetNodeIndex 
 
     let lastNodeTop    = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.top
     let lastNodeBottom = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.bottom
@@ -580,7 +589,7 @@ export class MapManager {
     for(let i=0; i<upNodes.length; ++i) {
       const node = upNodes[i]
       const bounds = node.calcYBounds()
-      const offsetY = defaultYs[targetNodeIndex - 1 - i]
+      const offsetY = spanYPerNode * (targetNodeIndex - 1 - i)
 
       const nodeBottom = offsetY + bounds.bottom + node.adjustY
       
@@ -598,7 +607,7 @@ export class MapManager {
     for(let i=0; i<downNodes.length; ++i) {
       const node = downNodes[i]
       const bounds = node.calcYBounds()
-      const offsetY = defaultYs[targetNodeIndex + 1 + i]
+      const offsetY = spanYPerNode * (targetNodeIndex + 1 + i)
       
       const nodeTop = offsetY + node.adjustY + bounds.top
       
@@ -620,8 +629,45 @@ export class MapManager {
     //this.debugDump()
   }
 
+  removeNode(node) {
+    node.remove()
+    
+    // TODO: 整理
+    const nodeIndex = this.nodes.indexOf(node)
+    if(nodeIndex >= 0) {
+      this.nodes.splice(nodeIndex, 1)
+    }
+  }
+
+  forceSetLastNode() {
+    this.lastNode = this.nodes[this.nodes.length-1]
+  }  
+
+  deleteSelectedNodes() {
+    let lastNodeDeleted = false
+    
+    this.selectedNodes.forEach(node => {
+      // ノードを削除
+      if(node != this.rootNode) {
+        this.removeNode(node)
+        if( node == this.lastNode ) {
+          lastNodeDeleted = true
+        }
+      } else {
+        node.setSelected(false)
+      }
+    })
+    this.seletedNodes = []
+    
+    if( lastNodeDeleted ) {
+      this.forceSetLastNode()
+    }
+
+    this.updateLayout()
+  }
+
   cut() {
-    console.log('cut')
+    this.deleteSelectedNodes()
   }
 
   debugDump() {

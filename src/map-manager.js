@@ -1,287 +1,6 @@
+import {Node, SPAN_Y_PER_NODE} from './node.js'
 //import {TextInput} from './text-input'
-
-import {getElementDimension} from './text-utils'
 const { nmapi } = window
-
-// 1ノードの取る縦幅
-const SPAN_Y_PER_NODE = 30.0
-
-
-class Node {
-  constructor(text, parentNode, container) {
-    this.text = text
-    this.parentNode = parentNode
-
-    let ns = 'http://www.w3.org/2000/svg'
-    let foreignObject = document.createElementNS(ns, 'foreignObject')
-    
-    foreignObject.classList.add('node')
-    if(this.isRoot) {
-      foreignObject.classList.add('root-node')
-    }
-
-    container.appendChild(foreignObject)
-    
-    this.foreignObject = foreignObject
-
-    let span = document.createElement('span')
-    // テキスト選択無効のクラスを指定
-    span.className = 'disable-select';
-    this.foreignObject.appendChild(span)
-    this.span = span
-    
-    this.setText(this.text)
-
-    this.children = []
-
-    // edge line
-
-    if( !this.isRoot ) {
-      let lineElement = document.createElementNS(ns, 'line')
-      this.lineElement = lineElement
-
-      // ラインの位置後ほどupdateLayout()で設定
-      lineElement.setAttribute('x1', 0)
-      lineElement.setAttribute('y1', 0)
-      lineElement.setAttribute('x2', 0)
-      lineElement.setAttribute('y2', 0)
-      
-      lineElement.setAttribute('stroke', '#7f7f7f')
-      lineElement.setAttribute('stroke-width', 1)
-
-      container.appendChild(lineElement)
-      this.lineElement = lineElement
-    }
-
-    this.selected = false
-    
-    this.shiftX = 0
-    this.shiftY = 0
-
-    this.adjustY = 0
-  }
-  
-  addChildNode(node) {
-    this.children.push(node)
-  }
-
-  updateLayout(baseX, baseY) {
-    if(this.isRoot) {
-      // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく.
-      baseX = -this.width / 2
-      baseY = -this.height / 2
-    }
-    // baseX,YにshirtX,Yを足してx,yとする
-    this.updatePos(baseX, baseY)
-
-    let childYOffset = 0.0
-    if( this.children.length == 1 ) {
-      // 子が1ノードしかない場合は少し上に上げておく
-      childYOffset = -3.0
-    }
-
-    const childBaseX = this.x + this.width + 20
-    // 子ノードのY方向の開始位置
-    const childDefaultStartY = this.y + childYOffset - (this.children.length-1) / 2 * SPAN_Y_PER_NODE
-
-    for(let i=0; i<this.children.length; i++) {
-      const node = this.children[i]
-      // 各ノードのx,yを更新する
-      const nodeDefaultY = childDefaultStartY + i * SPAN_Y_PER_NODE
-      node.updateLayout(childBaseX, nodeDefaultY)
-    }
-  }
-
-  calcYBounds() {
-    // TODO: 共通化
-    
-    let top = Number.POSITIVE_INFINITY
-    let bottom = Number.NEGATIVE_INFINITY
-
-    if(this.children.length == 0) {
-      // 子Nodeが無い場合
-      top = 0
-      bottom = SPAN_Y_PER_NODE
-    } else {
-      // 子Nodeがある場合      
-      let childYOffset = 0.0
-      if( this.children.length == 1 ) {
-        // 子が1ノードしかない場合は少し上に上げておく
-        childYOffset = -3.0
-      }
-      
-      // 子ノードのY方向の開始位置
-      let offsetY = childYOffset - (this.children.length-1) / 2 * SPAN_Y_PER_NODE
-      
-      for(let i=0; i<this.children.length; i++) {
-        const node = this.children[i]
-        // 子Nodeのboundsを算出する
-        const childYBounds = node.calcYBounds()
-        const childTop    = offsetY + childYBounds.top    + node.adjustY
-        const childBottom = offsetY + childYBounds.bottom + node.adjustY
-        
-        if(childTop < top) {
-          top = childTop
-        }
-        
-        if(childBottom > bottom) {
-          bottom = childBottom
-        }
-        
-        offsetY += SPAN_Y_PER_NODE
-      }
-    }
-    
-    const bounds = {}
-
-    if(top > 0) {
-      top = 0
-    }
-    if(bottom < SPAN_Y_PER_NODE) {
-      bottom = SPAN_Y_PER_NODE
-    }
-
-    if(this.shiftY <= 0) {
-      // 上にシフトされているのでtopを上に移動 (上にスペースを作る)
-      top += this.shiftY
-    } else {
-      // 下にシフト. bottomを下に移動 (下にスペースを作る)
-      bottom += this.shiftY
-    }
-    
-    bounds.top = top
-    bounds.bottom = bottom
-    return bounds
-  }
-
-  get parent() {
-    return this.parentNode
-  }
-  
-  setText(text) {
-    this.span.textContent = text
-    this.updateWidthHeight()
-  }
-
-  updateWidthHeight() {
-    let className = 'node'
-    const dims = getElementDimension(this.foreignObject.innerHTML, className)
-
-    this.width = dims.width
-    this.height = dims.height
-  }
-
-  updatePos(baseX, baseY) {
-    this.foreignObject.width.baseVal.value = this.width
-    this.foreignObject.height.baseVal.value = this.height
-
-    this.x = baseX + this.shiftX 
-    this.y = baseY + this.shiftY + this.adjustY
-
-    this.foreignObject.x.baseVal.value = this.x
-    this.foreignObject.y.baseVal.value = this.y
-
-    if(!this.isRoot) {
-      const edgeStartPos = this.parentNode.edgeOutPos
-      this.lineElement.setAttribute('x1', edgeStartPos.x)
-      this.lineElement.setAttribute('y1', edgeStartPos.y)
-      this.lineElement.setAttribute('x2', this.x)
-      this.lineElement.setAttribute('y2', this.y + this.height - 0.5) // lineの幅を考慮している
-    }
-  }
-
-  get isRoot() {
-    return this.parentNode == null
-  }
-
-  get edgeOutPos() {
-    const pos = {}
-    
-    if(this.isRoot) {
-      pos.x = this.x + this.width / 2
-      pos.y = this.y + this.height / 2
-    } else {
-      pos.x = this.x + this.width
-      pos.y = this.y + this.height - 0.5 // lineの幅を考慮している
-    }
-    
-    return pos
-  }
-
-  get left() {
-    return this.x
-  }
-
-  get top() {
-    return this.y
-  }
-
-  get right() {
-    return this.x + this.width
-  }
-
-  get bottom() {
-    return this.y + this.height
-  }
-
-  onDragStart() {
-    this.startElementX = this.shiftX
-    this.startElementY = this.shiftY
-  }
-
-  onDrag(dx, dy) {
-    this.shiftX = this.startElementX + dx
-    this.shiftY = this.startElementY + dy
-
-    // ここではforeignObjectのx,y座標はまだ更新していない
-  }
-
-  containsPos(x, y) {
-    return (x >= this.left) && (x <= this.right) && (y >= this.top) && (y <= this.bottom)
-  }
-
-  setSelected(selected) {
-    if(selected) {
-      this.foreignObject.classList.add("node_selected")
-    } else {
-      this.foreignObject.classList.remove("node_selected")
-    }
-    this.selected = selected
-  }
-
-  isSelected() {
-    return this.selected
-  }
-
-  remove() {
-    for(let i=this.children.length-1; i>=0; i-=1) {
-      this.children[i].remove()
-    }
-    
-    if( this.parent != null ) {
-      this.parent.removeChild(this)
-    }
-    
-    this.foreignObject.remove()
-    this.lineElement.remove()
-  }
-
-  removeChild(node) {
-    const nodeIndex = this.children.indexOf(node)
-    if(nodeIndex >= 0) {
-      this.children.splice(nodeIndex, 1)
-    }
-  }
-
-  debugDump() {
-    console.log('[node ' + this.text + ']')
-    console.log('  shiftY=' + this.shiftY)
-    console.log('  adjustY=' + this.adjustY)
-    const bounds = this.calcYBounds()
-    console.log('  bounds.top=' + bounds.top)
-    console.log('  bounds.bottom=' + bounds.bottom)
-  }
-}
 
 
 const DRAG_NONE = 0
@@ -301,7 +20,7 @@ export class MapManager {
     this.selectedNodes = []
     this.nodes = []
 
-    this.setLastNode(null)
+    //this.setLastNode(null)
   }
 
   prepare() {
@@ -329,7 +48,8 @@ export class MapManager {
     let node = new Node('root', null, g)
     this.nodes.push(node)
 
-    this.setLastNode(node)
+    //this.setLastNode(node)
+    this.setNodeSelected(node, true)
 
     this.updateLayout()
   }
@@ -374,73 +94,39 @@ export class MapManager {
     
     // マウスが乗ったnodeをpick対象として選ぶ
     let pickNode = this.findPickNode(x, y)
-
+    
     let dragMode = DRAG_NONE
     const shitDown = e.shiftKey
-    let clearSelection = false
-    
-    // selected nodesを一旦クリア
-    //this.selectedNodes = []
     
     if(pickNode != null) {
       // pickNodeがあった場合
       if(shitDown) {
-        if(pickNode.isSelected()) {
-          // shift押下でselectedなnodeをpick.
-          // pickNodeを選択済みでなくす.
-          this.setNodeSelected(pickNode, false)
-          // ドラッグは開始しない. エリア選択も開始しない.
-          // 他のnodeのselected状態はそのままキープ.
-          dragMode = DRAG_NONE
-        } else {
+        if(!pickNode.isSelected()) {
           // shift押下で、pickNodeがselectedでなかった場合
-          // pickNodeをselectedにして、
-          // 他のselectedの物も含めて全selected nodeをdrag
+          // pickNodeをselectedに
           this.setNodeSelected(pickNode, true)
-          pickNode.onDragStart()
-          this.setLastNode(pickNode, clearSelected=false)
-          //this.selectedNodes.push(pickNode)
-          dragMode = DRAG_NODE
-          // 他のnodeのselected状態はそのままキープ
         }
+        pickNode.onDragStart()
+        dragMode = DRAG_NODE
       } else {
         if(pickNode.isSelected()) {
           // 他のselectedの物も含めて全selected nodeをdrag
           pickNode.onDragStart()
-          this.setLastNode(pickNode)          
-          //this.selectedNodes.push(pickNode)
+          this.clearNodeSelection(pickNode)
           dragMode = DRAG_NODE
           // 他のnodeのselected状態はそのままキープ
         } else {
-          this.setNodeSelected(pickNode, true)
+          // pickNodeを除いてNode選択クリア
+          this.clearNodeSelection(pickNode)
           pickNode.onDragStart()
-          this.setLastNode(pickNode)
-          //this.selectedNodes.push(pickNode)
           dragMode = DRAG_NODE
-          // 他のnodeのselected状態はクリア
-          clearSelection = true
         }
       }
     } else {
       dragMode = DRAG_BACK
-      // エリア選択開始
-      // 全nodeのselected状態はクリア
-      clearSelection = true
-    }
-    
-    for(let i=0; i<this.nodes.length; i++) {
-      const node = this.nodes[i]
-      if( node != pickNode ) {
-        if( node.isSelected() ) {
-          if(clearSelection) {
-            this.setNodeSelected(node, false)
-          } else {
-            node.onDragStart()
-            // TODO: ここの対応を検討
-            //this.selectedNodes.push(node)
-          }
-        }
-      }
+      // 1つを除いてNode選択クリア
+      const targetNode = this.selectedNodes[this.selectedNodes.length-1]
+      this.clearNodeSelection(targetNode)
     }
 
     if( dragMode == DRAG_NODE ) {
@@ -474,12 +160,12 @@ export class MapManager {
       const dy = y - this.dragStartY
 
       // 1つのノードだけを動かす
-      const dragTargetNode = this.selectedNodes[0]
+      const dragTargetNode = this.lastNode
       dragTargetNode.onDrag(dx, dy)
-
+      
       this.adjustLayout(dragTargetNode)
     }
-  }  
+  }
   
   onKeyDown(e) {
     if( e.target != document.body ) {
@@ -515,7 +201,7 @@ export class MapManager {
     this.nodes.push(node)
     this.lastNode.addChildNode(node)
 
-    this.setLastNode(node)
+    this.clearNodeSelection(node)
     
     this.adjustLayout(node)
   }
@@ -534,7 +220,7 @@ export class MapManager {
       this.nodes.push(node)
       parentNode.addChildNode(node)
 
-      this.setLastNode(node)
+      this.clearNodeSelection(node)
       
       // 前のsiblingをtargetとしてadjustとしている
       this.adjustLayout(oldLastNode)
@@ -658,37 +344,27 @@ export class MapManager {
     this.updateLayout()
   }
 
-  removeNode(node) {
+  deleteNode(node) {
     const parentNode = node.parent
-    
-    node.remove()
-    
-    // TODO: 整理
-    const nodeIndex = this.nodes.indexOf(node)
-    if(nodeIndex >= 0) {
-      this.nodes.splice(nodeIndex, 1)
-    }
 
+    const removeNodeCallback = (node) => {
+      const nodeIndex = this.nodes.indexOf(node)
+      if(nodeIndex >= 0) {
+        this.nodes.splice(nodeIndex, 1)
+      }
+    }
+    
+    node.remove(removeNodeCallback)
+    
     this.adjustLayoutWithReset(parentNode)
   }
-  
-  forceSetLastNode() {
-    this.setLastNode(this.nodes[this.nodes.length-1])
-  }
 
-  setLastNode(node, clearSelected=true) {
-    if(this.lastNode != null && clearSelected) {
-      this.setNodeSelected(this.lastNode, false)
-    }
-    
-    this.lastNode = node
-    
-    if(this.lastNode != null) {
-      this.setNodeSelected(this.lastNode, true)
-    }
+  get lastNode() {
+    return this.selectedNodes[this.selectedNodes.length-1]
   }
 
   setNodeSelected(node, selected) {
+    // TODO: nodeを最後に持ってくる
     if(node.isSelected != selected) {
       node.setSelected(selected)
       
@@ -703,26 +379,30 @@ export class MapManager {
     }
   }
 
-  deleteSelectedNodes() {
-    let lastNodeDeleted = false
+  clearNodeSelection(leftNode) {
+    this.selectedNodes.forEach(node => {
+      node.setSelected(false)
+    })
+    this.selectedNodes = []
     
+    this.selectedNodes.push(leftNode)
+    leftNode.setSelected(true)    
+  }
+
+  deleteSelectedNodes() {
     this.selectedNodes.forEach(node => {
       // ノードを削除
-      if(node != this.rootNode) {
-        this.removeNode(node)
-        if( node == this.lastNode ) {
-          lastNodeDeleted = true
-        }
+      if(!node.isRoot) {
+        this.deleteNode(node)
       } else {
-        // ルートノードだった場合
-        this.setNodeSelected(node, false)
+        node.setSelected(false)
       }
     })
     
-    if( lastNodeDeleted ) {
-      this.forceSetLastNode()
-    }
-
+    this.selectedNodes = []
+    const targetNode = this.nodes[this.nodes.length-1]
+    this.setNodeSelected(targetNode, true)
+    
     this.updateLayout()
 
     //this.debugDump()

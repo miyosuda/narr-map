@@ -3,6 +3,8 @@ import {getElementDimension} from './text-utils'
 // 1ノードの取る縦幅
 export const SPAN_Y_PER_NODE = 30.0
 
+export const OFFSET_Y_FOR_SINGLE_CHILD = -3.0
+
 
 export class Node {
   constructor(text, parentNode, container) {
@@ -74,7 +76,7 @@ export class Node {
     let childYOffset = 0.0
     if( this.children.length == 1 ) {
       // 子が1ノードしかない場合は少し上に上げておく
-      childYOffset = -3.0
+      childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
     }
 
     const childBaseX = this.x + this.width + 20
@@ -90,8 +92,6 @@ export class Node {
   }
 
   calcYBounds() {
-    // TODO: 共通化
-    
     let top = Number.POSITIVE_INFINITY
     let bottom = Number.NEGATIVE_INFINITY
 
@@ -104,7 +104,7 @@ export class Node {
       let childYOffset = 0.0
       if( this.children.length == 1 ) {
         // 子が1ノードしかない場合は少し上に上げておく
-        childYOffset = -3.0
+        childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
       }
       
       // 子ノードのY方向の開始位置

@@ -5,7 +5,7 @@ const { nmapi } = window
 
 const DRAG_NONE = 0
 const DRAG_NODE = 1
-const DRAG_BACK = 1
+const DRAG_BACK = 2
 
 
 export class MapManager {
@@ -14,13 +14,11 @@ export class MapManager {
   }
 
   init() {
-    this.isDragging = false
+    this.dragMode = DRAG_NONE
     this.dragStartX = 0
     this.dragStartY = 0
     this.selectedNodes = []
     this.nodes = []
-
-    //this.setLastNode(null)
   }
 
   prepare() {
@@ -48,7 +46,6 @@ export class MapManager {
     let node = new Node('root', null, g)
     this.nodes.push(node)
 
-    //this.setLastNode(node)
     this.setNodeSelected(node, true)
 
     this.updateLayout()
@@ -96,44 +93,34 @@ export class MapManager {
     let pickNode = this.findPickNode(x, y)
     
     let dragMode = DRAG_NONE
-    const shitDown = e.shiftKey
+    const shiftDown = e.shiftKey
     
     if(pickNode != null) {
       // pickNodeがあった場合
-      if(shitDown) {
-        if(!pickNode.isSelected()) {
-          // shift押下で、pickNodeがselectedでなかった場合
-          // pickNodeをselectedに
-          this.setNodeSelected(pickNode, true)
-        }
+      if(shiftDown) {
+        // shift押下時
+        this.setNodeSelected(pickNode, true)
         pickNode.onDragStart()
         dragMode = DRAG_NODE
       } else {
-        if(pickNode.isSelected()) {
-          // 他のselectedの物も含めて全selected nodeをdrag
-          pickNode.onDragStart()
-          this.clearNodeSelection(pickNode)
-          dragMode = DRAG_NODE
-          // 他のnodeのselected状態はそのままキープ
-        } else {
-          // pickNodeを除いてNode選択クリア
-          this.clearNodeSelection(pickNode)
-          pickNode.onDragStart()
-          dragMode = DRAG_NODE
-        }
+        // pickしたnode以外のselectedをクリア
+        pickNode.onDragStart()
+        this.clearNodeSelection(pickNode)
+        dragMode = DRAG_NODE
       }
     } else {
-      dragMode = DRAG_BACK
       // 1つを除いてNode選択クリア
       const targetNode = this.selectedNodes[this.selectedNodes.length-1]
       this.clearNodeSelection(targetNode)
+      dragMode = DRAG_BACK
     }
 
-    if( dragMode == DRAG_NODE ) {
-      this.isDragging = true
+    if(dragMode != DRAG_NONE) {
       this.dragStartX = x
       this.dragStartY = y
     }
+    
+    this.dragMode = dragMode
   }
 
   onMouseUp(e) {
@@ -142,7 +129,7 @@ export class MapManager {
       return
     }
     
-    this.isDragging = false
+    this.dragMode = DRAG_NONE
   }
 
   onMouseMove(e) {
@@ -151,7 +138,7 @@ export class MapManager {
       return
     }
     
-    if(this.isDragging == true) {
+    if(this.dragMode != DRAG_NONE) {
       const pos = this.getLocalPos(e)
       const x = pos.x
       const y = pos.y
@@ -159,11 +146,14 @@ export class MapManager {
       const dx = x - this.dragStartX
       const dy = y - this.dragStartY
 
-      // 1つのノードだけを動かす
-      const dragTargetNode = this.lastNode
-      dragTargetNode.onDrag(dx, dy)
-      
-      this.adjustLayout(dragTargetNode)
+      if(this.dragMode == DRAG_NODE) {
+        // 1つのノードだけを動かす
+        const dragTargetNode = this.lastNode
+        dragTargetNode.onDrag(dx, dy)
+        this.adjustLayout(dragTargetNode)
+      } else {
+        // Backを移動
+      }
     }
   }
   
@@ -364,7 +354,6 @@ export class MapManager {
   }
 
   setNodeSelected(node, selected) {
-    // TODO: nodeを最後に持ってくる
     if(node.isSelected != selected) {
       node.setSelected(selected)
       
@@ -376,6 +365,13 @@ export class MapManager {
           this.selectedNodes.splice(nodeIndex, 1)
         }
       }
+    } else if(node.isSelected) {
+       // nodeを最後に持ってくる
+      const nodeIndex = this.selectedNodes.indexOf(node)
+      if(nodeIndex >= 0) {
+        this.selectedNodes.splice(nodeIndex, 1)
+      }
+      this.selectedNodes.push(node)
     }
   }
 
@@ -404,7 +400,7 @@ export class MapManager {
     this.setNodeSelected(targetNode, true)
     
     this.updateLayout()
-
+    
     //this.debugDump()
   }
 

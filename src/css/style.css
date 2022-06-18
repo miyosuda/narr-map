@@ -11,9 +11,16 @@ svg {
   border-bottom: solid 1px #7f7f7f;
 }
 
-/* getElementDimension()でのサイズが2回目以降で異なる場合の為のworkaround */
 .node_selected {
   background: #cfcfcf;
+}
+
+.node_right_overlapped {
+  background: linear-gradient(to right, white, gray);
+}
+
+.node_top_overlapped {
+  background: linear-gradient(to top, white, gray);
 }
 
 foreignObject {

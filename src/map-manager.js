@@ -1,4 +1,5 @@
 import {Node, SPAN_Y_PER_NODE} from './node.js'
+import {GhostNode} from './ghost-node.js'
 //import {TextInput} from './text-input'
 const { nmapi } = window
 
@@ -39,16 +40,22 @@ export class MapManager {
     })
     
     this.addRootNode()
+    this.addGhostNode()
   }
 
   addRootNode() {
-    const g = document.getElementById('nodes') 
+    const g = document.getElementById('overlay') 
     let node = new Node('root', null, g)
     this.nodes.push(node)
 
     this.setNodeSelected(node, true)
 
     this.updateLayout()
+  }
+
+  addGhostNode() {
+    const g = document.getElementById('overlay') 
+    this.ghostNode = new GhostNode(g)
   }
 
   onResize() {
@@ -90,7 +97,9 @@ export class MapManager {
     const y = pos.y
     
     // マウスが乗ったnodeをpick対象として選ぶ
-    let pickNode = this.findPickNode(x, y)
+    const pickNode = this.findPickNode(x, y)
+
+    //this.ghostNode.show(pickNode)
     
     let dragMode = DRAG_NONE
     const shiftDown = e.shiftKey
@@ -154,6 +163,15 @@ export class MapManager {
       } else {
         // Backを移動
       }
+    } else {
+      const pos = this.getLocalPos(e)
+      const x = pos.x
+      const y = pos.y
+      
+      // マウスオーバーの対応
+      this.nodes.forEach(node => {
+        node.checkHover(x, y)
+      })
     }
   }
   

@@ -11,8 +11,8 @@ export class Node {
     this.text = text
     this.parentNode = parentNode
 
-    let ns = 'http://www.w3.org/2000/svg'
-    let foreignObject = document.createElementNS(ns, 'foreignObject')
+    const ns = 'http://www.w3.org/2000/svg'
+    const foreignObject = document.createElementNS(ns, 'foreignObject')
     
     foreignObject.classList.add('node')
     if(this.isRoot) {
@@ -23,7 +23,7 @@ export class Node {
     
     this.foreignObject = foreignObject
 
-    let span = document.createElement('span')
+    const span = document.createElement('span')
     // テキスト選択無効のクラスを指定
     span.className = 'disable-select';
     this.foreignObject.appendChild(span)
@@ -33,10 +33,10 @@ export class Node {
 
     this.children = []
 
-    // edge line
 
     if( !this.isRoot ) {
-      let lineElement = document.createElementNS(ns, 'line')
+      // Edge line
+      const lineElement = document.createElementNS(ns, 'line')
       this.lineElement = lineElement
 
       // ラインの位置後ほどupdateLayout()で設定
@@ -47,12 +47,27 @@ export class Node {
       
       lineElement.setAttribute('stroke', '#7f7f7f')
       lineElement.setAttribute('stroke-width', 1)
-
       container.appendChild(lineElement)
-      this.lineElement = lineElement
+
+      // Handle
+      const handleElement = document.createElementNS(ns, 'ellipse')
+      this.handleElement = handleElement
+      
+      handleElement.setAttribute('stroke', '#7f7f7f')
+      handleElement.setAttribute('stroke-width', 1)
+      handleElement.setAttribute('fill', 'none')
+
+      // TODO: 定数指定
+      handleElement.setAttribute('cx', 0)
+      handleElement.setAttribute('cy', 0)
+      handleElement.setAttribute('rx', 5)
+      handleElement.setAttribute('ry', 10)
+      handleElement.setAttribute('visibility', 'hidden')
+      container.appendChild(handleElement)      
     }
 
     this.selected = false
+    this.handleShown = false
     
     this.shiftX = 0
     this.shiftY = 0
@@ -100,7 +115,7 @@ export class Node {
       top = 0
       bottom = SPAN_Y_PER_NODE
     } else {
-      // 子Nodeがある場合      
+      // 子Nodeがある場合
       let childYOffset = 0.0
       if( this.children.length == 1 ) {
         // 子が1ノードしかない場合は少し上に上げておく
@@ -161,7 +176,7 @@ export class Node {
   }
 
   updateWidthHeight() {
-    let className = 'node'
+    const className = 'node'
     const dims = getElementDimension(this.foreignObject.innerHTML, className)
 
     this.width = dims.width
@@ -184,6 +199,9 @@ export class Node {
       this.lineElement.setAttribute('y1', edgeStartPos.y)
       this.lineElement.setAttribute('x2', this.x)
       this.lineElement.setAttribute('y2', this.y + this.height - 0.5) // lineの幅を考慮している
+      // TODO: 定数指定
+      this.handleElement.setAttribute('cx', this.x-5)
+      this.handleElement.setAttribute('cy', this.y+9)
     }
   }
 
@@ -237,13 +255,43 @@ export class Node {
     return (x >= this.left) && (x <= this.right) && (y >= this.top) && (y <= this.bottom)
   }
 
-  setSelected(selected) {
-    if(selected) {
-      this.foreignObject.classList.add("node_selected")
+  containsPosForHandle(x, y) {
+    if(this.isRoot) {
+      //console.log('pass ' + x)
+      return false
     } else {
-      this.foreignObject.classList.remove("node_selected")
+      return (x >= this.left-10) && (x <= this.left) && (y >= this.top) && (y <= this.bottom)
     }
-    this.selected = selected
+  }
+
+  checkHover(x, y) {
+    if(this.containsPosForHandle(x, y)) {
+      this.setHandleShown(true)
+    } else {
+      this.setHandleShown(false)
+    }
+  }
+
+  setHandleShown(handleShown) {
+    if(handleShown != this.handleShown) {
+      if(handleShown) {
+        this.handleElement.setAttribute('visibility', 'visible')
+      } else {
+        this.handleElement.setAttribute('visibility', 'hidden')
+      }
+      this.handleShown = handleShown
+    }
+  }
+
+  setSelected(selected) {
+    if(selected != this.selected) {
+      if(selected) {
+        this.foreignObject.classList.add("node_selected")
+      } else {
+        this.foreignObject.classList.remove("node_selected")
+      }
+      this.selected = selected
+    }
   }
 
   isSelected() {

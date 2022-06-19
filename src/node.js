@@ -257,7 +257,6 @@ export class Node {
 
   containsPosForHandle(x, y) {
     if(this.isRoot) {
-      //console.log('pass ' + x)
       return false
     } else {
       return (x >= this.left-10) && (x <= this.left) && (y >= this.top) && (y <= this.bottom)

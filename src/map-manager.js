@@ -4,9 +4,10 @@ import {GhostNode} from './ghost-node.js'
 const { nmapi } = window
 
 
-const DRAG_NONE = 0
-const DRAG_NODE = 1
-const DRAG_BACK = 2
+const DRAG_NONE  = 0
+const DRAG_NODE  = 1
+const DRAG_GHOST = 2
+const DRAG_BACK  = 3
 
 
 export class MapManager {
@@ -20,6 +21,7 @@ export class MapManager {
     this.dragStartY = 0
     this.selectedNodes = []
     this.nodes = []
+    this.handleDraggingNode = null
   }
 
   prepare() {
@@ -45,7 +47,7 @@ export class MapManager {
 
   addRootNode() {
     const g = document.getElementById('overlay') 
-    let node = new Node('root', null, g)
+    const node = new Node('root', null, g)
     this.nodes.push(node)
 
     this.setNodeSelected(node, true)
@@ -66,12 +68,18 @@ export class MapManager {
     this.svg.setAttribute('height', window.innerHeight - margin)
   }
 
-  findPickNode(x, y) {
+  findPickNode(x, y, forHandle) {
     let pickNode = null
     
     for(let i=0; i<this.nodes.length; i++) {
       const node = this.nodes[i]
-      if( node.containsPos(x, y) ) {
+      let hit = false
+      if(forHandle) {
+        hit = node.containsPosForHandle(x, y)
+      } else {
+        hit = node.containsPos(x, y)
+      }
+      if(hit) {
         pickNode = node
         break
       }
@@ -97,25 +105,26 @@ export class MapManager {
     const y = pos.y
     
     // マウスが乗ったnodeをpick対象として選ぶ
-    const pickNode = this.findPickNode(x, y)
+    const pickNodeForHandle = this.findPickNode(x, y, true)
+    const pickNode = this.findPickNode(x, y, false)
 
-    //this.ghostNode.show(pickNode)
-    
     let dragMode = DRAG_NONE
     const shiftDown = e.shiftKey
-    
-    if(pickNode != null) {
+
+    if(pickNodeForHandle != null) {
+      pickNodeForHandle.onDragStart()
+      this.handleDraggingNode = pickNodeForHandle
+      dragMode = DRAG_NODE
+    } else if(pickNode != null) {
       // pickNodeがあった場合
       if(shiftDown) {
         // shift押下時
         this.setNodeSelected(pickNode, true)
-        pickNode.onDragStart()
-        dragMode = DRAG_NODE
+        dragMode = DRAG_GHOST
       } else {
         // pickしたnode以外のselectedをクリア
-        pickNode.onDragStart()
         this.clearNodeSelection(pickNode)
-        dragMode = DRAG_NODE
+        dragMode = DRAG_GHOST
       }
     } else {
       // 1つを除いてNode選択クリア
@@ -138,6 +147,8 @@ export class MapManager {
       return
     }
     
+    this.handleDraggingNode = null
+    this.ghostNode.hide()
     this.dragMode = DRAG_NONE
   }
 
@@ -157,9 +168,17 @@ export class MapManager {
 
       if(this.dragMode == DRAG_NODE) {
         // 1つのノードだけを動かす
-        const dragTargetNode = this.lastNode
+        const dragTargetNode = this.handleDraggingNode
         dragTargetNode.onDrag(dx, dy)
         this.adjustLayout(dragTargetNode)
+      } else if(this.dragMode == DRAG_GHOST) {
+        // Backを移動
+        if(!this.ghostNode.isShown) {
+          const targetNode = this.lastNode
+          this.ghostNode.show(targetNode)
+          
+        }
+        this.ghostNode.onDrag(dx, dy)
       } else {
         // Backを移動
       }

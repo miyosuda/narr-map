@@ -44,6 +44,10 @@ export class GhostNode {
     this.node = null
   }
 
+  get isShown() {
+    return this.node != null
+  }
+
   onDrag(dx, dy) {
     const x = this.startElementX + dx
     const y = this.startElementY + dy

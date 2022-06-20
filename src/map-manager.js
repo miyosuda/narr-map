@@ -1,4 +1,5 @@
-import {Node, SPAN_Y_PER_NODE} from './node.js'
+import {Node, SPAN_Y_PER_NODE, HOVER_NONE, HOVER_TOP, HOVER_RIGHT} from './node.js'
+
 import {GhostNode} from './ghost-node.js'
 //import {TextInput} from './text-input'
 const { nmapi } = window
@@ -141,17 +142,6 @@ export class MapManager {
     this.dragMode = dragMode
   }
 
-  onMouseUp(e) {
-    if(e.which == 3) {
-      // 右クリックの場合
-      return
-    }
-    
-    this.handleDraggingNode = null
-    this.ghostNode.hide()
-    this.dragMode = DRAG_NONE
-  }
-
   onMouseMove(e) {
     if(e.which == 3) {
       // 右クリックの場合
@@ -172,13 +162,18 @@ export class MapManager {
         dragTargetNode.onDrag(dx, dy)
         this.adjustLayout(dragTargetNode)
       } else if(this.dragMode == DRAG_GHOST) {
-        // Backを移動
+        // Ghostを移動
         if(!this.ghostNode.isShown) {
           const targetNode = this.lastNode
           this.ghostNode.show(targetNode)
-          
-        }
+        }        
         this.ghostNode.onDrag(dx, dy)
+        // マウスオーバーの対応
+        this.nodes.forEach(node => {
+          if(node != this.ghostNode.node) {
+            node.checkGhostHover(x, y)
+          }
+        })
       } else {
         // Backを移動
       }
@@ -192,6 +187,73 @@ export class MapManager {
         node.checkHover(x, y)
       })
     }
+  }
+
+  onMouseUp(e) {
+    if(e.which == 3) {
+      // 右クリックの場合
+      return
+    }
+    
+    this.handleDraggingNode = null
+    if(this.dragMode == DRAG_GHOST) {
+
+      const pos = this.getLocalPos(e)
+      const x = pos.x
+      const y = pos.y
+
+      let hoverHit = HOVER_NONE
+      let hoverHitNode = null
+
+      for(let i=0; i<this.nodes.length; i++) {
+        const node = this.nodes[i]
+
+        if(node != this.ghostNode.node) {
+          const ret = node.checkGhostHover(x, y)
+          if(ret != HOVER_NONE) {
+            hoverHit = ret
+            hoverHitNode = node
+          }
+        }
+        
+        node.clearGhostHover()
+      }
+      
+      if(hoverHit != HOVER_NONE) {
+        if(hoverHit == HOVER_RIGHT) {
+          const newChildNode = this.ghostNode.node
+
+          if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
+            // hoverHitNodeがnewChildNodeの子孫だったらNG
+            const oldParentNode = newChildNode.detachFromParent()
+            hoverHitNode.attachChildNodeToTail(newChildNode)
+            
+            if(newChildNode != oldParentNode) {
+              this.adjustLayoutWithReset(oldParentNode)
+            }
+            this.adjustLayoutWithReset(hoverHitNode)
+          }
+        } else if(hoverHit == HOVER_TOP) {
+          const newChildNode = this.ghostNode.node
+
+          if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
+            const newParentNode = hoverHitNode.parentNode
+            const oldParentNode = newChildNode.detachFromParent()
+            // hoverHitNodeがnewChildNodeの子孫だったら何もしない
+            newParentNode.attachChildNodeAboveSibling(newChildNode, hoverHitNode)
+            if(newChildNode != oldParentNode) {
+              this.adjustLayoutWithReset(oldParentNode)
+            }
+            this.adjustLayoutWithReset(newParentNode)
+          }
+          
+
+        }
+      }
+      this.ghostNode.hide()
+    }
+    
+    this.dragMode = DRAG_NONE
   }
   
   onKeyDown(e) {
@@ -375,6 +437,7 @@ export class MapManager {
     const parentNode = node.parent
 
     const removeNodeCallback = (node) => {
+      // nodes[]から削除する
       const nodeIndex = this.nodes.indexOf(node)
       if(nodeIndex >= 0) {
         this.nodes.splice(nodeIndex, 1)

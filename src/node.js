@@ -5,6 +5,70 @@ export const SPAN_Y_PER_NODE = 30.0
 
 export const OFFSET_Y_FOR_SINGLE_CHILD = -3.0
 
+export const HOVER_NONE  = 0
+export const HOVER_TOP   = 1
+export const HOVER_RIGHT = 2
+
+
+class States {
+  constructor(foreignObject, handleElement, isRoot) {
+    this.foreignObject = foreignObject
+    this.handleElement = handleElement
+    
+    this.selected = false
+    this.hoverState = HOVER_NONE
+    this.handleShown = false
+
+    foreignObject.classList.add('node')
+    if(this.isRoot) {
+      foreignObject.classList.add('root-node')
+    }
+  }
+
+  setHoverState(hoverState) {
+    if(hoverState != this.hoverState) {
+      if(hoverState == HOVER_TOP) {
+        this.foreignObject.classList.remove("node_selected")
+        this.foreignObject.classList.remove("node_right_overlapped")
+        this.foreignObject.classList.add("node_top_overlapped")
+      } else if( hoverState == HOVER_RIGHT ) {
+        this.foreignObject.classList.remove("node_selected")
+        this.foreignObject.classList.remove("node_top_overlapped")
+        this.foreignObject.classList.add("node_right_overlapped")
+      } else {
+        this.foreignObject.classList.remove("node_top_overlapped")
+        this.foreignObject.classList.remove("node_right_overlapped")
+        if(this.selected) {
+          this.foreignObject.classList.add("node_selected")
+        }
+      }
+      this.hoverState = hoverState
+    }
+  }
+
+  setSelected(selected) {
+    if(selected != this.selected) {
+      if(selected) {
+        this.foreignObject.classList.add("node_selected")
+      } else {
+        this.foreignObject.classList.remove("node_selected")
+      }
+      this.selected = selected
+    }
+  }
+
+  setHandleShown(handleShown) {
+    if(handleShown != this.handleShown) {
+      if(handleShown) {
+        this.handleElement.setAttribute('visibility', 'visible')
+      } else {
+        this.handleElement.setAttribute('visibility', 'hidden')
+      }
+      this.handleShown = handleShown
+    }
+  }
+}
+
 
 export class Node {
   constructor(text, parentNode, container) {
@@ -32,7 +96,6 @@ export class Node {
     this.setText(this.text)
 
     this.children = []
-
 
     if( !this.isRoot ) {
       // Edge line
@@ -63,12 +126,13 @@ export class Node {
       handleElement.setAttribute('rx', 5)
       handleElement.setAttribute('ry', 10)
       handleElement.setAttribute('visibility', 'hidden')
-      container.appendChild(handleElement)      
+      container.appendChild(handleElement)
+      
+      this.states = new States(foreignObject, handleElement, false)
+    } else {
+      this.states = new States(foreignObject, null, true)
     }
 
-    this.selected = false
-    this.handleShown = false
-    
     this.shiftX = 0
     this.shiftY = 0
 
@@ -263,38 +327,57 @@ export class Node {
     }
   }
 
+  containsPosHalf(x, y, leftHalf) {
+    if(leftHalf) {
+      return (x >= this.left) &&
+        (x <= this.left + this.width/2) &&
+        (y >= this.top) &&
+        (y <= this.bottom)
+    } else {
+      return (x > this.left + this.width/2) &&
+        (x <= this.right) &&
+        (y >= this.top) &&
+        (y <= this.bottom)
+    }
+  }  
+
   checkHover(x, y) {
     if(this.containsPosForHandle(x, y)) {
-      this.setHandleShown(true)
+      this.states.setHandleShown(true)
     } else {
-      this.setHandleShown(false)
+      this.states.setHandleShown(false)
     }
+  }
+
+  checkGhostHover(x, y) {
+    if(this.containsPosHalf(x, y, true) && !this.isRoot) {
+      // 左半分
+      this.states.setHoverState(HOVER_TOP)
+      return HOVER_TOP
+    } else if(this.containsPosHalf(x, y, false)) {
+      // 右半分
+      this.states.setHoverState(HOVER_RIGHT)
+      return HOVER_RIGHT
+    } else {
+      this.states.setHoverState(HOVER_NONE)
+      return HOVER_NONE
+    }
+  }
+
+  clearGhostHover() {
+    this.states.setHoverState(HOVER_NONE)
   }
 
   setHandleShown(handleShown) {
-    if(handleShown != this.handleShown) {
-      if(handleShown) {
-        this.handleElement.setAttribute('visibility', 'visible')
-      } else {
-        this.handleElement.setAttribute('visibility', 'hidden')
-      }
-      this.handleShown = handleShown
-    }
+    this.states.setHandleShown(handleShown)
   }
 
   setSelected(selected) {
-    if(selected != this.selected) {
-      if(selected) {
-        this.foreignObject.classList.add("node_selected")
-      } else {
-        this.foreignObject.classList.remove("node_selected")
-      }
-      this.selected = selected
-    }
+    this.states.setSelected(selected)
   }
 
   isSelected() {
-    return this.selected
+    return this.states.selected
   }
 
   remove(removeNodeCallback) {
@@ -308,7 +391,8 @@ export class Node {
     
     this.foreignObject.remove()
     this.lineElement.remove()
-    
+
+    // MapManager # nodes[]からこのnodeを削除する
     removeNodeCallback(this)
   }
 
@@ -319,6 +403,42 @@ export class Node {
     }
   }
 
+  detachFromParent() {
+    if(this.parent != null) {
+      this.parent.removeChild(this)
+      const oldParent = this.parent
+      this.parentNode = null
+      return oldParent
+    } else {
+      return null
+    }
+  }
+
+  attachChildNodeToTail(node) {
+    node.parentNode = this
+    this.addChildNode(node)
+  }
+
+  attachChildNodeAboveSibling(node, siblingNode) {
+    node.parentNode = this
+    const nodeIndex = this.children.indexOf(siblingNode)
+    if(nodeIndex >= 0) {
+      this.children.splice(nodeIndex, 0, node)
+    }
+  }
+
+  hasNodeInAncestor(node) {
+    let tmpNode = this.parent
+    
+    while(tmpNode != null) {
+      if(tmpNode == node) {
+        return true
+      }
+      tmpNode = tmpNode.parent
+    }
+    return false
+  }
+
   debugDump() {
     console.log('[node ' + this.text + ']')
     console.log('  shiftY=' + this.shiftY)
@@ -326,6 +446,9 @@ export class Node {
     const bounds = this.calcYBounds()
     console.log('  bounds.top=' + bounds.top)
     console.log('  bounds.bottom=' + bounds.bottom)
-    console.log('  selected=' + this.selected)
+    console.log('  selected=' + this.states.selected)
+    if(this.parentNode != null) {
+      console.log('  parent=' + this.parentNode.text)
+    }
   }
 }

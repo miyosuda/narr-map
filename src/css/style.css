@@ -38,9 +38,9 @@ foreignObject {
 
 /* input file style */
 textarea {
-  padding: 5px;
+  padding: 0px;
   font-size: 1.0em;
-  color: #777;
+  color: #000;
   border: 1px solid #999999;
   margin: 0 0 5px;
   

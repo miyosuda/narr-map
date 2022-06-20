@@ -95,19 +95,19 @@ export class TextInput {
     this.hide()
   }
 
-  show(data) {
-    this.data = data
-    this.input.value = this.data.text
+  show(node) {
+    this.node = node
+    this.input.value = this.node.text
 
-    this.textOnShown = this.data.text
+    this.textOnShown = this.node.text
     
     this.updateInputSize()
 
     // 先にdisplayをセットしておかないとinput.offsetWidth等が取れない
     this.foreignObject.style.display = 'block'
     
-    this.foreignObject.x.baseVal.value = this.data.x
-    this.foreignObject.y.baseVal.value = this.data.y
+    this.foreignObject.x.baseVal.value = this.node.x
+    this.foreignObject.y.baseVal.value = this.node.y
     this.updateOuterSize()
     
     this.input.focus()
@@ -151,9 +151,9 @@ export class TextInput {
     }
     
     // テキスト入力が完了した
-    this.data.setText(value)
+    this.node.setText(value)
     const textChanged = this.textOnShown != value
-    this.mapManager.onTextDecided(this.data, textChanged)
+    this.mapManager.onTextDecided(this.node, textChanged)
     this.hide()
   }
 

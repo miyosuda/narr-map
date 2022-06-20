@@ -1,7 +1,7 @@
 import {Node, SPAN_Y_PER_NODE, HOVER_NONE, HOVER_TOP, HOVER_RIGHT} from './node.js'
 
 import {GhostNode} from './ghost-node.js'
-//import {TextInput} from './text-input'
+import {TextInput} from './text-input'
 const { nmapi } = window
 
 
@@ -34,7 +34,7 @@ export class MapManager {
     document.onmouseup   = event => this.onMouseUp(event)
     document.onmousemove = event => this.onMouseMove(event)
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
-    //this.textInput = new TextInput(this)
+    this.textInput = new TextInput(this)
 
     nmapi.onReceiveMessage((arg) => {
       if( arg == 'cut' ) {
@@ -94,12 +94,10 @@ export class MapManager {
       return
     }
 
-    /*
     if( this.textInput.isShown() ) {
       // textInput表示中なら何もしない
       return
     }
-    */
     
     const pos = this.getLocalPos(e)
     const x = pos.x
@@ -284,15 +282,18 @@ export class MapManager {
   
   addChildNode() {
     const g = document.getElementById('nodes')
-    const text = 'child' + this.nodes.length
+    //const text = 'child' + this.nodes.length
+    const text = ''
     
-    let node = new Node(text, this.lastNode, g)
+    const node = new Node(text, this.lastNode, g)
     this.nodes.push(node)
     this.lastNode.addChildNode(node)
-
+    
     this.clearNodeSelection(node)
     
     this.adjustLayout(node)
+    
+    this.textInput.show(node)
   }
   
   addSiblingNode() {
@@ -300,7 +301,8 @@ export class MapManager {
       this.addChildNode()
     } else {
       const g = document.getElementById('nodes')
-      const text = 'child' + this.nodes.length
+      //const text = 'child' + this.nodes.length
+      const text = ''
 
       const oldLastNode = this.lastNode
       const parentNode = this.lastNode.parent
@@ -313,6 +315,8 @@ export class MapManager {
       
       // 前のsiblingをtargetとしてadjustとしている
       this.adjustLayout(oldLastNode)
+      
+      this.textInput.show(node)
     }
   }
 
@@ -507,6 +511,14 @@ export class MapManager {
   cut() {
     this.deleteSelectedNodes()
   }
+
+  onTextDecided(node, changed) {
+    if( changed ) {
+      // 文字列が削除された場合
+      //this.storeState()
+      this.updateLayout()
+    }
+  }  
 
   debugDump() {
     console.log('---------')

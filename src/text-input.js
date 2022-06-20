@@ -98,7 +98,6 @@ export class TextInput {
   show(node) {
     this.node = node
     this.input.value = this.node.text
-
     this.textOnShown = this.node.text
     
     this.updateInputSize()

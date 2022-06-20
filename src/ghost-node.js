@@ -17,20 +17,24 @@ export class GhostNode {
     this.hide()    
   }
 
-  show(node) {
-    const x = node.left
-    const y = node.top
+  prepare(node) {
+    this.node = node
+  }
+
+  show() {
+    const x = this.node.left
+    const y = this.node.top
 
     this.updatePos(x, y)
-    this.rectElement.setAttribute('width', node.width)
-    this.rectElement.setAttribute('height', node.height)
+    this.rectElement.setAttribute('width', this.node.width)
+    this.rectElement.setAttribute('height', this.node.height)
     
     this.rectElement.setAttribute('visibility', 'visible')
 
     this.startElementX = x
     this.startElementY = y
-    
-    this.node = node
+
+    this.shown = true
   }
   
   updatePos(x, y) {
@@ -40,12 +44,13 @@ export class GhostNode {
 
   hide() {
     this.rectElement.setAttribute('visibility', 'hidden')
-    
+
+    this.shown = false
     this.node = null
   }
 
   get isShown() {
-    return this.node != null
+    return this.shown
   }
 
   onDrag(dx, dy) {

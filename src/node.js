@@ -72,7 +72,6 @@ class States {
 
 export class Node {
   constructor(text, parentNode, container) {
-    this.text = text
     this.parentNode = parentNode
 
     const ns = 'http://www.w3.org/2000/svg'
@@ -93,7 +92,7 @@ export class Node {
     this.foreignObject.appendChild(span)
     this.span = span
     
-    this.setText(this.text)
+    this.setText(text)
 
     this.children = []
 
@@ -235,6 +234,7 @@ export class Node {
   }
   
   setText(text) {
+    this.text = text
     this.span.textContent = text
     this.updateWidthHeight()
   }
@@ -376,7 +376,7 @@ export class Node {
     this.states.setSelected(selected)
   }
 
-  isSelected() {
+  get isSelected() {
     return this.states.selected
   }
 

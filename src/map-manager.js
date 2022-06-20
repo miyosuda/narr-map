@@ -119,11 +119,21 @@ export class MapManager {
       if(shiftDown) {
         // shift押下時
         this.setNodeSelected(pickNode, true)
-        dragMode = DRAG_GHOST
+        if(!pickNode.isRoot) {
+          dragMode = DRAG_GHOST
+          this.ghostNode.prepare(pickNode)
+        } else {
+          dragMode = DRAG_NONE
+        }
       } else {
         // pickしたnode以外のselectedをクリア
         this.clearNodeSelection(pickNode)
-        dragMode = DRAG_GHOST
+        if(!pickNode.isRoot) {
+          dragMode = DRAG_GHOST
+          this.ghostNode.prepare(pickNode)
+        } else {
+          dragMode = DRAG_NONE
+        }        
       }
     } else {
       // 1つを除いてNode選択クリア
@@ -163,8 +173,9 @@ export class MapManager {
         // Ghostを移動
         if(!this.ghostNode.isShown) {
           const targetNode = this.lastNode
-          this.ghostNode.show(targetNode)
-        }        
+          //this.ghostNode.show(targetNode)
+          this.ghostNode.show()
+        }
         this.ghostNode.onDrag(dx, dy)
         // マウスオーバーの対応
         this.nodes.forEach(node => {
@@ -206,46 +217,49 @@ export class MapManager {
       for(let i=0; i<this.nodes.length; i++) {
         const node = this.nodes[i]
 
-        if(node != this.ghostNode.node) {
-          const ret = node.checkGhostHover(x, y)
-          if(ret != HOVER_NONE) {
-            hoverHit = ret
-            hoverHitNode = node
-          }
+        //..if(node !== this.ghostNode.node) {
+        const ret = node.checkGhostHover(x, y)
+        if(ret != HOVER_NONE) {
+          hoverHit = ret
+          hoverHitNode = node
         }
+        //..}
         
         node.clearGhostHover()
       }
       
       if(hoverHit != HOVER_NONE) {
-        if(hoverHit == HOVER_RIGHT) {
-          const newChildNode = this.ghostNode.node
+        if(this.ghostNode.node === hoverHitNode) {
+          // 同じノードの上で離した場合
+          this.textInput.show(hoverHitNode)
+        } else {
+          if(hoverHit == HOVER_RIGHT) {
+            const newChildNode = this.ghostNode.node
 
-          if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
-            // hoverHitNodeがnewChildNodeの子孫だったらNG
-            const oldParentNode = newChildNode.detachFromParent()
-            hoverHitNode.attachChildNodeToTail(newChildNode)
-            
-            if(newChildNode != oldParentNode) {
-              this.adjustLayoutWithReset(oldParentNode)
+            if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
+              // hoverHitNodeがnewChildNodeの子孫だったらNG
+              const oldParentNode = newChildNode.detachFromParent()
+              hoverHitNode.attachChildNodeToTail(newChildNode)
+              
+              if(newChildNode != oldParentNode) {
+                this.adjustLayoutWithReset(oldParentNode)
+              }
+              this.adjustLayoutWithReset(hoverHitNode)
             }
-            this.adjustLayoutWithReset(hoverHitNode)
-          }
-        } else if(hoverHit == HOVER_TOP) {
-          const newChildNode = this.ghostNode.node
+          } else if(hoverHit == HOVER_TOP) {
+            const newChildNode = this.ghostNode.node
 
-          if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
-            const newParentNode = hoverHitNode.parentNode
-            const oldParentNode = newChildNode.detachFromParent()
-            // hoverHitNodeがnewChildNodeの子孫だったら何もしない
-            newParentNode.attachChildNodeAboveSibling(newChildNode, hoverHitNode)
-            if(newChildNode != oldParentNode) {
-              this.adjustLayoutWithReset(oldParentNode)
+            if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
+              const newParentNode = hoverHitNode.parentNode
+              const oldParentNode = newChildNode.detachFromParent()
+              // hoverHitNodeがnewChildNodeの子孫だったら何もしない
+              newParentNode.attachChildNodeAboveSibling(newChildNode, hoverHitNode)
+              if(newChildNode != oldParentNode) {
+                this.adjustLayoutWithReset(oldParentNode)
+              }
+              this.adjustLayoutWithReset(newParentNode)
             }
-            this.adjustLayoutWithReset(newParentNode)
           }
-          
-
         }
       }
       this.ghostNode.hide()
@@ -282,9 +296,7 @@ export class MapManager {
   
   addChildNode() {
     const g = document.getElementById('nodes')
-    //const text = 'child' + this.nodes.length
     const text = ''
-    
     const node = new Node(text, this.lastNode, g)
     this.nodes.push(node)
     this.lastNode.addChildNode(node)
@@ -301,13 +313,11 @@ export class MapManager {
       this.addChildNode()
     } else {
       const g = document.getElementById('nodes')
-      //const text = 'child' + this.nodes.length
-      const text = ''
-
       const oldLastNode = this.lastNode
       const parentNode = this.lastNode.parent
-      
-      let node = new Node(text, parentNode, g)
+
+      const text = ''      
+      const node = new Node(text, parentNode, g)
       this.nodes.push(node)
       parentNode.addChildNode(node)
 

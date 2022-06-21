@@ -1,13 +1,15 @@
 import {getElementDimension} from './text-utils'
 
-// 1ノードの取る縦幅
-export const SPAN_Y_PER_NODE = 30.0
-
-export const OFFSET_Y_FOR_SINGLE_CHILD = -3.0
+export const SPAN_Y_PER_NODE = 30.0       // 1ノードの取る縦幅
 
 export const HOVER_NONE  = 0
 export const HOVER_TOP   = 1
 export const HOVER_RIGHT = 2
+
+const OFFSET_Y_FOR_SINGLE_CHILD = -3.0
+const GAP_X = 20
+const HANDLE_WIDTH  = 10
+const HANDLE_HEIGHT = 18
 
 
 class States {
@@ -92,8 +94,6 @@ export class Node {
     this.foreignObject.appendChild(span)
     this.span = span
     
-    this.setText(text)
-
     this.children = []
 
     if( !this.isRoot ) {
@@ -119,11 +119,10 @@ export class Node {
       handleElement.setAttribute('stroke-width', 1)
       handleElement.setAttribute('fill', 'none')
 
-      // TODO: 定数指定
       handleElement.setAttribute('cx', 0)
       handleElement.setAttribute('cy', 0)
-      handleElement.setAttribute('rx', 5)
-      handleElement.setAttribute('ry', 10)
+      handleElement.setAttribute('rx', HANDLE_WIDTH/2)
+      handleElement.setAttribute('ry', HANDLE_HEIGHT/2+1)
       handleElement.setAttribute('visibility', 'hidden')
       container.appendChild(handleElement)
       
@@ -131,10 +130,10 @@ export class Node {
     } else {
       this.states = new States(foreignObject, null, true)
     }
-
+    
+    this.setText(text)
     this.shiftX = 0
     this.shiftY = 0
-
     this.adjustY = 0
   }
   
@@ -156,10 +155,12 @@ export class Node {
       // 子が1ノードしかない場合は少し上に上げておく
       childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
     }
-
-    const childBaseX = this.x + this.width + 20
+    
+    const childBaseX = this.x + this.width + GAP_X
+    
     // 子ノードのY方向の開始位置
-    const childDefaultStartY = this.y + childYOffset - (this.children.length-1) / 2 * SPAN_Y_PER_NODE
+    const childDefaultStartY = this.y + childYOffset -
+          (this.children.length-1) / 2 * SPAN_Y_PER_NODE
 
     for(let i=0; i<this.children.length; i++) {
       const node = this.children[i]
@@ -263,9 +264,8 @@ export class Node {
       this.lineElement.setAttribute('y1', edgeStartPos.y)
       this.lineElement.setAttribute('x2', this.x)
       this.lineElement.setAttribute('y2', this.y + this.height - 0.5) // lineの幅を考慮している
-      // TODO: 定数指定
-      this.handleElement.setAttribute('cx', this.x-5)
-      this.handleElement.setAttribute('cy', this.y+9)
+      this.handleElement.setAttribute('cx', this.x-HANDLE_WIDTH/2)
+      this.handleElement.setAttribute('cy', this.y+HANDLE_HEIGHT/2)
     }
   }
 
@@ -323,7 +323,8 @@ export class Node {
     if(this.isRoot) {
       return false
     } else {
-      return (x >= this.left-10) && (x <= this.left) && (y >= this.top) && (y <= this.bottom)
+      return (x >= this.left-HANDLE_WIDTH) && (x <= this.left) &&
+        (y >= this.top) && (y <= this.bottom)
     }
   }
 

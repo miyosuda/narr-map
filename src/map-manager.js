@@ -23,6 +23,7 @@ export class MapManager {
     this.selectedNodes = []
     this.nodes = []
     this.handleDraggingNode = null
+    this.nodeEdited = false
   }
 
   prepare() {
@@ -98,6 +99,8 @@ export class MapManager {
       // textInput表示中なら何もしない
       return
     }
+
+    this.nodeEdited = false
     
     const pos = this.getLocalPos(e)
     const x = pos.x
@@ -168,6 +171,7 @@ export class MapManager {
         // 1つのノードだけを動かす
         const dragTargetNode = this.handleDraggingNode
         dragTargetNode.onDrag(dx, dy)
+        this.nodeEdited = true
         this.adjustLayout(dragTargetNode)
       } else if(this.dragMode == DRAG_GHOST) {
         // Ghostを移動
@@ -217,13 +221,11 @@ export class MapManager {
       for(let i=0; i<this.nodes.length; i++) {
         const node = this.nodes[i]
 
-        //..if(node !== this.ghostNode.node) {
         const ret = node.checkGhostHover(x, y)
         if(ret != HOVER_NONE) {
           hoverHit = ret
           hoverHitNode = node
         }
-        //..}
         
         node.clearGhostHover()
       }
@@ -240,6 +242,7 @@ export class MapManager {
               // hoverHitNodeがnewChildNodeの子孫だったらNG
               const oldParentNode = newChildNode.detachFromParent()
               hoverHitNode.attachChildNodeToTail(newChildNode)
+              this.nodeEdited = true
               
               if(newChildNode != oldParentNode) {
                 this.adjustLayoutWithReset(oldParentNode)
@@ -254,6 +257,7 @@ export class MapManager {
               const oldParentNode = newChildNode.detachFromParent()
               // hoverHitNodeがnewChildNodeの子孫だったら何もしない
               newParentNode.attachChildNodeAboveSibling(newChildNode, hoverHitNode)
+              this.nodeEdited = true
               if(newChildNode != oldParentNode) {
                 this.adjustLayoutWithReset(oldParentNode)
               }
@@ -266,6 +270,12 @@ export class MapManager {
     }
     
     this.dragMode = DRAG_NONE
+
+    if( this.nodeEdited ) {
+      // undoバッファ対応
+      this.storeState()
+      this.nodeEdited = false
+    }
   }
   
   onKeyDown(e) {
@@ -500,12 +510,17 @@ export class MapManager {
   }
 
   deleteSelectedNodes() {
+    let modified = false
+    
     this.selectedNodes.forEach(node => {
       // ノードを削除
       if(!node.isRoot) {
         this.deleteNode(node)
+        modified = true
       } else {
-        node.setSelected(false)
+        if(!node.isSelected) {
+          node.setSelected(false)
+        }
       }
     })
     
@@ -514,7 +529,10 @@ export class MapManager {
     this.setNodeSelected(targetNode, true)
     
     this.updateLayout()
-    
+
+    if(modified) {
+      this.storeState()
+    }
     //this.debugDump()
   }
 
@@ -525,10 +543,16 @@ export class MapManager {
   onTextDecided(node, changed) {
     if( changed ) {
       // 文字列が削除された場合
-      //this.storeState()
       this.updateLayout()
+      
+      // undoバッファ対応
+      this.storeState()
     }
-  }  
+  }
+
+  storeState() {
+    console.log('store state') //..
+  }
 
   debugDump() {
     console.log('---------')

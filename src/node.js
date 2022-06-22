@@ -12,6 +12,40 @@ const HANDLE_WIDTH  = 10
 const HANDLE_HEIGHT = 18
 
 
+/*
+const setObservableProperty = (obj, propertyName, onChangeCallback) => {
+  Object.defineProperty(
+    obj,
+    propertyName,
+    (() => {
+      return {
+        get : function() {
+          return this.valueMap[propertyName]
+        },
+        set : function(newValue) {
+          if(this.valueMap == null ) {
+            this.valueMap = {}
+          }
+          if(propertyName in this.valueMap) {
+            const oldValue = this.valueMap[propertyName]
+            if(oldValue !== newValue) {
+              this.valueMap[propertyName] = newValue
+              onChangeCallback(propertyName, newValue)
+            }
+          } else {
+            this.valueMap[propertyName] = newValue
+            onChangeCallback(propertyName, newValue)
+          }
+        },
+        enumerable: true,
+        configurable: true
+      }
+    })()
+  )
+}
+*/
+
+
 class States {
   constructor(foreignObject, handleElement, isRoot) {
     this.foreignObject = foreignObject
@@ -30,18 +64,18 @@ class States {
   setHoverState(hoverState) {
     if(hoverState != this.hoverState) {
       if(hoverState == HOVER_TOP) {
-        this.foreignObject.classList.remove("node_selected")
-        this.foreignObject.classList.remove("node_right_overlapped")
-        this.foreignObject.classList.add("node_top_overlapped")
+        this.foreignObject.classList.remove('node_selected')
+        this.foreignObject.classList.remove('node_right_overlapped')
+        this.foreignObject.classList.add('node_top_overlapped')
       } else if( hoverState == HOVER_RIGHT ) {
-        this.foreignObject.classList.remove("node_selected")
-        this.foreignObject.classList.remove("node_top_overlapped")
-        this.foreignObject.classList.add("node_right_overlapped")
+        this.foreignObject.classList.remove('node_selected')
+        this.foreignObject.classList.remove('node_top_overlapped')
+        this.foreignObject.classList.add('node_right_overlapped')
       } else {
-        this.foreignObject.classList.remove("node_top_overlapped")
-        this.foreignObject.classList.remove("node_right_overlapped")
+        this.foreignObject.classList.remove('node_top_overlapped')
+        this.foreignObject.classList.remove('node_right_overlapped')
         if(this.selected) {
-          this.foreignObject.classList.add("node_selected")
+          this.foreignObject.classList.add('node_selected')
         }
       }
       this.hoverState = hoverState
@@ -51,9 +85,9 @@ class States {
   setSelected(selected) {
     if(selected != this.selected) {
       if(selected) {
-        this.foreignObject.classList.add("node_selected")
+        this.foreignObject.classList.add('node_selected')
       } else {
-        this.foreignObject.classList.remove("node_selected")
+        this.foreignObject.classList.remove('node_selected')
       }
       this.selected = selected
     }
@@ -134,6 +168,7 @@ export class Node {
     this.setText(text)
     this.shiftX = 0
     this.shiftY = 0
+
     this.adjustY = 0
   }
   
@@ -241,9 +276,10 @@ export class Node {
   }
 
   updateWidthHeight() {
+    // TODO: classの指定が他にも考慮必要か？
     const className = 'node'
     const dims = getElementDimension(this.foreignObject.innerHTML, className)
-
+    
     this.width = dims.width
     this.height = dims.height
   }

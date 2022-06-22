@@ -11,71 +11,169 @@ const GAP_X = 20
 const HANDLE_WIDTH  = 10
 const HANDLE_HEIGHT = 18
 
+const NAME_SPACE = 'http://www.w3.org/2000/svg'
 
-/*
-const setObservableProperty = (obj, propertyName, onChangeCallback) => {
-  Object.defineProperty(
-    obj,
-    propertyName,
-    (() => {
-      return {
-        get : function() {
-          return this.valueMap[propertyName]
-        },
-        set : function(newValue) {
-          if(this.valueMap == null ) {
-            this.valueMap = {}
-          }
-          if(propertyName in this.valueMap) {
-            const oldValue = this.valueMap[propertyName]
-            if(oldValue !== newValue) {
-              this.valueMap[propertyName] = newValue
-              onChangeCallback(propertyName, newValue)
-            }
-          } else {
-            this.valueMap[propertyName] = newValue
-            onChangeCallback(propertyName, newValue)
-          }
-        },
-        enumerable: true,
-        configurable: true
-      }
-    })()
-  )
+const TEXT_COMPONENT_STYLE_NONE        = 0
+const TEXT_COMPONENT_STYLE_HOVER_TOP   = 1
+const TEXT_COMPONENT_STYLE_HOVER_RIGHT = 2
+const TEXT_COMPONENT_STYLE_SELECTED    = 3
+
+
+class TextComponent {
+  constructor(container, isRoot) {
+    const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject')
+    this.foreignObject = foreignObject
+
+    foreignObject.classList.add('node')
+    if(isRoot) {
+      foreignObject.classList.add('root-node')
+    }
+
+    container.appendChild(foreignObject)
+
+    const span = document.createElement('span')
+    this.span = span
+    
+    // テキスト選択無効のクラスを指定
+    span.className = 'disable-select';
+    foreignObject.appendChild(span)
+  }
+
+  setText(text) {
+    this.text = text
+    this.span.textContent = text
+
+    // TODO: classの指定が他にも考慮必要か？
+    const className = 'node'
+    const dims = getElementDimension(this.foreignObject.innerHTML, className)
+
+    this.foreignObject.width.baseVal.value = dims.width
+    this.foreignObject.height.baseVal.value = dims.height
+    
+    this.width = dims.width
+    this.height = dims.height
+  }
+
+  setPos(x, y) {
+    this.foreignObject.x.baseVal.value = x
+    this.foreignObject.y.baseVal.value = y
+    
+    this.x = x
+    this.y = y
+  }
+
+  remove() {
+    this.foreignObject.remove()
+  }
+  
+  setStyle(style) {
+    if(style == TEXT_COMPONENT_STYLE_SELECTED) {
+      this.foreignObject.classList.add('node_selected')
+      this.foreignObject.classList.remove('node_top_overlapped')
+      this.foreignObject.classList.remove('node_right_overlapped')      
+    } else if(style == TEXT_COMPONENT_STYLE_HOVER_TOP) {
+      this.foreignObject.classList.remove('node_selected')
+      this.foreignObject.classList.add('node_top_overlapped')
+      this.foreignObject.classList.remove('node_right_overlapped')
+    } else if(style == TEXT_COMPONENT_STYLE_HOVER_RIGHT) {
+      this.foreignObject.classList.remove('node_selected')
+      this.foreignObject.classList.remove('node_top_overlapped')
+      this.foreignObject.classList.add('node_right_overlapped')
+    } else {
+      this.foreignObject.classList.remove('node_selected')
+      this.foreignObject.classList.remove('node_top_overlapped')
+      this.foreignObject.classList.remove('node_right_overlapped')
+    }
+  }
 }
-*/
+
+
+class LineComponent {
+  constructor(container) {  
+    const lineElement = document.createElementNS(NAME_SPACE, 'line')
+    this.lineElement = lineElement
+    
+    // ラインの位置後ほどupdateLayout()時に設定
+    this.setPos(0, 0, 0, 0)
+    
+    lineElement.setAttribute('stroke', '#7f7f7f')
+    lineElement.setAttribute('stroke-width', 1)
+    
+    container.appendChild(lineElement)
+  }
+
+  setPos(sx, sy, ex, ey) {
+    this.lineElement.setAttribute('x1', sx)
+    this.lineElement.setAttribute('y1', sy)
+    this.lineElement.setAttribute('x2', ex)
+    this.lineElement.setAttribute('y2', ey)
+  }
+
+  remove() {
+    this.lineElement.remove()
+  }
+}
+
+
+class HandleComponent {
+  constructor(container) {
+    const handleElement = document.createElementNS(NAME_SPACE, 'ellipse')
+    this.handleElement = handleElement
+    
+    handleElement.setAttribute('stroke', '#7f7f7f')
+    handleElement.setAttribute('stroke-width', 1)
+    handleElement.setAttribute('fill', 'none')
+    
+    handleElement.setAttribute('cx', 0)
+    handleElement.setAttribute('cy', 0)
+    handleElement.setAttribute('rx', HANDLE_WIDTH/2)
+    handleElement.setAttribute('ry', HANDLE_HEIGHT/2+1)
+    container.appendChild(handleElement)
+
+    this.setVisible(false)
+  }
+
+  setVisible(visible) {
+    if(visible) {
+      this.handleElement.setAttribute('visibility', 'visible')
+    } else {
+      this.handleElement.setAttribute('visibility', 'hidden')
+    }
+  }
+
+  setPos(x, y) {
+    // Handleの右上をx,yとして指定する
+    this.handleElement.setAttribute('cx', x-HANDLE_WIDTH/2)
+    this.handleElement.setAttribute('cy', y+HANDLE_HEIGHT/2)
+  }
+
+  remove() {
+    this.handleElement.remove()
+  }
+}
 
 
 class States {
-  constructor(foreignObject, handleElement, isRoot) {
-    this.foreignObject = foreignObject
-    this.handleElement = handleElement
+  constructor(textComponent, handleComponent) {
+    this.textComponent = textComponent
+    this.handleComponent = handleComponent
     
     this.selected = false
     this.hoverState = HOVER_NONE
     this.handleShown = false
-
-    foreignObject.classList.add('node')
-    if(this.isRoot) {
-      foreignObject.classList.add('root-node')
-    }
   }
 
   setHoverState(hoverState) {
     if(hoverState != this.hoverState) {
       if(hoverState == HOVER_TOP) {
-        this.foreignObject.classList.remove('node_selected')
-        this.foreignObject.classList.remove('node_right_overlapped')
-        this.foreignObject.classList.add('node_top_overlapped')
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_TOP)
       } else if( hoverState == HOVER_RIGHT ) {
-        this.foreignObject.classList.remove('node_selected')
-        this.foreignObject.classList.remove('node_top_overlapped')
-        this.foreignObject.classList.add('node_right_overlapped')
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_RIGHT)
       } else {
-        this.foreignObject.classList.remove('node_top_overlapped')
-        this.foreignObject.classList.remove('node_right_overlapped')
         if(this.selected) {
-          this.foreignObject.classList.add('node_selected')
+          this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
+        } else {
+          this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
         }
       }
       this.hoverState = hoverState
@@ -85,9 +183,9 @@ class States {
   setSelected(selected) {
     if(selected != this.selected) {
       if(selected) {
-        this.foreignObject.classList.add('node_selected')
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
       } else {
-        this.foreignObject.classList.remove('node_selected')
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
       }
       this.selected = selected
     }
@@ -96,9 +194,9 @@ class States {
   setHandleShown(handleShown) {
     if(handleShown != this.handleShown) {
       if(handleShown) {
-        this.handleElement.setAttribute('visibility', 'visible')
+        this.handleComponent.setVisible(true)
       } else {
-        this.handleElement.setAttribute('visibility', 'hidden')
+        this.handleComponent.setVisible(false)
       }
       this.handleShown = handleShown
     }
@@ -109,76 +207,35 @@ class States {
 export class Node {
   constructor(text, parentNode, container) {
     this.parentNode = parentNode
-
-    const ns = 'http://www.w3.org/2000/svg'
-    const foreignObject = document.createElementNS(ns, 'foreignObject')
     
-    foreignObject.classList.add('node')
-    if(this.isRoot) {
-      foreignObject.classList.add('root-node')
-    }
-
-    container.appendChild(foreignObject)
-    
-    this.foreignObject = foreignObject
-
-    const span = document.createElement('span')
-    // テキスト選択無効のクラスを指定
-    span.className = 'disable-select';
-    this.foreignObject.appendChild(span)
-    this.span = span
+    this.textComponent = new TextComponent(container, this.isRoot)
     
     this.children = []
-
-    if( !this.isRoot ) {
-      // Edge line
-      const lineElement = document.createElementNS(ns, 'line')
-      this.lineElement = lineElement
-
-      // ラインの位置後ほどupdateLayout()で設定
-      lineElement.setAttribute('x1', 0)
-      lineElement.setAttribute('y1', 0)
-      lineElement.setAttribute('x2', 0)
-      lineElement.setAttribute('y2', 0)
-      
-      lineElement.setAttribute('stroke', '#7f7f7f')
-      lineElement.setAttribute('stroke-width', 1)
-      container.appendChild(lineElement)
-
-      // Handle
-      const handleElement = document.createElementNS(ns, 'ellipse')
-      this.handleElement = handleElement
-      
-      handleElement.setAttribute('stroke', '#7f7f7f')
-      handleElement.setAttribute('stroke-width', 1)
-      handleElement.setAttribute('fill', 'none')
-
-      handleElement.setAttribute('cx', 0)
-      handleElement.setAttribute('cy', 0)
-      handleElement.setAttribute('rx', HANDLE_WIDTH/2)
-      handleElement.setAttribute('ry', HANDLE_HEIGHT/2+1)
-      handleElement.setAttribute('visibility', 'hidden')
-      container.appendChild(handleElement)
-      
-      this.states = new States(foreignObject, handleElement, false)
+    
+    if(!this.isRoot) {
+      this.lineComponent = new LineComponent(container)
+      this.handleComponent = new HandleComponent(container)
     } else {
-      this.states = new States(foreignObject, null, true)
+      this.lineComponent = null
+      this.handleCompnent = null
     }
     
+    this.states = new States(this.textComponent, this.handleComponent)
+    
     this.setText(text)
+    
     this.shiftX = 0
     this.shiftY = 0
-
     this.adjustY = 0
   }
   
   addChildNode(node) {
     this.children.push(node)
   }
-
+  
   updateLayout(baseX, baseY) {
     if(this.isRoot) {
-      // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく.
+      // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく
       baseX = -this.width / 2
       baseY = -this.height / 2
     }
@@ -268,47 +325,44 @@ export class Node {
   get parent() {
     return this.parentNode
   }
+
+  get width() {
+    return this.textComponent.width
+  }
   
-  setText(text) {
-    this.text = text
-    this.span.textContent = text
-    this.updateWidthHeight()
+  get height() {
+    return this.textComponent.height
   }
 
-  updateWidthHeight() {
-    // TODO: classの指定が他にも考慮必要か？
-    const className = 'node'
-    const dims = getElementDimension(this.foreignObject.innerHTML, className)
-    
-    this.width = dims.width
-    this.height = dims.height
+  get text() {
+    return this.textComponent.text
+  }
+  
+  setText(text) {
+    this.textComponent.setText(text)
   }
 
   updatePos(baseX, baseY) {
-    this.foreignObject.width.baseVal.value = this.width
-    this.foreignObject.height.baseVal.value = this.height
-
     this.x = baseX + this.shiftX 
     this.y = baseY + this.shiftY + this.adjustY
-
-    this.foreignObject.x.baseVal.value = this.x
-    this.foreignObject.y.baseVal.value = this.y
-
+    
+    this.textComponent.setPos(this.x, this.y)
+    
     if(!this.isRoot) {
       const edgeStartPos = this.parentNode.edgeOutPos
-      this.lineElement.setAttribute('x1', edgeStartPos.x)
-      this.lineElement.setAttribute('y1', edgeStartPos.y)
-      this.lineElement.setAttribute('x2', this.x)
-      this.lineElement.setAttribute('y2', this.y + this.height - 0.5) // lineの幅を考慮している
-      this.handleElement.setAttribute('cx', this.x-HANDLE_WIDTH/2)
-      this.handleElement.setAttribute('cy', this.y+HANDLE_HEIGHT/2)
+      
+      this.lineComponent.setPos(edgeStartPos.x,
+                                edgeStartPos.y,
+                                this.x,
+                                this.y + this.height - 0.5) // lineの幅を考慮している
+      this.handleComponent.setPos(this.x, this.y)
     }
   }
-
+  
   get isRoot() {
     return this.parentNode == null
   }
-
+  
   get edgeOutPos() {
     const pos = {}
     
@@ -385,7 +439,7 @@ export class Node {
       this.states.setHandleShown(false)
     }
   }
-
+  
   checkGhostHover(x, y) {
     if(this.containsPosHalf(x, y, true) && !this.isRoot) {
       // 左半分
@@ -425,10 +479,11 @@ export class Node {
     if( this.parent != null ) {
       this.parent.removeChild(this)
     }
-    
-    this.foreignObject.remove()
-    this.lineElement.remove()
 
+    this.textComponent.remove()
+    this.lineComponent.remove()
+    this.handleComponent.remove()
+    
     // MapManager # nodes[]からこのnodeを削除する
     removeNodeCallback(this)
   }

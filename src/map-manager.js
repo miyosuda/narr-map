@@ -25,6 +25,8 @@ export class MapManager {
     this.nodes = []
     this.handleDraggingNode = null
     this.nodeEdited = false
+
+    this.setDirty(false)
   }
 
   prepare() {
@@ -561,16 +563,20 @@ export class MapManager {
     const rootNode = this.nodes[0]
     const state = rootNode.getState()
     this.editHistory.addHistory(state)
+
+    this.setDirty(true)
   }
 
   applyNodeState(state, parentNode) {
     let node = null
     if(parentNode == null) {
+      // TODO: 共通化
       const g = document.getElementById('overlay') 
       node = new Node(null, g)
       node.applyState(state)
       this.nodes.push(node)
     } else {
+      // TODO: 共通化
       const g = document.getElementById('nodes')
       node = new Node(parentNode, g)
       node.applyState(state)
@@ -600,6 +606,22 @@ export class MapManager {
     this.applyNodeState(state, null)
   }
 
+  /*
+  save() {
+    const DATA_VERSION = 1
+    
+    const rootNode = this.nodes[0]
+    const state = rootNode.getState()
+    
+    const mapData = {
+      'version' : DATA_VERSION,
+      'state' : state,
+    }
+    const json = JSON.stringify(mapData, null , '\t')
+    console.log(json)
+  }
+  */
+
   undo() {
     if( this.textInput.isShown() ) {
       document.execCommand('undo')
@@ -623,6 +645,11 @@ export class MapManager {
       this.applyMapState(state)
     }
   }
+
+  setDirty(dirty) {
+    // TODO:
+    //..window.ipc.send('set-dirty', dirty)
+  }  
 
   debugDump() {
     console.log('---------')

@@ -154,7 +154,7 @@ class HandleComponent {
 
 
 export class Node {
-  constructor(text, parentNode, container) {
+  constructor(parentNode, container) {
     this.parentNode = parentNode
     this.children = []    
     
@@ -168,7 +168,7 @@ export class Node {
       this.handleCompnent = null
     }
     
-    this.setText(text)
+    this.setText('')
     
     this.shiftX = 0
     this.shiftY = 0
@@ -189,9 +189,9 @@ export class Node {
       baseX = -this.width / 2
       baseY = -this.height / 2
     }
-    // baseX,YにshirtX,Yを足してx,yとする
+    // baseX,YにshiftX,Yを足してx,yとする
     this.updatePos(baseX, baseY)
-
+    
     let childYOffset = 0.0
     if( this.children.length == 1 ) {
       // 子が1ノードしかない場合は少し上に上げておく
@@ -203,7 +203,7 @@ export class Node {
     // 子ノードのY方向の開始位置
     const childDefaultStartY = this.y + childYOffset -
           (this.children.length-1) / 2 * SPAN_Y_PER_NODE
-
+    
     for(let i=0; i<this.children.length; i++) {
       const node = this.children[i]
       // 各ノードのx,yを更新する
@@ -215,7 +215,7 @@ export class Node {
   calcYBounds() {
     let top = Number.POSITIVE_INFINITY
     let bottom = Number.NEGATIVE_INFINITY
-
+    
     if(this.children.length == 0) {
       // 子Nodeが無い場合
       top = 0
@@ -251,14 +251,14 @@ export class Node {
     }
     
     const bounds = {}
-
+    
     if(top > 0) {
       top = 0
     }
     if(bottom < SPAN_Y_PER_NODE) {
       bottom = SPAN_Y_PER_NODE
     }
-
+    
     if(this.shiftY <= 0) {
       // 上にシフトされているのでtopを上に移動 (上にスペースを作る)
       top += this.shiftY
@@ -271,7 +271,7 @@ export class Node {
     bounds.bottom = bottom
     return bounds
   }
-
+  
   get parent() {
     return this.parentNode
   }
@@ -462,8 +462,14 @@ export class Node {
     }
 
     this.textComponent.remove()
-    this.lineComponent.remove()
-    this.handleComponent.remove()
+
+    if(this.lineComponent != null) {
+      this.lineComponent.remove()
+    }
+
+    if(this.handleComponent != null ) {
+      this.handleComponent.remove()
+    }
     
     // MapManager # nodes[]からこのnodeを削除する
     removeNodeCallback(this)
@@ -504,12 +510,42 @@ export class Node {
     let tmpNode = this.parent
     
     while(tmpNode != null) {
-      if(tmpNode == node) {
+      if(tmpNode === node) {
         return true
       }
       tmpNode = tmpNode.parent
     }
     return false
+  }
+  
+  getState() {
+    const state = {
+      'text'     : this.text,
+      'shiftX'   : this.shiftX,
+      'shiftY'   : this.shiftY,
+      'adjustY'  : this.adjustY,
+      'selected' : this.selected,
+    }
+    
+    const childStates = []
+    this.children.forEach(node => {
+      childStates.push(node.getState())
+    })
+    
+    state['children'] = childStates
+    return state
+  }
+  
+  applyState(state) {
+    this.setText(state['text'])
+    
+    this.shiftX = state['shiftX']
+    this.shiftY = state['shiftY']
+    this.adjustY = state['adjustY']
+
+    this.setSelected(state['selected'])
+    this.setHoverState(HOVER_NONE)
+    this.setHandleShown(false)
   }
 
   debugDump() {

@@ -2,6 +2,7 @@ import {Node, SPAN_Y_PER_NODE, HOVER_NONE, HOVER_TOP, HOVER_RIGHT} from './node.
 
 import {GhostNode} from './ghost-node.js'
 import {TextInput} from './text-input'
+import {EditHistory} from './edit-history'
 const { nmapi } = window
 
 
@@ -40,21 +41,30 @@ export class MapManager {
     nmapi.onReceiveMessage((arg) => {
       if( arg == 'cut' ) {
         this.cut()
+      } else if( arg == 'undo' ) {
+        this.undo()
+      } else if( arg == 'redo' ) {
+        this.redo()
       }
     })
     
-    this.addRootNode()
+    const rootNode = this.addRootNode()
     this.addGhostNode()
+    
+    this.editHistory = new EditHistory(rootNode.getState())
   }
 
   addRootNode() {
     const g = document.getElementById('overlay') 
-    const node = new Node('root', null, g)
+    const node = new Node(null, g)
+    node.setText('root')
     this.nodes.push(node)
 
     this.setNodeSelected(node, true)
 
     this.updateLayout()
+
+    return node
   }
 
   addGhostNode() {
@@ -306,8 +316,7 @@ export class MapManager {
   
   addChildNode() {
     const g = document.getElementById('nodes')
-    const text = ''
-    const node = new Node(text, this.lastNode, g)
+    const node = new Node(this.lastNode, g)
     this.nodes.push(node)
     this.lastNode.addChildNode(node)
     
@@ -326,8 +335,7 @@ export class MapManager {
       const oldLastNode = this.lastNode
       const parentNode = this.lastNode.parent
 
-      const text = ''      
-      const node = new Node(text, parentNode, g)
+      const node = new Node(parentNode, g)
       this.nodes.push(node)
       parentNode.addChildNode(node)
 
@@ -422,8 +430,6 @@ export class MapManager {
 
     // 上の階層に上がる
     this.adjustLayout(targetParentNode)
-
-    //this.debugDump()
   }
 
   adjustLayoutWithReset(targetParentNode) {
@@ -469,8 +475,10 @@ export class MapManager {
     }
     
     node.remove(removeNodeCallback)
-    
-    this.adjustLayoutWithReset(parentNode)
+
+    if(parentNode != null) {
+      this.adjustLayoutWithReset(parentNode)
+    }
   }
 
   get lastNode() {
@@ -533,7 +541,6 @@ export class MapManager {
     if(modified) {
       this.storeState()
     }
-    //this.debugDump()
   }
 
   cut() {
@@ -551,7 +558,70 @@ export class MapManager {
   }
 
   storeState() {
-    console.log('store state') //..
+    const rootNode = this.nodes[0]
+    const state = rootNode.getState()
+    this.editHistory.addHistory(state)
+  }
+
+  applyNodeState(state, parentNode) {
+    let node = null
+    if(parentNode == null) {
+      const g = document.getElementById('overlay') 
+      node = new Node(null, g)
+      node.applyState(state)
+      this.nodes.push(node)
+    } else {
+      const g = document.getElementById('nodes')
+      node = new Node(parentNode, g)
+      node.applyState(state)
+      this.nodes.push(node)
+      parentNode.addChildNode(node)
+    }
+
+    if(node.isSelected) {
+      this.selectedNodes.push(node)
+    }
+    
+    state.children.forEach(childState => {
+      this.applyNodeState(childState, node)
+    })
+    
+    this.updateLayout()
+  }
+
+  applyMapState(state) {
+    this.ghostNode.hide()
+    
+    const rootNode = this.nodes[0]
+    this.deleteNode(rootNode)
+    
+    this.init()
+    
+    this.applyNodeState(state, null)
+  }
+
+  undo() {
+    if( this.textInput.isShown() ) {
+      document.execCommand('undo')
+      return
+    }
+    
+    const state = this.editHistory.undo()
+    if( state != null ) {
+      this.applyMapState(state)
+    }
+  }
+
+  redo() {
+    if( this.textInput.isShown() ) {
+      document.execCommand('redo')
+      return
+    }
+    
+    const state = this.editHistory.redo()
+    if( state != null ) {
+      this.applyMapState(state)
+    }
   }
 
   debugDump() {

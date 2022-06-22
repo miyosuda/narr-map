@@ -70,7 +70,7 @@ class TextComponent {
     if(style == TEXT_COMPONENT_STYLE_SELECTED) {
       this.foreignObject.classList.add('node_selected')
       this.foreignObject.classList.remove('node_top_overlapped')
-      this.foreignObject.classList.remove('node_right_overlapped')      
+      this.foreignObject.classList.remove('node_right_overlapped')
     } else if(style == TEXT_COMPONENT_STYLE_HOVER_TOP) {
       this.foreignObject.classList.remove('node_selected')
       this.foreignObject.classList.add('node_top_overlapped')
@@ -89,7 +89,7 @@ class TextComponent {
 
 
 class LineComponent {
-  constructor(container) {  
+  constructor(container) {
     const lineElement = document.createElementNS(NAME_SPACE, 'line')
     this.lineElement = lineElement
     
@@ -153,64 +153,12 @@ class HandleComponent {
 }
 
 
-class States {
-  constructor(textComponent, handleComponent) {
-    this.textComponent = textComponent
-    this.handleComponent = handleComponent
-    
-    this.selected = false
-    this.hoverState = HOVER_NONE
-    this.handleShown = false
-  }
-
-  setHoverState(hoverState) {
-    if(hoverState != this.hoverState) {
-      if(hoverState == HOVER_TOP) {
-        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_TOP)
-      } else if( hoverState == HOVER_RIGHT ) {
-        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_RIGHT)
-      } else {
-        if(this.selected) {
-          this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
-        } else {
-          this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
-        }
-      }
-      this.hoverState = hoverState
-    }
-  }
-
-  setSelected(selected) {
-    if(selected != this.selected) {
-      if(selected) {
-        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
-      } else {
-        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
-      }
-      this.selected = selected
-    }
-  }
-
-  setHandleShown(handleShown) {
-    if(handleShown != this.handleShown) {
-      if(handleShown) {
-        this.handleComponent.setVisible(true)
-      } else {
-        this.handleComponent.setVisible(false)
-      }
-      this.handleShown = handleShown
-    }
-  }
-}
-
-
 export class Node {
   constructor(text, parentNode, container) {
     this.parentNode = parentNode
+    this.children = []    
     
     this.textComponent = new TextComponent(container, this.isRoot)
-    
-    this.children = []
     
     if(!this.isRoot) {
       this.lineComponent = new LineComponent(container)
@@ -220,13 +168,15 @@ export class Node {
       this.handleCompnent = null
     }
     
-    this.states = new States(this.textComponent, this.handleComponent)
-    
     this.setText(text)
     
     this.shiftX = 0
     this.shiftY = 0
     this.adjustY = 0
+    
+    this.selected = false
+    this.hoverState = HOVER_NONE
+    this.handleShown = false
   }
   
   addChildNode(node) {
@@ -430,45 +380,76 @@ export class Node {
         (y >= this.top) &&
         (y <= this.bottom)
     }
-  }  
+  }
+
+  setHoverState(hoverState) {
+    if(hoverState != this.hoverState) {
+      if(hoverState == HOVER_TOP) {
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_TOP)
+      } else if( hoverState == HOVER_RIGHT ) {
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_RIGHT)
+      } else {
+        if(this.selected) {
+          this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
+        } else {
+          this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
+        }
+      }
+      this.hoverState = hoverState
+    }
+  }
+
+  setSelected(selected) {
+    if(selected != this.selected) {
+      if(selected) {
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
+      } else {
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
+      }
+      this.selected = selected
+    }
+  }
+
+  setHandleShown(handleShown) {
+    if(handleShown != this.handleShown) {
+      if(handleShown) {
+        this.handleComponent.setVisible(true)
+      } else {
+        this.handleComponent.setVisible(false)
+      }
+      this.handleShown = handleShown
+    }
+  }
 
   checkHover(x, y) {
     if(this.containsPosForHandle(x, y)) {
-      this.states.setHandleShown(true)
+      this.setHandleShown(true)
     } else {
-      this.states.setHandleShown(false)
+      this.setHandleShown(false)
     }
   }
   
   checkGhostHover(x, y) {
     if(this.containsPosHalf(x, y, true) && !this.isRoot) {
       // 左半分
-      this.states.setHoverState(HOVER_TOP)
+      this.setHoverState(HOVER_TOP)
       return HOVER_TOP
     } else if(this.containsPosHalf(x, y, false)) {
       // 右半分
-      this.states.setHoverState(HOVER_RIGHT)
+      this.setHoverState(HOVER_RIGHT)
       return HOVER_RIGHT
     } else {
-      this.states.setHoverState(HOVER_NONE)
+      this.setHoverState(HOVER_NONE)
       return HOVER_NONE
     }
   }
 
   clearGhostHover() {
-    this.states.setHoverState(HOVER_NONE)
-  }
-
-  setHandleShown(handleShown) {
-    this.states.setHandleShown(handleShown)
-  }
-
-  setSelected(selected) {
-    this.states.setSelected(selected)
+    this.setHoverState(HOVER_NONE)
   }
 
   get isSelected() {
-    return this.states.selected
+    return this.selected
   }
 
   remove(removeNodeCallback) {
@@ -538,7 +519,7 @@ export class Node {
     const bounds = this.calcYBounds()
     console.log('  bounds.top=' + bounds.top)
     console.log('  bounds.bottom=' + bounds.bottom)
-    console.log('  selected=' + this.states.selected)
+    console.log('  selected=' + this.selected)
     if(this.parentNode != null) {
       console.log('  parent=' + this.parentNode.text)
     }

@@ -1,5 +1,7 @@
 const { app, Menu, BrowserWindow } = require('electron')
-const path = require('path')
+const ipc = require('electron').ipcMain
+const dialog = require('electron').dialog
+const fs = require('fs')
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -48,9 +50,91 @@ app.on('activate', () => {
   }
 })
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
+const CONFIRM_ANSWER_SAVE   = 0
+const CONFIRM_ANSWER_DELETE = 1
+const CONFIRM_ANSWER_CANCEL = 2
 
+let editDirty = false
+let filePath = null
+
+ipc.on('response', (event, arg, obj) => {
+  if( arg == 'set-dirty' ) {
+    editDirty = obj
+  } else if( arg == 'response-save' ) {
+    const json = JSON.stringify(obj, null , '\t')
+
+    fs.writeFile(filePath, json, (error) => {
+      if(error != null) {
+        console.log('save error')
+      }
+    })
+    
+    // TODO: ここのeditDirty処理でOKかどうか要確認
+    editDirty = false
+  }
+})
+
+const showSaveConfirmDialog = () => {
+  const options = {
+    type: 'info',
+    buttons: ['Save', 'Delete', 'Cancel'],
+    message: 'File not saved. Save?',
+  }
+  
+  const ret = dialog.showMessageBoxSync(options)
+  return ret
+}
+
+let onSavedFunction = null
+
+const saveOptions = {
+  title: 'Save',
+  filters: [
+    {
+      name: 'Data',
+      extensions: ['.json']
+    }
+  ]
+}
+
+const save = (browserWindow, onSavedHook=null) => {
+  if(filePath == null) {
+    const path = dialog.showSaveDialogSync(saveOptions)
+    if(path != null) {
+      onSavedFunction = onSavedHook
+      // filePathの設定
+      filePath = path      
+      browserWindow.webContents.send('request', 'save')
+    }
+  } else {
+    onSavedFunction = onSavedHook
+    browserWindow.webContents.send('request', 'save')
+  }
+}
+
+const saveAs = (browserWindow) => {
+  const path = dialog.showSaveDialogSync(saveOptions)
+  if(path != null) {
+    // filePathの設定
+    filePath = path
+    browserWindow.webContents.send('request', 'save')
+  }
+}
+
+const load = (browserWindow, path) => {
+  fs.readFile(path, (error, json) => {
+    if(error != null) {
+      console.log('file open error')
+    }
+    if(json != null) {
+      const mapData = JSON.parse(json)
+      browserWindow.webContents.send('request', 'load', mapData)
+      
+      // TODO: ここのeditDirty処理でOKかどうか要確認
+      editDirty = false
+    }
+  })
+}
 
 // ElectronのMenuの設定
 const templateMenu = [
@@ -76,6 +160,81 @@ const templateMenu = [
           quit()
         },
       },
+    ]
+  },
+  {
+    label: 'File',
+    submenu: [
+      {
+        label: 'New',
+        accelerator: 'CmdOrCtrl+N',
+        click: (menuItem, browserWindow, event) => {
+          const requestNewFile = () => {
+            browserWindow.webContents.send('request', 'new-file')
+            // filePathの設定
+            filePath = null
+          }
+          
+          if( editDirty ) {
+            const ret = showSaveConfirmDialog()
+            if( ret == CONFIRM_ANSWER_SAVE ) {
+              // save後にnew fileを実行する
+              save(browserWindow, requestNewFile)
+            } else if( ret == CONFIRM_ANSWER_DELETE ) {
+              requestNewFile()
+            }
+          } else {
+            requestNewFile()
+          }
+        },
+      },
+      {
+        label: 'Open',
+        accelerator: 'CmdOrCtrl+O',
+        click: (menuItem, browserWindow, event) => {
+          const requestOpen = () => {
+            const options = {
+              properties: ['openFile']
+            }
+            const pathes = dialog.showOpenDialogSync(options)
+            if(pathes != null && pathes.length > 0) {
+              const path = pathes[0]
+              load(browserWindow, path)
+              // filePathの設定
+              filePath = path
+            }
+          }
+          
+          if( editDirty ) {
+            const ret = showSaveConfirmDialog()
+            if( ret == CONFIRM_ANSWER_SAVE ) {
+              // save後にopenする
+              save(browserWindow, requestOpen)
+            } else if( ret == CONFIRM_ANSWER_DELETE ) {
+              requestOpen()
+            }
+          } else {
+            requestOpen()
+          }
+        },
+      },      
+      {
+        type: 'separator',
+      },
+      {
+        label: 'Save',
+        accelerator: 'CmdOrCtrl+S',
+        click: (menuItem, browserWindow, event) => {
+          save(browserWindow)
+        }
+      },
+      {
+        label: 'Save As',
+        accelerator: 'CmdOrCtrl+Shift+S',
+        click: (menuItem, browserWindow, event) => {
+          saveAs(browserWindow)
+        }
+      },      
     ]
   },
   {

@@ -40,13 +40,19 @@ export class MapManager {
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
     this.textInput = new TextInput(this)
 
-    nmapi.onReceiveMessage((arg) => {
+    nmapi.onReceiveMessage((arg, obj) => {
       if( arg == 'cut' ) {
         this.cut()
       } else if( arg == 'undo' ) {
         this.undo()
       } else if( arg == 'redo' ) {
         this.redo()
+      } else if( arg == 'save' ) {
+        this.save()
+      } else if( arg == 'load' ) {
+        this.load(obj)
+      } else if( arg == 'new-file' ) {
+        this.newFile(obj)
       }
     })
     
@@ -606,7 +612,6 @@ export class MapManager {
     this.applyNodeState(state, null)
   }
 
-  /*
   save() {
     const DATA_VERSION = 1
     
@@ -617,10 +622,16 @@ export class MapManager {
       'version' : DATA_VERSION,
       'state' : state,
     }
-    const json = JSON.stringify(mapData, null , '\t')
-    console.log(json)
+    
+    nmapi.sendMessage('response-save', mapData)
   }
-  */
+
+  load(mapData) {
+    const version = mapData['version']
+    const state = mapData['state']
+    
+    this.applyMapState(state)
+  }
 
   undo() {
     if( this.textInput.isShown() ) {
@@ -646,9 +657,22 @@ export class MapManager {
     }
   }
 
+  newFile() {
+    // TODO: 共通化
+    this.ghostNode.hide()
+    
+    const oldRootNode = this.nodes[0]
+    this.deleteNode(oldRootNode)
+    
+    const rootNode = this.addRootNode()
+    
+    this.editHistory = new EditHistory(rootNode.getState())
+    
+    this.setDirty(false)
+  }
+
   setDirty(dirty) {
-    // TODO:
-    //..window.ipc.send('set-dirty', dirty)
+    nmapi.sendMessage('set-dirty', dirty)
   }  
 
   debugDump() {

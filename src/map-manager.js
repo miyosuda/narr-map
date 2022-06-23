@@ -14,18 +14,19 @@ const DRAG_BACK  = 3
 
 export class MapManager {
   constructor() {
-    this.init()
   }
 
   init() {
     this.dragMode = DRAG_NONE
     this.dragStartX = 0
     this.dragStartY = 0
-    this.selectedNodes = []
     this.nodes = []
+    this.selectedNodes = []
     this.handleDraggingNode = null
     this.nodeEdited = false
 
+    this.ghostNode.hide()
+    
     this.setDirty(false)
   }
 
@@ -55,10 +56,11 @@ export class MapManager {
         this.newFile(obj)
       }
     })
-    
-    const rootNode = this.addRootNode()
     this.addGhostNode()
     
+    this.init()
+    
+    const rootNode = this.addRootNode()
     this.editHistory = new EditHistory(rootNode.getState())
   }
 
@@ -73,6 +75,10 @@ export class MapManager {
     this.updateLayout()
 
     return node
+  }
+
+  get rootNode() {
+    return this.nodes[0]
   }
 
   addGhostNode() {
@@ -289,7 +295,7 @@ export class MapManager {
     
     this.dragMode = DRAG_NONE
 
-    if( this.nodeEdited ) {
+    if(this.nodeEdited) {
       // undoバッファ対応
       this.storeState()
       this.nodeEdited = false
@@ -357,8 +363,7 @@ export class MapManager {
   }
 
   updateLayout() {
-    const rootNode = this.nodes[0]
-    rootNode.updateLayout(null, null)
+    this.rootNode.updateLayout(null, null)
   }
   
   adjustLayout(targetNode) {
@@ -565,11 +570,15 @@ export class MapManager {
     }
   }
 
-  storeState() {
-    const rootNode = this.nodes[0]
-    const state = rootNode.getState()
-    this.editHistory.addHistory(state)
+  clearAllNodes() {
+    const oldRootNode = this.rootNode
+    this.deleteNode(oldRootNode)
+  }
 
+  storeState() {
+    const state = this.rootNode.getState()
+    this.editHistory.addHistory(state)
+    
     this.setDirty(true)
   }
 
@@ -602,21 +611,35 @@ export class MapManager {
   }
 
   applyMapState(state) {
-    this.ghostNode.hide()
-    
-    const rootNode = this.nodes[0]
-    this.deleteNode(rootNode)
+    this.clearAllNodes()
     
     this.init()
     
     this.applyNodeState(state, null)
   }
+  
+  newFile() {
+    this.clearAllNodes()
+    
+    this.init()
+    
+    const rootNode = this.addRootNode()
+    this.editHistory = new EditHistory(rootNode.getState())
+  }
+
+  load(mapData) {
+    const version = mapData['version']
+    const state = mapData['state']
+    
+    this.applyMapState(state)
+    
+    this.editHistory = new EditHistory(state)
+  }
 
   save() {
     const DATA_VERSION = 1
     
-    const rootNode = this.nodes[0]
-    const state = rootNode.getState()
+    const state = this.rootNode.getState()
     
     const mapData = {
       'version' : DATA_VERSION,
@@ -625,13 +648,7 @@ export class MapManager {
     
     nmapi.sendMessage('response-save', mapData)
   }
-
-  load(mapData) {
-    const version = mapData['version']
-    const state = mapData['state']
-    
-    this.applyMapState(state)
-  }
+  
 
   undo() {
     if( this.textInput.isShown() ) {
@@ -655,20 +672,6 @@ export class MapManager {
     if( state != null ) {
       this.applyMapState(state)
     }
-  }
-
-  newFile() {
-    // TODO: 共通化
-    this.ghostNode.hide()
-    
-    const oldRootNode = this.nodes[0]
-    this.deleteNode(oldRootNode)
-    
-    const rootNode = this.addRootNode()
-    
-    this.editHistory = new EditHistory(rootNode.getState())
-    
-    this.setDirty(false)
   }
 
   setDirty(dirty) {

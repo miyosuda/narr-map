@@ -97,8 +97,10 @@ export class TextInput {
 
   show(node) {
     this.node = node
-    this.input.value = this.node.text
-    this.textOnShown = this.node.text
+
+    const text = node.text
+    this.input.value = text
+    this.textOnShown = text
     
     this.updateInputSize()
 
@@ -108,7 +110,9 @@ export class TextInput {
     this.foreignObject.x.baseVal.value = this.node.x
     this.foreignObject.y.baseVal.value = this.node.y
     this.updateOuterSize()
-    
+
+    // テキストをを選択状態に
+    this.input.setSelectionRange(0, text.length)
     this.input.focus()
     
     this.textChanged = false

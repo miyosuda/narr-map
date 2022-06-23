@@ -320,7 +320,11 @@ export class MapManager {
       this.addChildNode()
       e.preventDefault()
     } else if(e.key === 'Enter' ) {
-      this.addSiblingNode()
+      if(!e.ctrlKey) {
+        this.addSiblingNode()
+      } else {
+        this.editText()
+      }
       e.preventDefault()
     } else if(e.key === 'Backspace' ) {
       this.deleteSelectedNodes()
@@ -332,7 +336,22 @@ export class MapManager {
       this.move(MOVE_RIGHT, shiftDown)
     } else if(e.key === 'ArrowLeft' ) {
       this.move(MOVE_LEFT, shiftDown)
+    } else if(e.key === 'F2') {
+      this.editText()
+    } else if(e.key === ' ') {
+      // TODO: Toggle Fold
+      e.preventDefault()
+    } else if(
+      (e.key >= 'a' && e.key <= 'z') ||
+        (e.key >= 'A' && e.key <= 'Z') ||
+        (e.key >= '1' && e.key <= '0')) {
+      // 文字列入力なら
+      this.editText()
     }
+  }
+
+  editText() {
+    this.textInput.show(this.lastNode)
   }
   
   move(direction, shiftDown) {

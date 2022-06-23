@@ -1,4 +1,4 @@
-const EDIT_HISTORY_MAX = 10
+const EDIT_HISTORY_MAX = 30
 
 
 export class EditHistory {

@@ -11,6 +11,11 @@ const DRAG_NODE  = 1
 const DRAG_GHOST = 2
 const DRAG_BACK  = 3
 
+const MOVE_UP    = 1
+const MOVE_DOWN  = 2
+const MOVE_RIGHT = 3
+const MOVE_LEFT  = 4
+
 
 export class MapManager {
   constructor() {
@@ -24,7 +29,8 @@ export class MapManager {
     this.selectedNodes = []
     this.handleDraggingNode = null
     this.nodeEdited = false
-
+    this.cursorDepth = 0
+    
     this.ghostNode.hide()
     
     this.setDirty(false)
@@ -69,7 +75,7 @@ export class MapManager {
     const node = new Node(null, g)
     node.setText('root')
     this.nodes.push(node)
-
+    
     this.setNodeSelected(node, true)
 
     this.updateLayout()
@@ -307,6 +313,8 @@ export class MapManager {
       // input入力時のkey押下は無視する
       return
     }
+
+    const shiftDown = e.shiftKey
     
     if(e.key === 'Tab' ) {
       this.addChildNode()
@@ -316,6 +324,42 @@ export class MapManager {
       e.preventDefault()
     } else if(e.key === 'Backspace' ) {
       this.deleteSelectedNodes()
+    } else if(e.key === 'ArrowUp' ) {
+      this.move(MOVE_UP, shiftDown)
+    } else if(e.key === 'ArrowDown' ) {
+      this.move(MOVE_DOWN, shiftDown)
+    } else if(e.key === 'ArrowRight' ) {
+      this.move(MOVE_RIGHT, shiftDown)
+    } else if(e.key === 'ArrowLeft' ) {
+      this.move(MOVE_LEFT, shiftDown)
+    }
+  }
+  
+  move(direction, shiftDown) {
+    let node = null
+
+    if(direction == MOVE_RIGHT) {
+      node = this.lastNode.getLatestChild()
+      if(node != null) {
+        this.cursorDepth = node.depth
+      }
+    } else if(direction == MOVE_LEFT) {
+      node = this.lastNode.parentNode
+      if(node != null) {
+        this.cursorDepth = node.depth
+      }
+    } else if(direction == MOVE_UP) {
+      node = this.lastNode.getSibling(true, this.cursorDepth)
+    } else {
+      node = this.lastNode.getSibling(false, this.cursorDepth)
+    }
+
+    if(node != null) {
+      if(!shiftDown) {
+        this.clearNodeSelection(node, false) // cursorDepthを更新しない
+      } else {
+        this.setNodeSelected(node, true, false) // cursorDepthを更新しない
+      }
     }
   }
 
@@ -498,13 +542,15 @@ export class MapManager {
     return this.selectedNodes[this.selectedNodes.length-1]
   }
 
-  setNodeSelected(node, selected) {
+  setNodeSelected(node, selected, updateCursorDepth=true) {
     if(node.isSelected != selected) {
       node.setSelected(selected)
       
       if(selected) {
+        // selectedにしたのでselectedNodes[]に追加
         this.selectedNodes.push(node)
       } else {
+        // selectedを外したのでselectedNodesから削除
         const nodeIndex = this.selectedNodes.indexOf(node)
         if(nodeIndex >= 0) {
           this.selectedNodes.splice(nodeIndex, 1)
@@ -518,16 +564,24 @@ export class MapManager {
       }
       this.selectedNodes.push(node)
     }
+
+    if(selected && updateCursorDepth) {
+      this.cursorDepth = node.depth
+    }
   }
 
-  clearNodeSelection(leftNode) {
+  clearNodeSelection(leftNode, updateCursorDepth=true) {
     this.selectedNodes.forEach(node => {
       node.setSelected(false)
     })
     this.selectedNodes = []
     
     this.selectedNodes.push(leftNode)
-    leftNode.setSelected(true)    
+    leftNode.setSelected(true)
+
+    if(updateCursorDepth) {
+      this.cursorDepth = leftNode.depth
+    }
   }
 
   deleteSelectedNodes() {
@@ -561,8 +615,9 @@ export class MapManager {
   }
 
   onTextDecided(node, changed) {
+    this.cursorDepth = node.depth
     if( changed ) {
-      // 文字列が削除された場合
+      // 文字列が変更された場合
       this.updateLayout()
       
       // undoバッファ対応
@@ -616,6 +671,8 @@ export class MapManager {
     this.init()
     
     this.applyNodeState(state, null)
+
+    this.cursorDepth = this.lastNode.depth
   }
   
   newFile() {
@@ -649,7 +706,6 @@ export class MapManager {
     nmapi.sendMessage('response-save', mapData)
   }
   
-
   undo() {
     if( this.textInput.isShown() ) {
       document.execCommand('undo')
@@ -676,7 +732,7 @@ export class MapManager {
 
   setDirty(dirty) {
     nmapi.sendMessage('set-dirty', dirty)
-  }  
+  }
 
   debugDump() {
     console.log('---------')

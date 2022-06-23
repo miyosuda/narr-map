@@ -271,6 +271,14 @@ export class Node {
     bounds.bottom = bottom
     return bounds
   }
+
+  get hasChildren() {
+    return this.children.length > 0
+  }
+  
+  get hasParent() {
+    return this.parentNode != null
+  }
   
   get parent() {
     return this.parentNode
@@ -290,6 +298,7 @@ export class Node {
   
   setText(text) {
     this.textComponent.setText(text)
+    this.updateTimeStamp()
   }
 
   updatePos(baseX, baseY) {
@@ -400,6 +409,10 @@ export class Node {
   }
 
   setSelected(selected) {
+    if(selected) {
+      this.updateTimeStamp()
+    }
+    
     if(selected != this.selected) {
       if(selected) {
         this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
@@ -546,6 +559,111 @@ export class Node {
     this.setSelected(state['selected'])
     this.setHoverState(HOVER_NONE)
     this.setHandleShown(false)
+  }
+
+  updateTimeStamp() {
+    this.timeStamp = Date.now()
+  }
+
+  getBottomDescendant(cursorDepth) {
+    let bottomChild = this.children[this.children.length-1]
+    if(bottomChild.depth < cursorDepth && bottomChild.hasChildren) {
+      return bottomChild.getBottomDescendant(cursorDepth)
+    } else {
+      return bottomChild
+    }
+  }
+
+  getTopDescendant(cursorDepth) {
+    let topChild = this.children[0]
+    if(topChild.depth < cursorDepth && topChild.hasChildren) {
+      return topChild.getTopDescendant(cursorDepth)
+    } else {
+      return topChild
+    }
+  } 
+
+  getSiblingOfChild(node, above, cursorDepth) {
+    const nodeIndex = this.children.indexOf(node)
+    
+    if(above) {
+      // 上方向へ
+      if(nodeIndex >= 1) {
+        // 上のnode
+        const aboveNode = this.children[nodeIndex-1]
+        if(aboveNode.depth == cursorDepth) {
+          return aboveNode
+        } else if(aboveNode.depth < cursorDepth) {
+          if(aboveNode.hasChildren) {
+            // aboveNodeの子孫を探す
+            return aboveNode.getBottomDescendant(cursorDepth)
+          } else {
+            return aboveNode
+          }
+        } else {
+          console.log('この場合はないはず(above)')
+          // aboveNode.depth > cursorDepth の場合
+          return aboveNode
+        }
+      } else {
+        // nodeが既にtopのnodeだった
+        return this.getSibling(above, cursorDepth)
+      }
+    } else {
+      // 下方向へ
+      if(nodeIndex <= this.children.length-2) {
+        const belowNode = this.children[nodeIndex+1]
+        if(belowNode.depth == cursorDepth) {
+          return belowNode
+        } else if(belowNode.depth < cursorDepth) {
+          if(belowNode.hasChildren) {
+            // belowNodeの子を探す
+            return belowNode.getTopDescendant(cursorDepth)
+          } else {
+            return belowNode
+          }
+        } else {
+          console.log('この場合はないはず(below)')
+          // belowNode.depth > cursorDepth の場合
+          return belowNode
+        }
+      } else {
+        // nodeが既にbottomのnodeだった
+        return this.getSibling(above, cursorDepth)
+      }
+    }
+  }
+  
+  getSibling(above, cursorDepth) {
+    if(this.parent == null) {
+      return null
+    }
+    
+    return this.parent.getSiblingOfChild(this, above, cursorDepth)
+  }
+  
+  get depth() {
+    let p = this.parent
+    let depth = 0
+    while(p != null) {
+      p = p.parent
+      depth += 1
+    }
+    return depth
+  }
+
+  getLatestChild() {
+    let latestChildNode = null
+    let latestTimeStamp = -1
+    
+    this.children.forEach(node => {
+      if(node.timeStamp >= latestTimeStamp ) {
+        latestTimeStamp = node.timeStamp
+        latestChildNode = node
+      }
+    })
+    
+    return latestChildNode
   }
 
   debugDump() {

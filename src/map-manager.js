@@ -347,7 +347,7 @@ export class MapManager {
     }
 
     const shiftDown = e.shiftKey
-    
+
     if(e.key === 'Tab' ) {
       this.addChildNode()
       e.preventDefault()
@@ -371,7 +371,7 @@ export class MapManager {
     } else if(e.key === 'F2') {
       this.editText()
     } else if(e.key === ' ') {
-      // TODO: Toggle Fold
+      this.toggleFold()
       e.preventDefault()
     } else if(
       (e.key >= 'a' && e.key <= 'z') ||
@@ -379,7 +379,8 @@ export class MapManager {
         (e.key >= '1' && e.key <= '0')) {
       if(!e.ctrlKey && !e.metaKey) {
         // 文字列入力なら
-        this.editText()
+        //this.editText()
+        // TODO: shiftキーでも反応してしまっている.
       }
     }
   }
@@ -392,7 +393,7 @@ export class MapManager {
     let node = null
 
     if(direction == MOVE_RIGHT) {
-      node = this.lastNode.getLatestChild()
+      node = this.lastNode.getLatestVisibleChild()
       if(node != null) {
         this.cursorDepth = node.depth
       }
@@ -413,6 +414,13 @@ export class MapManager {
       } else {
         this.setNodeSelected(node, true, false) // cursorDepthを更新しない
       }
+    }
+  }
+
+  toggleFold() {
+    if(!this.lastNode.isRoot) {
+      this.lastNode.toggleFolded()
+      this.clearNodeSelection(this.lastNode) //..
     }
   }
 
@@ -696,26 +704,27 @@ export class MapManager {
       // TODO: 共通化
       const g = document.getElementById('overlay') 
       node = new Node(null, g)
-      node.applyState(state)
+      // ここではまだapplyState(state)しない
       this.nodes.push(node)
     } else {
       // TODO: 共通化
       const g = document.getElementById('nodes')
       node = new Node(parentNode, g)
-      node.applyState(state)
+      // ここではまだapplyState(state)しない
       this.nodes.push(node)
       parentNode.addChildNode(node)
-    }
-
-    if(node.isSelected) {
-      this.selectedNodes.push(node)
     }
     
     state.children.forEach(childState => {
       this.applyNodeState(childState, node)
     })
     
-    this.updateLayout()
+    // folded反映の関係でchildrendにstateを適用した後にこのnodeのstateを適用する
+    node.applyState(state)
+    
+    if(node.isSelected) {
+      this.selectedNodes.push(node)
+    }    
   }
 
   applyMapState(state) {
@@ -725,7 +734,9 @@ export class MapManager {
     
     this.applyNodeState(state, null)
 
-    this.cursorDepth = this.lastNode.depth
+    this.cursorDepth = this.lastNode.depth    
+    
+    this.updateLayout()
   }
   
   newFile() {

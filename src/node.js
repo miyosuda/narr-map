@@ -11,6 +11,8 @@ const GAP_X = 20
 const HANDLE_WIDTH  = 10
 const HANDLE_HEIGHT = 18
 
+const FOLD_MARK_RADIUS = 3
+
 const NAME_SPACE = 'http://www.w3.org/2000/svg'
 
 const TEXT_COMPONENT_STYLE_NONE        = 0
@@ -37,6 +39,8 @@ class TextComponent {
     // テキスト選択無効のクラスを指定
     span.className = 'disable-select';
     foreignObject.appendChild(span)
+    
+    this.setVisible(true)
   }
 
   setText(text) {
@@ -52,6 +56,19 @@ class TextComponent {
     
     this.width = dims.width
     this.height = dims.height
+  }
+
+  setVisible(visible) {
+    if(visible) {
+      this.foreignObject.setAttribute('visibility', 'visible')
+    } else {
+      this.foreignObject.setAttribute('visibility', 'hidden')
+    }
+    this.visible = visible
+  }
+
+  get isVisible() {
+    return this.visible
   }
 
   setPos(x, y) {
@@ -102,6 +119,14 @@ class LineComponent {
     container.appendChild(lineElement)
   }
 
+  setVisible(visible) {
+    if(visible) {
+      this.lineElement.setAttribute('visibility', 'visible')
+    } else {
+      this.lineElement.setAttribute('visibility', 'hidden')
+    }
+  }
+
   setPos(sx, sy, ex, ey) {
     this.lineElement.setAttribute('x1', sx)
     this.lineElement.setAttribute('y1', sy)
@@ -111,6 +136,42 @@ class LineComponent {
 
   remove() {
     this.lineElement.remove()
+  }
+}
+
+class FoldMarkComponent {
+
+  constructor(container) {
+    const markElement = document.createElementNS(NAME_SPACE, 'circle')
+    this.markElement = markElement
+    
+    markElement.setAttribute('stroke', '#7f7f7f')
+    markElement.setAttribute('stroke-width', 1)
+    markElement.setAttribute('fill', '#ffffff')
+    
+    markElement.setAttribute('cx', 0)
+    markElement.setAttribute('cy', 0)
+    markElement.setAttribute('r', FOLD_MARK_RADIUS)
+    container.appendChild(markElement)
+  
+    this.setVisible(false)
+  }
+
+  setVisible(visible) {
+    if(visible) {
+      this.markElement.setAttribute('visibility', 'visible')
+    } else {
+      this.markElement.setAttribute('visibility', 'hidden')
+    }
+  }
+
+  setPos(x, y) {
+    this.markElement.setAttribute('cx', x)
+    this.markElement.setAttribute('cy', y)
+  }
+
+  remove() {
+    this.markElement.remove()
   }
 }
 
@@ -156,20 +217,22 @@ class HandleComponent {
 export class Node {
   constructor(parentNode, container) {
     this.parentNode = parentNode
-    this.children = []    
+    this.children = []
     
     this.textComponent = new TextComponent(container, this.isRoot)
-    
+
     if(!this.isRoot) {
       this.lineComponent = new LineComponent(container)
       this.handleComponent = new HandleComponent(container)
+      this.foldMarkComponent = new FoldMarkComponent(container)
     } else {
       this.lineComponent = null
       this.handleCompnent = null
+      this.foldMarkComponent = null
     }
     
     this.setText('')
-    
+
     this.shiftX = 0
     this.shiftY = 0
     this.adjustY = 0
@@ -177,6 +240,47 @@ export class Node {
     this.selected = false
     this.hoverState = HOVER_NONE
     this.handleShown = false
+    this.folded = false
+  }
+
+  get isVisible() {
+    return this.textComponent.isVisible
+  }
+
+  setVisible(visible) {
+    if(this.isVisible != visible) {
+      this.textComponent.setVisible(visible)
+      
+      if(this.lineComponent != null) {
+        this.lineComponent.setVisible(visible)
+      }
+      if(this.handleComponent != null) {
+        if(visible) {
+          if(this.handleShown) {
+            this.handleComponent.setVisible(visible)
+          } else {
+            this.handleComponent.setVisible(false)
+          }
+        } else {
+          this.handleComponent.setVisible(visible)
+        }
+      }
+      if(this.foldMarkComponent != null) {
+        if(visible) {
+          if(this.folded) {
+            this.foldMarkComponent.setVisible(visible)
+          } else {
+            this.foldMarkComponent.setVisible(false)
+          }
+        } else {
+          this.foldMarkComponent.setVisible(visible)
+        }        
+      }
+
+      this.children.forEach(node => {
+        node.setVisible(visible)
+      })
+    }
   }
   
   addChildNode(node) {
@@ -275,6 +379,14 @@ export class Node {
   get hasChildren() {
     return this.children.length > 0
   }
+
+  get hasVisibleChildren() {
+    if(this.folded) {
+      return false
+    } else {
+      return this.hasChildren
+    }
+  }
   
   get hasParent() {
     return this.parentNode != null
@@ -302,7 +414,7 @@ export class Node {
   }
 
   updatePos(baseX, baseY) {
-    this.x = baseX + this.shiftX 
+    this.x = baseX + this.shiftX
     this.y = baseY + this.shiftY + this.adjustY
     
     this.textComponent.setPos(this.x, this.y)
@@ -315,6 +427,7 @@ export class Node {
                                 this.x,
                                 this.y + this.height - 0.5) // lineの幅を考慮している
       this.handleComponent.setPos(this.x, this.y)
+      this.foldMarkComponent.setPos(this.x + this.width, this.y + this.height)
     }
   }
   
@@ -365,10 +478,17 @@ export class Node {
   }
 
   containsPos(x, y) {
+    if(!this.isVisible) {
+      return false
+    }
     return (x >= this.left) && (x <= this.right) && (y >= this.top) && (y <= this.bottom)
   }
 
   containsPosForHandle(x, y) {
+    if(!this.isVisible) {
+      return false
+    }
+    
     if(this.isRoot) {
       return false
     } else {
@@ -378,6 +498,10 @@ export class Node {
   }
 
   containsPosHalf(x, y, leftHalf) {
+    if(!this.isVisible) {
+      return false
+    }
+    
     if(leftHalf) {
       return (x >= this.left) &&
         (x <= this.left + this.width/2) &&
@@ -420,6 +544,29 @@ export class Node {
         this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
       }
       this.selected = selected
+    }
+  }
+
+  toggleFolded() {
+    if(this.hasChildren) {
+      this.setFolded(!this.folded)
+    }
+  }
+
+  setFolded(folded) {
+    if(folded != this.folded) {
+      if(folded) {
+        this.foldMarkComponent.setVisible(true)
+        this.children.forEach(node => {
+          node.setVisible(false)
+        })  
+      } else {
+        this.foldMarkComponent.setVisible(false)
+        this.children.forEach(node => {
+          node.setVisible(true)
+        })
+      }
+      this.folded = folded
     }
   }
 
@@ -483,6 +630,10 @@ export class Node {
     if(this.handleComponent != null ) {
       this.handleComponent.remove()
     }
+
+    if(this.foldMarkComponent != null ) {
+      this.foldMarkComponent.remove()
+    }    
     
     // MapManager # nodes[]からこのnodeを削除する
     removeNodeCallback(this)
@@ -492,6 +643,10 @@ export class Node {
     const nodeIndex = this.children.indexOf(node)
     if(nodeIndex >= 0) {
       this.children.splice(nodeIndex, 1)
+    }
+
+    if(this.hasChildren && this.folded) {
+      this.setFolded(false)
     }
   }
 
@@ -507,6 +662,11 @@ export class Node {
   }
 
   attachChildNodeToTail(node) {
+    if(this.folded) {
+      // foldされていたら開いておく
+      this.setFolded(false)
+    }
+    
     node.parentNode = this
     this.addChildNode(node)
   }
@@ -538,6 +698,7 @@ export class Node {
       'shiftY'   : this.shiftY,
       'adjustY'  : this.adjustY,
       'selected' : this.selected,
+      'folded'   : this.folded,
     }
     
     const childStates = []
@@ -557,6 +718,7 @@ export class Node {
     this.adjustY = state['adjustY']
 
     this.setSelected(state['selected'])
+    this.setFolded(state['folded'])
     this.setHoverState(HOVER_NONE)
     this.setHandleShown(false)
   }
@@ -567,7 +729,7 @@ export class Node {
 
   getBottomDescendant(cursorDepth) {
     let bottomChild = this.children[this.children.length-1]
-    if(bottomChild.depth < cursorDepth && bottomChild.hasChildren) {
+    if(bottomChild.depth < cursorDepth && bottomChild.hasVisibleChildren) {
       return bottomChild.getBottomDescendant(cursorDepth)
     } else {
       return bottomChild
@@ -576,7 +738,7 @@ export class Node {
 
   getTopDescendant(cursorDepth) {
     let topChild = this.children[0]
-    if(topChild.depth < cursorDepth && topChild.hasChildren) {
+    if(topChild.depth < cursorDepth && topChild.hasVisibleChildren) {
       return topChild.getTopDescendant(cursorDepth)
     } else {
       return topChild
@@ -594,7 +756,7 @@ export class Node {
         if(aboveNode.depth == cursorDepth) {
           return aboveNode
         } else if(aboveNode.depth < cursorDepth) {
-          if(aboveNode.hasChildren) {
+          if(aboveNode.hasVisibleChildren) {
             // aboveNodeの子孫を探す
             return aboveNode.getBottomDescendant(cursorDepth)
           } else {
@@ -616,7 +778,7 @@ export class Node {
         if(belowNode.depth == cursorDepth) {
           return belowNode
         } else if(belowNode.depth < cursorDepth) {
-          if(belowNode.hasChildren) {
+          if(belowNode.hasVisibleChildren) {
             // belowNodeの子を探す
             return belowNode.getTopDescendant(cursorDepth)
           } else {
@@ -652,7 +814,11 @@ export class Node {
     return depth
   }
 
-  getLatestChild() {
+  getLatestVisibleChild() {
+    if(!this.hasVisibleChildren) {
+      return null
+    }
+    
     let latestChildNode = null
     let latestTimeStamp = -1
     

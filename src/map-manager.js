@@ -249,7 +249,6 @@ export class MapManager {
         })
       } else {
         // Backを移動
-        // TODO: globalでの対応を検討
         const globalDx = e.clientX - this.dragStartX
         const globalDy = e.clientY - this.dragStartY
         this.onBackDrag(globalDx, globalDy)

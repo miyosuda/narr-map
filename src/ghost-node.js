@@ -1,7 +1,9 @@
-export class GhostNode {
+const NAME_SPACE = 'http://www.w3.org/2000/svg'
+
+
+class RectComponent {
   constructor(container) {
-    let ns = 'http://www.w3.org/2000/svg'    
-    const rectElement = document.createElementNS(ns, 'rect')
+    const rectElement = document.createElementNS(NAME_SPACE, 'rect')
 
     rectElement.setAttribute('x', 0)
     rectElement.setAttribute('y', 0)
@@ -12,9 +14,36 @@ export class GhostNode {
     rectElement.setAttribute('stroke-width', 2)
 
     container.appendChild(rectElement)
-
     this.rectElement = rectElement
-    this.hide()    
+  }
+
+  setWidth(width) {
+    this.rectElement.setAttribute('width', width)
+  }
+  
+  setHeight(height) {
+    this.rectElement.setAttribute('height', height)
+  }
+
+  setPos(x, y) {
+    this.rectElement.setAttribute('x', x)
+    this.rectElement.setAttribute('y', y)    
+  }
+
+  setVisible(visible) {
+    if(visible) {
+      this.rectElement.setAttribute('visibility', 'visible')
+    } else {
+      this.rectElement.setAttribute('visibility', 'hidden')
+    }
+  }
+}
+
+
+export class GhostNode {
+  constructor(container) {
+    this.rectComponent = new RectComponent(container)
+    this.hide()
   }
 
   prepare(node) {
@@ -25,26 +54,20 @@ export class GhostNode {
     const x = this.node.left
     const y = this.node.top
 
-    this.updatePos(x, y)
-    this.rectElement.setAttribute('width', this.node.width)
-    this.rectElement.setAttribute('height', this.node.height)
+    this.rectComponent.setPos(x, y)
+    this.rectComponent.setWidth(this.node.width)
+    this.rectComponent.setHeight(this.node.height)
+    this.rectComponent.setVisible(true)
     
-    this.rectElement.setAttribute('visibility', 'visible')
-
     this.startElementX = x
     this.startElementY = y
 
     this.shown = true
   }
   
-  updatePos(x, y) {
-    this.rectElement.setAttribute('x', x)
-    this.rectElement.setAttribute('y', y)
-  }
-
   hide() {
-    this.rectElement.setAttribute('visibility', 'hidden')
-
+    this.rectComponent.setVisible(false)
+    
     this.shown = false
     this.node = null
   }
@@ -57,7 +80,6 @@ export class GhostNode {
     const x = this.startElementX + dx
     const y = this.startElementY + dy
     
-    this.rectElement.setAttribute('x', x)
-    this.rectElement.setAttribute('y', y)
+    this.rectComponent.setPos(x, y)
   }
 }

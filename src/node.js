@@ -1,6 +1,6 @@
 import {getElementDimension} from './text-utils'
 
-export const SPAN_Y_PER_NODE = 30.0       // 1ノードの取る縦幅
+export const SPAN_Y_PER_NODE = 30.0 // 1ノードの取る縦幅
 
 export const HOVER_NONE  = 0
 export const HOVER_TOP   = 1

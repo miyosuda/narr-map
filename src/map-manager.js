@@ -38,9 +38,14 @@ export class MapManager {
 
   prepare() {
     this.svg = document.getElementById('svg')
+    this.canvas = document.getElementById('canvas')
+
+    const width = this.svg.width.baseVal.value
+    const height = this.svg.height.baseVal.value
+    this.setCanvasTranslate(width/2, height/2)
     
     this.onResize()
-
+    
     document.onmousedown = event => this.onMouseDown(event)
     document.onmouseup   = event => this.onMouseUp(event)
     document.onmousemove = event => this.onMouseMove(event)
@@ -68,6 +73,27 @@ export class MapManager {
     
     const rootNode = this.addRootNode()
     this.editHistory = new EditHistory(rootNode.getState())
+  }
+
+  setCanvasTranslate(translateX, translateY) {
+    this.canvasTranslateX = translateX
+    this.canvasTranslateY = translateY
+    
+    this.canvas.setAttribute('transform', 'translate(' +
+                             this.canvasTranslateX + ',' +
+                             this.canvasTranslateY + ')')
+  }
+  
+  onBackDragStart() {
+    this.startCanvasTranslateX = this.canvasTranslateX
+    this.startCanvasTranslateY = this.canvasTranslateY
+  }
+
+  onBackDrag(dx, dy) {
+    const translateX = this.startCanvasTranslateX + dx
+    const translateY = this.startCanvasTranslateY + dy
+
+    this.setCanvasTranslate(translateX, translateY)
   }
 
   addRootNode() {
@@ -132,9 +158,9 @@ export class MapManager {
 
     this.nodeEdited = false
     
-    const pos = this.getLocalPos(e)
-    const x = pos.x
-    const y = pos.y
+    const localPos = this.getLocalPos(e)
+    const x = localPos.x
+    const y = localPos.y
     
     // マウスが乗ったnodeをpick対象として選ぶ
     const pickNodeForHandle = this.findPickNode(x, y, true)
@@ -173,11 +199,15 @@ export class MapManager {
       const targetNode = this.selectedNodes[this.selectedNodes.length-1]
       this.clearNodeSelection(targetNode)
       dragMode = DRAG_BACK
+      this.onBackDragStart()
     }
 
-    if(dragMode != DRAG_NONE) {
+    if(dragMode == DRAG_NODE || dragMode == DRAG_GHOST ) {
       this.dragStartX = x
       this.dragStartY = y
+    } else if( dragMode == DRAG_BACK ) {
+      this.dragStartX = e.clientX
+      this.dragStartY = e.clientY
     }
     
     this.dragMode = dragMode
@@ -190,9 +220,9 @@ export class MapManager {
     }
     
     if(this.dragMode != DRAG_NONE) {
-      const pos = this.getLocalPos(e)
-      const x = pos.x
-      const y = pos.y
+      const localPos = this.getLocalPos(e)
+      const x = localPos.x
+      const y = localPos.y
       
       const dx = x - this.dragStartX
       const dy = y - this.dragStartY
@@ -219,11 +249,15 @@ export class MapManager {
         })
       } else {
         // Backを移動
+        // TODO: globalでの対応を検討
+        const globalDx = e.clientX - this.dragStartX
+        const globalDy = e.clientY - this.dragStartY
+        this.onBackDrag(globalDx, globalDy)
       }
     } else {
-      const pos = this.getLocalPos(e)
-      const x = pos.x
-      const y = pos.y
+      const localPos = this.getLocalPos(e)
+      const x = localPos.x
+      const y = localPos.y
       
       // マウスオーバーの対応
       this.nodes.forEach(node => {
@@ -240,10 +274,9 @@ export class MapManager {
     
     this.handleDraggingNode = null
     if(this.dragMode == DRAG_GHOST) {
-
-      const pos = this.getLocalPos(e)
-      const x = pos.x
-      const y = pos.y
+      const localPos = this.getLocalPos(e)
+      const x = localPos.x
+      const y = localPos.y
 
       let hoverHit = HOVER_NONE
       let hoverHitNode = null
@@ -345,8 +378,10 @@ export class MapManager {
       (e.key >= 'a' && e.key <= 'z') ||
         (e.key >= 'A' && e.key <= 'Z') ||
         (e.key >= '1' && e.key <= '0')) {
-      // 文字列入力なら
-      this.editText()
+      if(!e.ctrlKey && !e.metaKey) {
+        // 文字列入力なら
+        this.editText()
+      }
     }
   }
 

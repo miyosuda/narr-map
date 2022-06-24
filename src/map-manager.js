@@ -314,6 +314,12 @@ export class MapManager {
             if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
               // hoverHitNodeがnewChildNodeの子孫だったらNG
               const oldParentNode = newChildNode.detachFromParent()
+
+              // TODO: 要整理
+              if(newChildNode.isLeft != oldParentNode.isLeft) {
+                newChildNode.changeSideRecursive(oldParentNode.isLeft)
+              }
+              
               hoverHitNode.attachChildNodeToTail(newChildNode)
               this.nodeEdited = true
               
@@ -464,7 +470,11 @@ export class MapManager {
   
   addChildNode() {
     const g = document.getElementById('nodes')
-    const node = new Node(this.lastNode, g)
+
+    // TODO: lastNodeがrootだった場合の検討
+    let isLeft = this.lastNode.isLeft
+
+    const node = new Node(this.lastNode, g, isLeft)
     this.nodes.push(node)
     this.lastNode.addChildNode(node)
     

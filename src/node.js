@@ -272,12 +272,23 @@ export class Node {
     this.textComponent.setPos(this.x, this.y)
     
     if(!this.isRoot) {
+      // 親Node側
       const edgeStartPos = this.parentNode.edgeOutPos
+
+      // 子Node側
+      const edgeEndPosY = this.y + this.height - 0.5 // lineの幅を考慮している
+
+      let edgeEndPosX      
+      if(this.isLeft) {
+        edgeEndPosX = this.x + this.width
+      } else {
+        edgeEndPosX = this.x
+      }
       
       this.lineComponent.setPos(edgeStartPos.x,
                                 edgeStartPos.y,
-                                this.x,
-                                this.y + this.height - 0.5) // lineの幅を考慮している
+                                edgeEndPosX,
+                                edgeEndPosY)
       this.handleComponent.setPos(this.x, this.y)
       this.foldMarkComponent.setPos(this.x + this.width, this.y + this.height)
     }
@@ -288,14 +299,20 @@ export class Node {
   }
   
   get edgeOutPos() {
+    // 親Nodeの出口
     const pos = {}
     
     if(this.isRoot) {
       pos.x = this.x + this.width / 2
       pos.y = this.y + this.height / 2
     } else {
-      pos.x = this.x + this.width
-      pos.y = this.y + this.height - 0.5 // lineの幅を考慮している
+      if(this.isLeft) {
+        pos.x = this.x
+        pos.y = this.y + this.height - 0.5 // lineの幅を考慮している
+      } else {
+        pos.x = this.x + this.width
+        pos.y = this.y + this.height - 0.5 // lineの幅を考慮している
+      }
     }
     
     return pos
@@ -596,7 +613,7 @@ export class Node {
     this.isLeft = isLeft
     
     this.children.forEach(node => {
-      changeSideRecursive(isLeft)
+      node.changeSideRecursive(isLeft)
     })
   }
 
@@ -651,7 +668,7 @@ export class Node {
     
     this.setSelected(state['selected'])
     this.setFolded(state['folded'])
-    this.setHoverState(HOVER_NONE)
+    this.setHoverState(HOVER_STATE_NONE)
     this.setHandleShown(false)
   }
 

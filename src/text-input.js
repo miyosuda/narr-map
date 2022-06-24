@@ -106,7 +106,7 @@ export class TextInput {
 
     // 先にdisplayをセットしておかないとinput.offsetWidth等が取れない
     this.foreignObject.style.display = 'block'
-    
+
     this.foreignObject.x.baseVal.value = this.node.x
     this.foreignObject.y.baseVal.value = this.node.y
     this.updateOuterSize()

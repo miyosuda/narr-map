@@ -1,4 +1,11 @@
-import {Node, SPAN_Y_PER_NODE, HOVER_NONE, HOVER_TOP, HOVER_RIGHT} from './node.js'
+import {
+  Node,
+  SPAN_Y_PER_NODE,
+  HOVER_HIT_NONE,
+  HOVER_HIT_SIBLING,
+  HOVER_HIT_CHILD,
+  HOVER_HIT_OTHER_CHILD,
+} from './node.js'
 
 import {GhostNode} from './ghost-node.js'
 import {TextInput} from './text-input'
@@ -281,14 +288,14 @@ export class MapManager {
       const x = localPos.x
       const y = localPos.y
 
-      let hoverHit = HOVER_NONE
+      let hoverHit = HOVER_HIT_NONE
       let hoverHitNode = null
 
       for(let i=0; i<this.nodes.length; i++) {
         const node = this.nodes[i]
 
         const ret = node.checkGhostHover(x, y)
-        if(ret != HOVER_NONE) {
+        if(ret != HOVER_HIT_NONE) {
           hoverHit = ret
           hoverHitNode = node
         }
@@ -296,12 +303,12 @@ export class MapManager {
         node.clearGhostHover()
       }
       
-      if(hoverHit != HOVER_NONE) {
+      if(hoverHit != HOVER_HIT_NONE) {
         if(this.ghostNode.node === hoverHitNode) {
           // 同じノードの上で離した場合
           this.textInput.show(hoverHitNode)
         } else {
-          if(hoverHit == HOVER_RIGHT) {
+          if(hoverHit == HOVER_HIT_CHILD) {
             const newChildNode = this.ghostNode.node
 
             if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
@@ -315,9 +322,27 @@ export class MapManager {
               }
               this.adjustLayoutWithReset(hoverHitNode)
             }
-          } else if(hoverHit == HOVER_TOP) {
+          } else if(hoverHit == HOVER_HIT_OTHER_CHILD) {
+            // rootの左側にhitした場合
             const newChildNode = this.ghostNode.node
 
+            // TODO: 要整理
+            if(!newChildNode.isLeft) {
+              // 右から左へ持ってきた場合
+              newChildNode.changeSideRecursive(true)
+            }
+            
+            const oldParentNode = newChildNode.detachFromParent()
+            hoverHitNode.attachChildNodeToTail(newChildNode)
+            this.nodeEdited = true
+              
+            if(newChildNode != oldParentNode) {
+              this.adjustLayoutWithReset(oldParentNode)
+            }
+            this.adjustLayoutWithReset(hoverHitNode)
+          } else if(hoverHit == HOVER_HIT_SIBLING) {
+            const newChildNode = this.ghostNode.node
+            
             if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
               const newParentNode = hoverHitNode.parentNode
               const oldParentNode = newChildNode.detachFromParent()
@@ -458,7 +483,7 @@ export class MapManager {
       const oldLastNode = this.lastNode
       const parentNode = this.lastNode.parent
 
-      const node = new Node(parentNode, g)
+      const node = new Node(parentNode, g, oldLastNode.isLeft)
       this.nodes.push(node)
       parentNode.addChildNode(node)
 
@@ -722,6 +747,12 @@ export class MapManager {
     state.children.forEach(childState => {
       this.applyNodeState(childState, node)
     })
+
+    if(node.isRoot) {
+      state.otherChildren.forEach(childState => {
+        this.applyNodeState(childState, node)
+      })
+    }
     
     // folded反映の関係でchildrendにstateを適用した後にこのnodeのstateを適用する
     node.applyState(state)

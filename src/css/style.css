@@ -19,6 +19,10 @@ svg {
   background: linear-gradient(to right, white, gray);
 }
 
+.node_left_overlapped {
+  background: linear-gradient(to left, white, gray);
+}
+
 .node_top_overlapped {
   background: linear-gradient(to top, white, gray);
 }

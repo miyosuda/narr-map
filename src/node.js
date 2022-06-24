@@ -8,23 +8,34 @@ import {
   TEXT_COMPONENT_STYLE_NONE,
   TEXT_COMPONENT_STYLE_HOVER_TOP,
   TEXT_COMPONENT_STYLE_HOVER_RIGHT,
+  TEXT_COMPONENT_STYLE_HOVER_LEFT,
   TEXT_COMPONENT_STYLE_SELECTED,
 } from './components.js'
   
 export const SPAN_Y_PER_NODE = 30.0 // 1ノードの取る縦幅
 
-export const HOVER_NONE  = 0
-export const HOVER_TOP   = 1
-export const HOVER_RIGHT = 2
+const HOVER_STATE_NONE  = 0
+const HOVER_STATE_TOP   = 1
+const HOVER_STATE_RIGHT = 2
+const HOVER_STATE_LEFT  = 3
+
+export const HOVER_HIT_NONE        = 0
+export const HOVER_HIT_SIBLING     = 1
+export const HOVER_HIT_CHILD       = 2
+export const HOVER_HIT_OTHER_CHILD = 3
 
 const OFFSET_Y_FOR_SINGLE_CHILD = -3.0
 const GAP_X = 20
 
 
 export class Node {
-  constructor(parentNode, container) {
+  constructor(parentNode, container, isLeft=false) {
     this.parentNode = parentNode
     this.children = []
+    if(this.isRoot) {
+      // rootの左側のchildren
+      this.otherChildren = []
+    }
     
     this.textComponent = new TextComponent(container, this.isRoot)
 
@@ -45,9 +56,11 @@ export class Node {
     this.adjustY = 0
     
     this.selected = false
-    this.hoverState = HOVER_NONE
+    this.hoverState = HOVER_STATE_NONE
     this.handleShown = false
     this.folded = false
+    
+    this.isLeft = isLeft
   }
 
   get isVisible() {
@@ -91,7 +104,43 @@ export class Node {
   }
   
   addChildNode(node) {
-    this.children.push(node)
+    if(this.isRoot && node.isLeft) {
+      this.otherChildren.push(node)
+    } else {
+      this.children.push(node)
+    }
+  }
+
+  updateLayoutSub(baseY, children) {
+    if(children.length == 0) {
+      return
+    }
+    
+    let childYOffset = 0.0
+    if( this.children.length == 1 ) {
+      // 子が1ノードしかない場合は少し上に上げておく
+      childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
+    }
+    
+    const toLeft = children[0].isLeft
+    
+    let childBaseX = 0
+    if(!toLeft) {
+      childBaseX = this.x + this.width + GAP_X
+    } else {
+      childBaseX = this.x - GAP_X
+    }
+    
+    // 子ノードのY方向の開始位置
+    const childDefaultStartY = this.y + childYOffset -
+          (children.length-1) / 2 * SPAN_Y_PER_NODE
+    
+    for(let i=0; i<children.length; i++) {
+      const node = children[i]
+      // 各ノードのx,yを更新する
+      const nodeDefaultY = childDefaultStartY + i * SPAN_Y_PER_NODE
+      node.updateLayout(childBaseX, nodeDefaultY)
+    }
   }
   
   updateLayout(baseX, baseY) {
@@ -103,23 +152,9 @@ export class Node {
     // baseX,YにshiftX,Yを足してx,yとする
     this.updatePos(baseX, baseY)
     
-    let childYOffset = 0.0
-    if( this.children.length == 1 ) {
-      // 子が1ノードしかない場合は少し上に上げておく
-      childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
-    }
-    
-    const childBaseX = this.x + this.width + GAP_X
-    
-    // 子ノードのY方向の開始位置
-    const childDefaultStartY = this.y + childYOffset -
-          (this.children.length-1) / 2 * SPAN_Y_PER_NODE
-    
-    for(let i=0; i<this.children.length; i++) {
-      const node = this.children[i]
-      // 各ノードのx,yを更新する
-      const nodeDefaultY = childDefaultStartY + i * SPAN_Y_PER_NODE
-      node.updateLayout(childBaseX, nodeDefaultY)
+    this.updateLayoutSub(baseY, this.children)
+    if(this.isRoot) {
+      this.updateLayoutSub(baseY, this.otherChildren)
     }
   }
 
@@ -184,7 +219,12 @@ export class Node {
   }
 
   get hasChildren() {
-    return this.children.length > 0
+    if(this.isRoot) {
+      // TODO: これで問題ないか要確認
+      return this.children.length > 0 || this.otherChildren.length > 0
+    } else {
+      return this.children.length > 0
+    }
   }
 
   get hasVisibleChildren() {
@@ -221,7 +261,12 @@ export class Node {
   }
 
   updatePos(baseX, baseY) {
-    this.x = baseX + this.shiftX
+    if(this.isLeft) {
+      this.x = baseX - this.width + this.shiftX
+    } else {
+      this.x = baseX + this.shiftX
+    }
+
     this.y = baseY + this.shiftY + this.adjustY
     
     this.textComponent.setPos(this.x, this.y)
@@ -292,6 +337,7 @@ export class Node {
   }
 
   containsPosForHandle(x, y) {
+    // TREAT: left対応, 右側にHandleが来る
     if(!this.isVisible) {
       return false
     }
@@ -324,10 +370,12 @@ export class Node {
 
   setHoverState(hoverState) {
     if(hoverState != this.hoverState) {
-      if(hoverState == HOVER_TOP) {
+      if(hoverState == HOVER_STATE_TOP) {
         this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_TOP)
-      } else if( hoverState == HOVER_RIGHT ) {
+      } else if( hoverState == HOVER_STATE_RIGHT ) {
         this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_RIGHT)
+      } else if( hoverState == HOVER_STATE_LEFT ) {
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_LEFT)
       } else {
         if(this.selected) {
           this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
@@ -397,22 +445,48 @@ export class Node {
   }
   
   checkGhostHover(x, y) {
-    if(this.containsPosHalf(x, y, true) && !this.isRoot) {
+    if(this.containsPosHalf(x, y, true)) {
       // 左半分
-      this.setHoverState(HOVER_TOP)
-      return HOVER_TOP
+      if(this.isRoot) {
+        // rootの場合
+        this.setHoverState(HOVER_STATE_LEFT)
+        return HOVER_HIT_OTHER_CHILD
+      } else {
+        if(this.isLeft) {
+          // 左Nodeの場合
+          this.setHoverState(HOVER_STATE_LEFT)
+          return HOVER_HIT_CHILD
+        } else {
+          // 右Nodeの場合
+          this.setHoverState(HOVER_STATE_TOP)
+          return HOVER_HIT_SIBLING
+        }
+      }
     } else if(this.containsPosHalf(x, y, false)) {
       // 右半分
-      this.setHoverState(HOVER_RIGHT)
-      return HOVER_RIGHT
+      if(this.isRoot) {
+        // rootの場合
+        this.setHoverState(HOVER_STATE_RIGHT)
+        return HOVER_HIT_CHILD
+      } else {
+        if(this.isLeft) {
+          // 左Nodeの場合
+          this.setHoverState(HOVER_STATE_TOP)
+          return HOVER_HIT_SIBLING          
+        } else {
+          // 右Nodeの場合
+          this.setHoverState(HOVER_STATE_RIGHT)
+          return HOVER_HIT_CHILD
+        }
+      }
     } else {
-      this.setHoverState(HOVER_NONE)
-      return HOVER_NONE
+      this.setHoverState(HOVER_STATE_NONE)
+      return HOVER_STATE_NONE
     }
   }
 
   clearGhostHover() {
-    this.setHoverState(HOVER_NONE)
+    this.setHoverState(HOVER_STATE_NONE)
   }
 
   get isSelected() {
@@ -420,8 +494,14 @@ export class Node {
   }
 
   remove(removeNodeCallback) {
+    // TREAT: left対応
     for(let i=this.children.length-1; i>=0; i-=1) {
       this.children[i].remove(removeNodeCallback)
+    }
+    if(this.isRoot) {
+      for(let i=this.children.length-1; i>=0; i-=1) {
+        this.otherChildren[i].remove(removeNodeCallback)
+      }   
     }
     
     if( this.parent != null ) {
@@ -440,16 +520,23 @@ export class Node {
 
     if(this.foldMarkComponent != null ) {
       this.foldMarkComponent.remove()
-    }    
+    }
     
     // MapManager # nodes[]からこのnodeを削除する
     removeNodeCallback(this)
   }
 
   removeChild(node) {
-    const nodeIndex = this.children.indexOf(node)
+    // TREAT: left対応
+    let nodeIndex = this.children.indexOf(node)
     if(nodeIndex >= 0) {
       this.children.splice(nodeIndex, 1)
+    }
+    if(this.isRoot && nodeIndex < 0) {
+      nodeIndex = this.otherChildren.indexOf(node)
+      if(nodeIndex >= 0) {
+        this.otherChildren.splice(nodeIndex, 1)
+      }
     }
 
     if(this.hasChildren && this.folded) {
@@ -469,21 +556,48 @@ export class Node {
   }
 
   attachChildNodeToTail(node) {
+    // TREAT: nodeを左に入れる時の対応
+    
     if(this.folded) {
       // foldされていたら開いておく
       this.setFolded(false)
     }
     
     node.parentNode = this
+
+    // TREAT: 今addChildNode()の中でnode.isLeftをみてotherに入れるかどうかを決めている
     this.addChildNode(node)
   }
 
   attachChildNodeAboveSibling(node, siblingNode) {
+    // nodeをsiblingNodeの上の兄弟にする
     node.parentNode = this
-    const nodeIndex = this.children.indexOf(siblingNode)
-    if(nodeIndex >= 0) {
-      this.children.splice(nodeIndex, 0, node)
+
+    if(siblingNode.isLeft != node.isLeft) {
+      node.changeSideRecursive(siblingNode.isLeft)
     }
+    
+    if(this.isRoot && siblingNode.isLeft ) {
+      const nodeIndex = this.otherChildren.indexOf(siblingNode)
+      if(nodeIndex >= 0) {
+        this.otherChildren.splice(nodeIndex, 0, node)
+      } 
+    } else {
+      const nodeIndex = this.children.indexOf(siblingNode)
+      if(nodeIndex >= 0) {
+        this.children.splice(nodeIndex, 0, node)
+      }
+    }
+  }
+
+  changeSideRecursive(isLeft) {
+    // TREAT: handleとfold markの位置の変更が必要かどうかを調査
+    
+    this.isLeft = isLeft
+    
+    this.children.forEach(node => {
+      changeSideRecursive(isLeft)
+    })
   }
 
   hasNodeInAncestor(node) {
@@ -506,6 +620,7 @@ export class Node {
       'adjustY'  : this.adjustY,
       'selected' : this.selected,
       'folded'   : this.folded,
+      'isLeft'   : this.isLeft,
     }
     
     const childStates = []
@@ -514,6 +629,15 @@ export class Node {
     })
     
     state['children'] = childStates
+    
+    if(this.isRoot) {
+      const otherChildStates = []
+      this.otherChildren.forEach(node => {
+        otherChildStates.push(node.getState())
+      })
+      state['otherChildren'] = otherChildStates
+    }
+    
     return state
   }
   
@@ -523,7 +647,8 @@ export class Node {
     this.shiftX = state['shiftX']
     this.shiftY = state['shiftY']
     this.adjustY = state['adjustY']
-
+    this.isLeft = state['isLeft']
+    
     this.setSelected(state['selected'])
     this.setFolded(state['folded'])
     this.setHoverState(HOVER_NONE)
@@ -643,6 +768,7 @@ export class Node {
     console.log('[node ' + this.text + ']')
     console.log('  shiftY=' + this.shiftY)
     console.log('  adjustY=' + this.adjustY)
+    console.log('  isLeft=' + this.isLeft)
     const bounds = this.calcYBounds()
     console.log('  bounds.top=' + bounds.top)
     console.log('  bounds.bottom=' + bounds.bottom)

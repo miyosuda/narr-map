@@ -8,7 +8,8 @@ export const HANDLE_HEIGHT = 18
 export const TEXT_COMPONENT_STYLE_NONE        = 0
 export const TEXT_COMPONENT_STYLE_HOVER_TOP   = 1
 export const TEXT_COMPONENT_STYLE_HOVER_RIGHT = 2
-export const TEXT_COMPONENT_STYLE_SELECTED    = 3
+export const TEXT_COMPONENT_STYLE_HOVER_LEFT  = 3
+export const TEXT_COMPONENT_STYLE_SELECTED    = 4
 
 const FOLD_MARK_RADIUS = 3
 
@@ -80,18 +81,27 @@ export class TextComponent {
       this.foreignObject.classList.add('node_selected')
       this.foreignObject.classList.remove('node_top_overlapped')
       this.foreignObject.classList.remove('node_right_overlapped')
+      this.foreignObject.classList.remove('node_left_overlapped')
     } else if(style == TEXT_COMPONENT_STYLE_HOVER_TOP) {
       this.foreignObject.classList.remove('node_selected')
       this.foreignObject.classList.add('node_top_overlapped')
       this.foreignObject.classList.remove('node_right_overlapped')
+      this.foreignObject.classList.remove('node_left_overlapped')
     } else if(style == TEXT_COMPONENT_STYLE_HOVER_RIGHT) {
       this.foreignObject.classList.remove('node_selected')
       this.foreignObject.classList.remove('node_top_overlapped')
       this.foreignObject.classList.add('node_right_overlapped')
+      this.foreignObject.classList.remove('node_left_overlapped')
+    } else if(style == TEXT_COMPONENT_STYLE_HOVER_LEFT) {
+      this.foreignObject.classList.remove('node_selected')
+      this.foreignObject.classList.remove('node_top_overlapped')
+      this.foreignObject.classList.remove('node_right_overlapped')
+      this.foreignObject.classList.add('node_left_overlapped')
     } else {
       this.foreignObject.classList.remove('node_selected')
       this.foreignObject.classList.remove('node_top_overlapped')
       this.foreignObject.classList.remove('node_right_overlapped')
+      this.foreignObject.classList.remove('node_left_overlapped')
     }
   }
 }

@@ -1,43 +1,4 @@
-const NAME_SPACE = 'http://www.w3.org/2000/svg'
-
-
-class RectComponent {
-  constructor(container) {
-    const rectElement = document.createElementNS(NAME_SPACE, 'rect')
-
-    rectElement.setAttribute('x', 0)
-    rectElement.setAttribute('y', 0)
-    rectElement.setAttribute('width', 100)
-    rectElement.setAttribute('height', 30)
-    rectElement.setAttribute('fill', 'none')
-    rectElement.setAttribute('stroke', '#7f7f7f')
-    rectElement.setAttribute('stroke-width', 2)
-
-    container.appendChild(rectElement)
-    this.rectElement = rectElement
-  }
-
-  setWidth(width) {
-    this.rectElement.setAttribute('width', width)
-  }
-  
-  setHeight(height) {
-    this.rectElement.setAttribute('height', height)
-  }
-
-  setPos(x, y) {
-    this.rectElement.setAttribute('x', x)
-    this.rectElement.setAttribute('y', y)    
-  }
-
-  setVisible(visible) {
-    if(visible) {
-      this.rectElement.setAttribute('visibility', 'visible')
-    } else {
-      this.rectElement.setAttribute('visibility', 'hidden')
-    }
-  }
-}
+import { RectComponent } from './components.js'
 
 
 export class GhostNode {

@@ -61,7 +61,7 @@ ipc.on('response', (event, arg, obj) => {
   if( arg == 'set-dirty' ) {
     editDirty = obj
   } else if( arg == 'response-save' ) {
-    const json = JSON.stringify(obj, null , '\t')
+    const json = JSON.stringify(obj, null , '  ')
 
     fs.writeFile(filePath, json, (error) => {
       if(error != null) {

@@ -53,6 +53,10 @@ export class MapManager {
     this.textInput = new TextInput(this)
 
     nmapi.onReceiveMessage((arg, obj) => {
+      if( this.textInput.isShown() ) {
+        this.textInput.hide()
+      }
+      
       if( arg == 'cut' ) {
         this.cut()
       } else if( arg == 'undo' ) {

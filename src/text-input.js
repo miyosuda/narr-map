@@ -98,6 +98,14 @@ export class TextInput {
   show(node) {
     this.node = node
 
+    if(node.isLeft) {
+      this.input.classList.remove('text-input-right')
+      this.input.classList.add('text-input-left')
+    } else {
+      this.input.classList.remove('text-input-left')
+      this.input.classList.add('text-input-right')
+    }
+
     const text = node.text
     this.input.value = text
     this.textOnShown = text
@@ -106,9 +114,8 @@ export class TextInput {
 
     // 先にdisplayをセットしておかないとinput.offsetWidth等が取れない
     this.foreignObject.style.display = 'block'
-
-    this.foreignObject.x.baseVal.value = this.node.x
     this.foreignObject.y.baseVal.value = this.node.y
+    
     this.updateOuterSize()
 
     // テキストをを選択状態に
@@ -131,11 +138,23 @@ export class TextInput {
     this.input.setAttribute('rows', rows)
   }
 
+  updatePos() {
+    if(this.node.isLeft) {
+      this.foreignObject.x.baseVal.value = this.node.right - this.width
+    } else {
+      this.foreignObject.x.baseVal.value = this.node.x
+    }
+  }
+
   updateOuterSize() {
     // foreignObjectのサイズを更新する
     const dims = getElementDimension(this.inputContainer.innerHTML)
     this.foreignObject.width.baseVal.value = dims.width
     this.foreignObject.height.baseVal.value = dims.height
+
+    this.width = dims.width
+
+    this.updatePos()
   }
 
   onTextInput() {

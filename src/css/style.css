@@ -11,19 +11,19 @@ svg {
   border-bottom: solid 1px #7f7f7f;
 }
 
-.node_selected {
+.node-selected {
   background: #cfcfcf;
 }
 
-.node_right_overlapped {
+.node-right-overlapped {
   background: linear-gradient(to right, white, gray);
 }
 
-.node_left_overlapped {
+.node-left-overlapped {
   background: linear-gradient(to left, white, gray);
 }
 
-.node_top_overlapped {
+.node-top-overlapped {
   background: linear-gradient(to top, white, gray);
 }
 
@@ -42,7 +42,7 @@ foreignObject {
 
 /* input file style */
 textarea {
-  padding: 0px;
+  padding: 0 5px 0;
   font-size: 1.0em;
   color: #000;
   border: 1px solid #999999;
@@ -51,6 +51,16 @@ textarea {
   font-family: "ヒラギノ角ゴ Pro W3","Hiragino Kaku Gothic Pro",sans-serif;
   resize: none;
   display: block;
+
+  text-align:right;
+}
+
+.text-input-right {
+  text-align: left;
+}
+
+.text-input-left {
+  text-align: right;
 }
 
 textarea:focus {

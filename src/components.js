@@ -78,30 +78,30 @@ export class TextComponent {
   
   setStyle(style) {
     if(style == TEXT_COMPONENT_STYLE_SELECTED) {
-      this.foreignObject.classList.add('node_selected')
-      this.foreignObject.classList.remove('node_top_overlapped')
-      this.foreignObject.classList.remove('node_right_overlapped')
-      this.foreignObject.classList.remove('node_left_overlapped')
+      this.foreignObject.classList.add('node-selected')
+      this.foreignObject.classList.remove('node-top-overlapped')
+      this.foreignObject.classList.remove('node-right-overlapped')
+      this.foreignObject.classList.remove('node-left-overlapped')
     } else if(style == TEXT_COMPONENT_STYLE_HOVER_TOP) {
-      this.foreignObject.classList.remove('node_selected')
-      this.foreignObject.classList.add('node_top_overlapped')
-      this.foreignObject.classList.remove('node_right_overlapped')
-      this.foreignObject.classList.remove('node_left_overlapped')
+      this.foreignObject.classList.remove('node-selected')
+      this.foreignObject.classList.add('node-top-overlapped')
+      this.foreignObject.classList.remove('node-right-overlapped')
+      this.foreignObject.classList.remove('node-left-overlapped')
     } else if(style == TEXT_COMPONENT_STYLE_HOVER_RIGHT) {
-      this.foreignObject.classList.remove('node_selected')
-      this.foreignObject.classList.remove('node_top_overlapped')
-      this.foreignObject.classList.add('node_right_overlapped')
-      this.foreignObject.classList.remove('node_left_overlapped')
+      this.foreignObject.classList.remove('node-selected')
+      this.foreignObject.classList.remove('node-top-overlapped')
+      this.foreignObject.classList.add('node-right-overlapped')
+      this.foreignObject.classList.remove('node-left-overlapped')
     } else if(style == TEXT_COMPONENT_STYLE_HOVER_LEFT) {
-      this.foreignObject.classList.remove('node_selected')
-      this.foreignObject.classList.remove('node_top_overlapped')
-      this.foreignObject.classList.remove('node_right_overlapped')
-      this.foreignObject.classList.add('node_left_overlapped')
+      this.foreignObject.classList.remove('node-selected')
+      this.foreignObject.classList.remove('node-top-overlapped')
+      this.foreignObject.classList.remove('node-right-overlapped')
+      this.foreignObject.classList.add('node-left-overlapped')
     } else {
-      this.foreignObject.classList.remove('node_selected')
-      this.foreignObject.classList.remove('node_top_overlapped')
-      this.foreignObject.classList.remove('node_right_overlapped')
-      this.foreignObject.classList.remove('node_left_overlapped')
+      this.foreignObject.classList.remove('node-selected')
+      this.foreignObject.classList.remove('node-top-overlapped')
+      this.foreignObject.classList.remove('node-right-overlapped')
+      this.foreignObject.classList.remove('node-left-overlapped')
     }
   }
 }

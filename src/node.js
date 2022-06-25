@@ -33,7 +33,7 @@ export class Node {
     this.parentNode = parentNode
     this.children = []
     if(this.isRoot) {
-      // rootの左側のchildren
+      // rootの左側のchildren (rootでのみ利用)
       this.otherChildren = []
     }
     
@@ -219,12 +219,13 @@ export class Node {
   }
 
   get hasChildren() {
-    if(this.isRoot) {
-      // TODO: これで問題ないか要確認
-      return this.children.length > 0 || this.otherChildren.length > 0
-    } else {
-      return this.children.length > 0
-    }
+    // ここではotherChildrenは考慮していない
+    // TODO: 問題ないか要確認
+    return this.children.length > 0
+  }
+
+  get hasOtherChildren() {
+    return this.otherChildren.length > 0 
   }
 
   get hasVisibleChildren() {
@@ -234,7 +235,7 @@ export class Node {
       return this.hasChildren
     }
   }
-  
+
   get hasParent() {
     return this.parentNode != null
   }
@@ -695,13 +696,21 @@ export class Node {
   } 
 
   getSiblingOfChild(node, above, cursorDepth) {
-    const nodeIndex = this.children.indexOf(node)
+    let targetChildren = this.children
+    
+    let nodeIndex
+    nodeIndex = targetChildren.indexOf(node)
+    
+    if(this.isRoot && nodeIndex < 0) {
+      targetChildren = this.otherChildren
+      nodeIndex = targetChildren.indexOf(node)
+    }
     
     if(above) {
       // 上方向へ
       if(nodeIndex >= 1) {
         // 上のnode
-        const aboveNode = this.children[nodeIndex-1]
+        const aboveNode = targetChildren[nodeIndex-1]
         if(aboveNode.depth == cursorDepth) {
           return aboveNode
         } else if(aboveNode.depth < cursorDepth) {
@@ -722,8 +731,8 @@ export class Node {
       }
     } else {
       // 下方向へ
-      if(nodeIndex <= this.children.length-2) {
-        const belowNode = this.children[nodeIndex+1]
+      if(nodeIndex <= targetChildren.length-2) {
+        const belowNode = targetChildren[nodeIndex+1]
         if(belowNode.depth == cursorDepth) {
           return belowNode
         } else if(belowNode.depth < cursorDepth) {
@@ -746,6 +755,8 @@ export class Node {
   }
   
   getSibling(above, cursorDepth) {
+    // カーソル上下移動時に利用
+    // TODO: otherNodesにカレントがある時に上下移動できないバグ
     if(this.parent == null) {
       return null
     }
@@ -779,6 +790,36 @@ export class Node {
     })
     
     return latestChildNode
+  }
+
+  getLatestOtherChild() {
+    // rootでのみ利用される
+    if(!this.hasOtherChildren) {
+      return null
+    }
+
+    let latestChildNode = null
+    let latestTimeStamp = -1
+    
+    this.otherChildren.forEach(node => {
+      if(node.timeStamp >= latestTimeStamp ) {
+        latestTimeStamp = node.timeStamp
+        latestChildNode = node
+      }
+    })
+    
+    return latestChildNode
+  }
+
+  get isOther() {
+    // このNodeがrootのotherChildren内のものかどうか
+    if(this.parent != null &&
+       this.parent.isRoot &&
+       this.parent.otherChildren.indexOf(this) != -1) {
+      return true
+    } else {
+      return false
+    }
   }
 
   debugDump() {

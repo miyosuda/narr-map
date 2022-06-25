@@ -408,6 +408,9 @@ export class MapManager {
     } else if(e.key === ' ') {
       this.toggleFold()
       e.preventDefault()
+    } else if(e.key === 'F12') {
+      // TODO: デバッグ中
+      this.debug()
     } else if(
       (e.key >= 'a' && e.key <= 'z') ||
         (e.key >= 'A' && e.key <= 'Z') ||
@@ -417,6 +420,8 @@ export class MapManager {
         //this.editText()
         // TODO: shiftキーでも反応してしまっている.
       }
+    } else if(e.key === 'F2') {
+      this.editText()
     }
   }
 
@@ -428,12 +433,24 @@ export class MapManager {
     let node = null
 
     if(direction == MOVE_RIGHT) {
-      node = this.lastNode.getLatestVisibleChild()
+      if(!this.lastNode.isLeft) {
+        node = this.lastNode.getLatestVisibleChild()
+      } else {
+        node = this.lastNode.parentNode
+      }
       if(node != null) {
         this.cursorDepth = node.depth
       }
     } else if(direction == MOVE_LEFT) {
-      node = this.lastNode.parentNode
+      if(!this.lastNode.isLeft) {
+        if(this.lastNode.isRoot) {
+          node = this.lastNode.getLatestOtherChild()
+        } else {
+          node = this.lastNode.parentNode
+        }
+      } else {
+        node = this.lastNode.getLatestVisibleChild()
+      }
       if(node != null) {
         this.cursorDepth = node.depth
       }
@@ -470,9 +487,13 @@ export class MapManager {
   
   addChildNode() {
     const g = document.getElementById('nodes')
-
-    // TODO: lastNodeがrootだった場合の検討
-    let isLeft = this.lastNode.isLeft
+    
+    let isLeft;
+    if(this.lastNode.isRoot && this.lastNode.hasChildren) {
+      isLeft = true
+    } else {
+      isLeft = this.lastNode.isLeft
+    }
 
     const node = new Node(this.lastNode, g, isLeft)
     this.nodes.push(node)
@@ -526,8 +547,15 @@ export class MapManager {
     const downNodes = []
     let targetNodeIndex = -1
 
-    for(let i=0; i<targetParentNode.children.length; i++) {
-      const child = targetParentNode.children[i]
+    let targetSiblingChildren = targetParentNode.children
+    if(targetNode.isOther) {
+      // targetNodeがrootのother children内のものだった場合
+      targetSiblingChildren = targetParentNode.otherChildren
+      console.log(targetSiblingChildren)
+    }
+    
+    for(let i=0; i<targetSiblingChildren.length; i++) {
+      const child = targetSiblingChildren[i]
       
       if(child == targetNode) {
         targetNodeIndex = i
@@ -590,6 +618,7 @@ export class MapManager {
   }
 
   adjustLayoutWithReset(targetParentNode) {
+    // targetParentNodeで指定したNodeの子が削除されたり子枝が追加された場合の対処
     this.updateLayout()
     
     if(targetParentNode == null) {
@@ -597,7 +626,8 @@ export class MapManager {
     }
     
     let lastNodeBottom = null
-    
+
+    // TODO: FIX: ここのotherChildernの考慮が必要
     for(let i=0; i<targetParentNode.children.length; i++) {
       const node = targetParentNode.children[i]
       const bounds = node.calcYBounds()
@@ -849,5 +879,9 @@ export class MapManager {
       const node = this.nodes[i]
       node.debugDump()
     }
+  }
+
+  debug() {
+    this.debugDump()
   }
 }

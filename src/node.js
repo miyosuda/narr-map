@@ -117,6 +117,11 @@ export class Node {
     this.children.push(node)
   }
 
+  addChildNodeBelow(node, targetNode) {
+    const targetNodeIndex = this.children.indexOf(targetNode)
+    this.children.splice(targetNodeIndex+1, 0, node)
+  }
+
   updateLayout(baseX, baseY) {
     if(this.isRoot) {
       // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく
@@ -539,6 +544,10 @@ export class Node {
 
   get isSelected() {
     return this.selected
+  }
+
+  get isFolded() {
+    return this.folded
   }
 
   remove(removeNodeCallback) {

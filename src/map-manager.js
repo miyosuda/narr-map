@@ -416,6 +416,8 @@ export class MapManager {
     } else if(e.key === 'F12') {
       // TODO: デバッグ中
       this.debug()
+    } else if(e.key == 'i' && e.ctrlKey) {
+      this.editText()
     } else if(
       (e.key >= 'a' && e.key <= 'z') ||
         (e.key >= 'A' && e.key <= 'Z') ||
@@ -443,11 +445,14 @@ export class MapManager {
       } else {
         node = this.lastNode.parentNode
       }
-      if(node.isDummy) {
-        node = this.rootNode
-      }
+
       if(node != null) {
+        if(node.isDummy) {
+          node = this.rootNode
+        }     
         this.cursorDepth = node.depth
+      } else if(this.lastNode.isFolded) {
+        this.lastNode.toggleFolded()
       }
     } else if(direction == MOVE_LEFT) {
       if(!this.lastNode.isLeft) {
@@ -461,7 +466,10 @@ export class MapManager {
       }
       if(node != null) {
         this.cursorDepth = node.depth
+      } else if(this.lastNode.isFolded) {
+        this.lastNode.toggleFolded()
       }
+
     } else if(direction == MOVE_UP) {
       node = this.lastNode.getSibling(true, this.cursorDepth)
     } else {
@@ -528,8 +536,8 @@ export class MapManager {
 
       const node = new Node(parentNode, g, oldLastNode.isLeft)
       this.nodes.push(node)
-      parentNode.addChildNode(node)
-
+      parentNode.addChildNodeBelow(node, oldLastNode)
+      
       this.clearNodeSelection(node)
       
       // 前のsiblingをtargetとしてadjustとしている
@@ -735,7 +743,12 @@ export class MapManager {
     })
     
     this.selectedNodes = []
-    const targetNode = this.nodes[this.nodes.length-1]
+    
+    let targetNode = this.nodes[this.nodes.length-1]
+    if(targetNode.isDummy) {
+      targetNode = this.nodes[this.nodes.length-2]
+    }
+    
     this.setNodeSelected(targetNode, true)
     
     this.updateLayout()
@@ -815,14 +828,14 @@ export class MapManager {
 
   applyMapState(state) {
     this.clearAllNodes()
-    
+
     this.init()
-    
+
     this.applyNodeState(state['right'], null)
     this.applyNodeState(state['left'], null)
-    
-    this.cursorDepth = this.lastNode.depth    
-    
+
+    this.cursorDepth = this.lastNode.depth
+
     this.updateLayout()
   }
   
@@ -870,7 +883,7 @@ export class MapManager {
       document.execCommand('undo')
       return
     }
-    
+
     const state = this.editHistory.undo()
     if( state != null ) {
       this.applyMapState(state)

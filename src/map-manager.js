@@ -82,8 +82,8 @@ export class MapManager {
     
     this.init()
     
-    const rootNode = this.addRootNode()
-    this.editHistory = new EditHistory(rootNode.getState())
+    this.addRootNode()
+    this.editHistory = new EditHistory(this.getState())
   }
 
   setCanvasTranslate(translateX, translateY) {
@@ -108,20 +108,23 @@ export class MapManager {
   }
 
   addRootNode() {
-    const g = document.getElementById('overlay') 
-    const node = new Node(null, g)
-    node.setText('root')
-    this.nodes.push(node)
+    const g = document.getElementById('overlay')
     
-    this.setNodeSelected(node, true)
+    const rightRootNode = new Node(null, g)
+    rightRootNode.setText('root')
+    this.nodes.push(rightRootNode)
+    
+    this.setNodeSelected(rightRootNode, true)
 
+    const leftRootNode = new Node(null, g,
+                                  true,
+                                  rightRootNode)
+    this.nodes.push(leftRootNode)
+
+    this.rootNode = rightRootNode
+    this.leftRootNode = leftRootNode
+    
     this.updateLayout()
-
-    return node
-  }
-
-  get rootNode() {
-    return this.nodes[0]
   }
 
   addGhostNode() {
@@ -316,8 +319,8 @@ export class MapManager {
               const oldParentNode = newChildNode.detachFromParent()
 
               // TODO: 要整理
-              if(newChildNode.isLeft != oldParentNode.isLeft) {
-                newChildNode.changeSideRecursive(oldParentNode.isLeft)
+              if(newChildNode.isLeft != hoverHitNode.isLeft) {
+                newChildNode.changeSideRecursive(hoverHitNode.isLeft)
               }
               
               hoverHitNode.attachChildNodeToTail(newChildNode)
@@ -339,7 +342,9 @@ export class MapManager {
             }
             
             const oldParentNode = newChildNode.detachFromParent()
-            hoverHitNode.attachChildNodeToTail(newChildNode)
+            //hoverHitNode.attachChildNodeToTail(newChildNode)
+            this.leftRootNode.attachChildNodeToTail(newChildNode)
+            
             this.nodeEdited = true
               
             if(newChildNode != oldParentNode) {
@@ -438,13 +443,16 @@ export class MapManager {
       } else {
         node = this.lastNode.parentNode
       }
+      if(node.isDummy) {
+        node = this.rootNode
+      }
       if(node != null) {
         this.cursorDepth = node.depth
       }
     } else if(direction == MOVE_LEFT) {
       if(!this.lastNode.isLeft) {
         if(this.lastNode.isRoot) {
-          node = this.lastNode.getLatestOtherChild()
+          node = this.leftRootNode.getLatestVisibleChild()
         } else {
           node = this.lastNode.parentNode
         }
@@ -488,16 +496,20 @@ export class MapManager {
   addChildNode() {
     const g = document.getElementById('nodes')
     
-    let isLeft;
+    let isLeft
+    let parentNode
     if(this.lastNode.isRoot && this.lastNode.hasChildren) {
+      // leftRootの子にする
       isLeft = true
+      parentNode = this.leftRootNode
     } else {
       isLeft = this.lastNode.isLeft
+      parentNode = this.lastNode
     }
 
-    const node = new Node(this.lastNode, g, isLeft)
+    const node = new Node(parentNode, g, isLeft)
     this.nodes.push(node)
-    this.lastNode.addChildNode(node)
+    parentNode.addChildNode(node)
     
     this.clearNodeSelection(node)
     
@@ -529,6 +541,7 @@ export class MapManager {
 
   updateLayout() {
     this.rootNode.updateLayout(null, null)
+    this.leftRootNode.updateLayout(null, null)
   }
   
   adjustLayout(targetNode) {
@@ -547,15 +560,8 @@ export class MapManager {
     const downNodes = []
     let targetNodeIndex = -1
 
-    let targetSiblingChildren = targetParentNode.children
-    if(targetNode.isOther) {
-      // targetNodeがrootのother children内のものだった場合
-      targetSiblingChildren = targetParentNode.otherChildren
-      console.log(targetSiblingChildren)
-    }
-    
-    for(let i=0; i<targetSiblingChildren.length; i++) {
-      const child = targetSiblingChildren[i]
+    for(let i=0; i<targetParentNode.children.length; i++) {
+      const child = targetParentNode.children[i]
       
       if(child == targetNode) {
         targetNodeIndex = i
@@ -627,7 +633,6 @@ export class MapManager {
     
     let lastNodeBottom = null
 
-    // TODO: FIX: ここのotherChildernの考慮が必要
     for(let i=0; i<targetParentNode.children.length; i++) {
       const node = targetParentNode.children[i]
       const bounds = node.calcYBounds()
@@ -660,9 +665,9 @@ export class MapManager {
         this.nodes.splice(nodeIndex, 1)
       }
     }
-    
-    node.remove(removeNodeCallback)
 
+    node.remove(removeNodeCallback)
+    
     if(parentNode != null) {
       this.adjustLayoutWithReset(parentNode)
     }
@@ -756,12 +761,18 @@ export class MapManager {
   }
 
   clearAllNodes() {
-    const oldRootNode = this.rootNode
-    this.deleteNode(oldRootNode)
+    const oldLeftRootNode = this.leftRootNode
+    this.deleteNode(oldLeftRootNode)
+    
+    const oldRightRootNode = this.rootNode
+    this.deleteNode(oldRightRootNode)
+
+    this.rootNode = null
+    this.leftRootNode = null
   }
 
   storeState() {
-    const state = this.rootNode.getState()
+    const state = this.getState()
     this.editHistory.addHistory(state)
     
     this.setDirty(true)
@@ -770,13 +781,19 @@ export class MapManager {
   applyNodeState(state, parentNode) {
     let node = null
     if(parentNode == null) {
-      // TODO: 共通化
-      const g = document.getElementById('overlay') 
-      node = new Node(null, g)
+      const g = document.getElementById('overlay')
+      if(!state['isLeft'] ) {
+        // TOOD: 要整理
+        node = new Node(null, g)
+        this.rootNode = node
+      } else {
+        // TOOD: 要整理 (isLeftを後で再設定されている？)
+        node = new Node(null, g, true, this.rootNode)
+        this.leftRootNode = node
+      }
       // ここではまだapplyState(state)しない
       this.nodes.push(node)
     } else {
-      // TODO: 共通化
       const g = document.getElementById('nodes')
       node = new Node(parentNode, g)
       // ここではまだapplyState(state)しない
@@ -788,12 +805,6 @@ export class MapManager {
       this.applyNodeState(childState, node)
     })
 
-    if(node.isRoot) {
-      state.otherChildren.forEach(childState => {
-        this.applyNodeState(childState, node)
-      })
-    }
-    
     // folded反映の関係でchildrendにstateを適用した後にこのnodeのstateを適用する
     node.applyState(state)
     
@@ -807,8 +818,9 @@ export class MapManager {
     
     this.init()
     
-    this.applyNodeState(state, null)
-
+    this.applyNodeState(state['right'], null)
+    this.applyNodeState(state['left'], null)
+    
     this.cursorDepth = this.lastNode.depth    
     
     this.updateLayout()
@@ -819,8 +831,16 @@ export class MapManager {
     
     this.init()
     
-    const rootNode = this.addRootNode()
-    this.editHistory = new EditHistory(rootNode.getState())
+    this.addRootNode()
+    this.editHistory = new EditHistory(this.getState())
+  }
+
+  getState() {
+    const mapState = {
+      'right' : this.rootNode.getState(),
+      'left' : this.leftRootNode.getState(),
+    }
+    return mapState
   }
 
   load(mapData) {
@@ -835,7 +855,7 @@ export class MapManager {
   save() {
     const DATA_VERSION = 1
     
-    const state = this.rootNode.getState()
+    const state = this.getState()
     
     const mapData = {
       'version' : DATA_VERSION,

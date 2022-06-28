@@ -29,15 +29,17 @@ const GAP_X = 20
 
 
 export class Node {
-  constructor(parentNode, container, isLeft=false) {
+  constructor(parentNode, container, isLeft=false, accompaniedNode=null) {
     this.parentNode = parentNode
+    this.isLeft = isLeft
+    this.accompaniedNode = accompaniedNode
     this.children = []
-    if(this.isRoot) {
-      // rootの左側のchildren (rootでのみ利用)
-      this.otherChildren = []
-    }
     
-    this.textComponent = new TextComponent(container, this.isRoot)
+    if(!this.isDummy) {
+      this.textComponent = new TextComponent(container, this.isRoot)
+    } else {
+      this.textComponent = null
+    }
 
     if(!this.isRoot) {
       this.lineComponent = new LineComponent(container)
@@ -48,8 +50,10 @@ export class Node {
       this.handleCompnent = null
       this.foldMarkComponent = null
     }
-    
-    this.setText('')
+
+    if(!this.isDummy) {
+      this.setText('')
+    }
 
     this.shiftX = 0
     this.shiftY = 0
@@ -59,11 +63,17 @@ export class Node {
     this.hoverState = HOVER_STATE_NONE
     this.handleShown = false
     this.folded = false
-    
-    this.isLeft = isLeft
+  }
+  
+  get isDummy() {
+    return this.isRoot && this.isLeft
   }
 
   get isVisible() {
+    if(this.isDummy) {
+      // TODO: 要確認
+      return false
+    }
     return this.textComponent.isVisible
   }
 
@@ -104,15 +114,19 @@ export class Node {
   }
   
   addChildNode(node) {
-    if(this.isRoot && node.isLeft) {
-      this.otherChildren.push(node)
-    } else {
-      this.children.push(node)
-    }
+    this.children.push(node)
   }
 
-  updateLayoutSub(baseY, children) {
-    if(children.length == 0) {
+  updateLayout(baseX, baseY) {
+    if(this.isRoot) {
+      // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく
+      baseX = -this.width / 2
+      baseY = -this.height / 2
+    }
+    // baseX,YにshiftX,Yを足してx,yとする
+    this.updatePos(baseX, baseY)
+
+    if(this.children.length == 0) {
       return
     }
     
@@ -122,7 +136,7 @@ export class Node {
       childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
     }
     
-    const toLeft = children[0].isLeft
+    const toLeft = this.children[0].isLeft
     
     let childBaseX = 0
     if(!toLeft) {
@@ -133,28 +147,13 @@ export class Node {
     
     // 子ノードのY方向の開始位置
     const childDefaultStartY = this.y + childYOffset -
-          (children.length-1) / 2 * SPAN_Y_PER_NODE
+          (this.children.length-1) / 2 * SPAN_Y_PER_NODE
     
-    for(let i=0; i<children.length; i++) {
-      const node = children[i]
+    for(let i=0; i<this.children.length; i++) {
+      const node = this.children[i]
       // 各ノードのx,yを更新する
       const nodeDefaultY = childDefaultStartY + i * SPAN_Y_PER_NODE
       node.updateLayout(childBaseX, nodeDefaultY)
-    }
-  }
-  
-  updateLayout(baseX, baseY) {
-    if(this.isRoot) {
-      // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく
-      baseX = -this.width / 2
-      baseY = -this.height / 2
-    }
-    // baseX,YにshiftX,Yを足してx,yとする
-    this.updatePos(baseX, baseY)
-    
-    this.updateLayoutSub(baseY, this.children)
-    if(this.isRoot) {
-      this.updateLayoutSub(baseY, this.otherChildren)
     }
   }
 
@@ -219,13 +218,7 @@ export class Node {
   }
 
   get hasChildren() {
-    // ここではotherChildrenは考慮していない
-    // TODO: 問題ないか要確認
     return this.children.length > 0
-  }
-
-  get hasOtherChildren() {
-    return this.otherChildren.length > 0 
   }
 
   get hasVisibleChildren() {
@@ -245,32 +238,47 @@ export class Node {
   }
 
   get width() {
+    if(this.isDummy) {
+      return this.accompaniedNode.width
+    }
     return this.textComponent.width
   }
   
   get height() {
+    if(this.isDummy) {
+      return this.accompaniedNode.width
+    }
     return this.textComponent.height
   }
 
   get text() {
-    return this.textComponent.text
+    if(this.isDummy) {
+      return null
+    } else {
+      return this.textComponent.text
+    }
   }
   
   setText(text) {
+    if(this.isDummy) {
+      return
+    }
     this.textComponent.setText(text)
     this.updateTimeStamp()
   }
 
   updatePos(baseX, baseY) {
-    if(this.isLeft) {
+    if(this.isLeft && !this.isRoot) {
       this.x = baseX - this.width + this.shiftX
     } else {
       this.x = baseX + this.shiftX
     }
 
     this.y = baseY + this.shiftY + this.adjustY
-    
-    this.textComponent.setPos(this.x, this.y)
+
+    if(!this.isDummy) {
+      this.textComponent.setPos(this.x, this.y)
+    }
     
     if(!this.isRoot) {
       // 親Node側
@@ -290,8 +298,16 @@ export class Node {
                                 edgeStartPos.y,
                                 edgeEndPosX,
                                 edgeEndPosY)
-      this.handleComponent.setPos(this.x, this.y)
-      this.foldMarkComponent.setPos(this.x + this.width, this.y + this.height)
+
+      if(!this.isLeft) {
+        this.handleComponent.setPos(this.x-HANDLE_WIDTH, this.y)
+        this.foldMarkComponent.setPos(this.x + this.width,
+                                      this.y + this.height)
+      } else {
+        this.handleComponent.setPos(this.x + this.width, this.y)
+        this.foldMarkComponent.setPos(this.x,
+                                      this.y + this.height)
+      }
     }
   }
   
@@ -363,8 +379,14 @@ export class Node {
     if(this.isRoot) {
       return false
     } else {
-      return (x >= this.left-HANDLE_WIDTH) && (x <= this.left) &&
-        (y >= this.top) && (y <= this.bottom)
+      // TODO: Handleクラスに持っていく
+      if(!this.isLeft) {
+        return (x >= this.left-HANDLE_WIDTH) && (x <= this.left) &&
+          (y >= this.top) && (y <= this.bottom)
+      } else {
+        return (x >= this.right) && (x <= this.right + HANDLE_WIDTH) &&
+          (y >= this.top) && (y <= this.bottom)
+      }
     }
   }
 
@@ -455,6 +477,10 @@ export class Node {
   }
 
   checkHover(x, y) {
+    if(this.isDummy) {
+      return false
+    }
+    
     if(this.containsPosForHandle(x, y)) {
       this.setHandleShown(true)
     } else {
@@ -463,6 +489,10 @@ export class Node {
   }
   
   checkGhostHover(x, y) {
+    if(this.isDummy) {
+      return false
+    }
+    
     if(this.containsPosHalf(x, y, true)) {
       // 左半分
       if(this.isRoot) {
@@ -512,21 +542,17 @@ export class Node {
   }
 
   remove(removeNodeCallback) {
-    // TREAT: left対応
     for(let i=this.children.length-1; i>=0; i-=1) {
       this.children[i].remove(removeNodeCallback)
-    }
-    if(this.isRoot) {
-      for(let i=this.children.length-1; i>=0; i-=1) {
-        this.otherChildren[i].remove(removeNodeCallback)
-      }   
     }
     
     if( this.parent != null ) {
       this.parent.removeChild(this)
     }
 
-    this.textComponent.remove()
+    if(this.textComponent != null) {
+      this.textComponent.remove()
+    }
 
     if(this.lineComponent != null) {
       this.lineComponent.remove()
@@ -545,16 +571,9 @@ export class Node {
   }
 
   removeChild(node) {
-    // TREAT: left対応
     let nodeIndex = this.children.indexOf(node)
     if(nodeIndex >= 0) {
       this.children.splice(nodeIndex, 1)
-    }
-    if(this.isRoot && nodeIndex < 0) {
-      nodeIndex = this.otherChildren.indexOf(node)
-      if(nodeIndex >= 0) {
-        this.otherChildren.splice(nodeIndex, 1)
-      }
     }
 
     if(this.hasChildren && this.folded) {
@@ -574,8 +593,6 @@ export class Node {
   }
 
   attachChildNodeToTail(node) {
-    // TREAT: nodeを左に入れる時の対応
-    
     if(this.folded) {
       // foldされていたら開いておく
       this.setFolded(false)
@@ -583,7 +600,6 @@ export class Node {
     
     node.parentNode = this
 
-    // TREAT: 今addChildNode()の中でnode.isLeftをみてotherに入れるかどうかを決めている
     this.addChildNode(node)
   }
 
@@ -595,16 +611,9 @@ export class Node {
       node.changeSideRecursive(siblingNode.isLeft)
     }
     
-    if(this.isRoot && siblingNode.isLeft ) {
-      const nodeIndex = this.otherChildren.indexOf(siblingNode)
-      if(nodeIndex >= 0) {
-        this.otherChildren.splice(nodeIndex, 0, node)
-      } 
-    } else {
-      const nodeIndex = this.children.indexOf(siblingNode)
-      if(nodeIndex >= 0) {
-        this.children.splice(nodeIndex, 0, node)
-      }
+    const nodeIndex = this.children.indexOf(siblingNode)
+    if(nodeIndex >= 0) {
+      this.children.splice(nodeIndex, 0, node)
     }
   }
 
@@ -647,15 +656,6 @@ export class Node {
     })
     
     state['children'] = childStates
-    
-    if(this.isRoot) {
-      const otherChildStates = []
-      this.otherChildren.forEach(node => {
-        otherChildStates.push(node.getState())
-      })
-      state['otherChildren'] = otherChildStates
-    }
-    
     return state
   }
   
@@ -700,11 +700,6 @@ export class Node {
     
     let nodeIndex
     nodeIndex = targetChildren.indexOf(node)
-    
-    if(this.isRoot && nodeIndex < 0) {
-      targetChildren = this.otherChildren
-      nodeIndex = targetChildren.indexOf(node)
-    }
     
     if(above) {
       // 上方向へ
@@ -756,7 +751,6 @@ export class Node {
   
   getSibling(above, cursorDepth) {
     // カーソル上下移動時に利用
-    // TODO: otherNodesにカレントがある時に上下移動できないバグ
     if(this.parent == null) {
       return null
     }
@@ -790,36 +784,6 @@ export class Node {
     })
     
     return latestChildNode
-  }
-
-  getLatestOtherChild() {
-    // rootでのみ利用される
-    if(!this.hasOtherChildren) {
-      return null
-    }
-
-    let latestChildNode = null
-    let latestTimeStamp = -1
-    
-    this.otherChildren.forEach(node => {
-      if(node.timeStamp >= latestTimeStamp ) {
-        latestTimeStamp = node.timeStamp
-        latestChildNode = node
-      }
-    })
-    
-    return latestChildNode
-  }
-
-  get isOther() {
-    // このNodeがrootのotherChildren内のものかどうか
-    if(this.parent != null &&
-       this.parent.isRoot &&
-       this.parent.otherChildren.indexOf(this) != -1) {
-      return true
-    } else {
-      return false
-    }
   }
 
   debugDump() {

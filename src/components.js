@@ -205,9 +205,8 @@ export class HandleComponent {
   }
 
   setPos(x, y) {
-    // Handleの右上をx,yとして指定する
-    this.handleElement.setAttribute('cx', x-HANDLE_WIDTH/2)
-    this.handleElement.setAttribute('cy', y+HANDLE_HEIGHT/2)
+    this.handleElement.setAttribute('cx', x + HANDLE_WIDTH/2)
+    this.handleElement.setAttribute('cy', y + HANDLE_HEIGHT/2)
   }
 
   remove() {

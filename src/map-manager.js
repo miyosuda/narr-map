@@ -400,15 +400,15 @@ export class MapManager {
       e.preventDefault()
     } else if(e.key === 'Backspace' ) {
       this.deleteSelectedNodes()
-    } else if(e.key === 'ArrowUp' ) {
+    } else if(e.key === 'ArrowUp' || (e.key == 'p' && e.ctrlKey)) {
       this.move(MOVE_UP, shiftDown)
-    } else if(e.key === 'ArrowDown' ) {
+    } else if(e.key === 'ArrowDown' || (e.key == 'n' && e.ctrlKey)) {
       this.move(MOVE_DOWN, shiftDown)
-    } else if(e.key === 'ArrowRight' ) {
+    } else if(e.key === 'ArrowRight' || (e.key == 'f' && e.ctrlKey)) {
       this.move(MOVE_RIGHT, shiftDown)
-    } else if(e.key === 'ArrowLeft' ) {
+    } else if(e.key === 'ArrowLeft' || (e.key == 'b' && e.ctrlKey)) {
       this.move(MOVE_LEFT, shiftDown)
-    } else if(e.key === 'F2') {
+    } else if(e.key === 'F2' || (e.key == 'i' && e.ctrlKey)) {
       this.editText()
     } else if(e.key === ' ') {
       this.toggleFold()
@@ -416,8 +416,6 @@ export class MapManager {
     } else if(e.key === 'F12') {
       // TODO: デバッグ中
       this.debug()
-    } else if(e.key == 'i' && e.ctrlKey) {
-      this.editText()
     } else if(
       (e.key >= 'a' && e.key <= 'z') ||
         (e.key >= 'A' && e.key <= 'Z') ||

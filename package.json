@@ -2,7 +2,7 @@
   "name": "narr-map",
   "productName": "narr-map",
   "version": "0.0.1",
-  "description": "mind map tool",
+  "description": "Minimal Mind Map",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
@@ -13,13 +13,15 @@
   },
   "keywords": [],
   "author": {
-    "name": "kosuke miyoshi",
+    "name": "Kosuke Miyoshi",
     "email": "miyosuda@gmail.com"
   },
   "license": "MIT",
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+        "icon": "build/icon.icns"
+      },      
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",

@@ -3,6 +3,8 @@ import {getElementDimension} from './text-utils'
 const KEY_ENTER = 13
 const KEY_SHIFT = 16
 
+const MARGIN_Y = 5
+
 
 // 全角を2文字としてカウントする文字列カウント
 const getStringLength = (str) => {
@@ -114,7 +116,7 @@ export class TextInput {
 
     // 先にdisplayをセットしておかないとinput.offsetWidth等が取れない
     this.foreignObject.style.display = 'block'
-    this.foreignObject.y.baseVal.value = this.node.y
+    this.foreignObject.y.baseVal.value = this.node.y - MARGIN_Y
     
     this.updateOuterSize()
 

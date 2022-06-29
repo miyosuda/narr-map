@@ -2,6 +2,7 @@ const { app, Menu, BrowserWindow } = require('electron')
 const ipc = require('electron').ipcMain
 const dialog = require('electron').dialog
 const fs = require('fs')
+const path = require('path')
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -25,7 +26,7 @@ const createWindow = () => {
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  //mainWindow.webContents.openDevTools()
 }
 
 // This method will be called when Electron has finished
@@ -99,11 +100,11 @@ const saveOptions = {
 
 const save = (browserWindow, onSavedHook=null) => {
   if(filePath == null) {
-    const path = dialog.showSaveDialogSync(saveOptions)
-    if(path != null) {
+    const path_ = dialog.showSaveDialogSync(saveOptions)
+    if(path_ != null) {
       onSavedFunction = onSavedHook
       // filePathの設定
-      filePath = path      
+      filePath = path_
       browserWindow.webContents.send('request', 'save')
     }
   } else {
@@ -113,16 +114,16 @@ const save = (browserWindow, onSavedHook=null) => {
 }
 
 const saveAs = (browserWindow) => {
-  const path = dialog.showSaveDialogSync(saveOptions)
-  if(path != null) {
+  const path_ = dialog.showSaveDialogSync(saveOptions)
+  if(path_ != null) {
     // filePathの設定
-    filePath = path
+    filePath = path_
     browserWindow.webContents.send('request', 'save')
   }
 }
 
-const load = (browserWindow, path) => {
-  fs.readFile(path, (error, json) => {
+const load = (browserWindow, path_) => {
+  fs.readFile(path_, (error, json) => {
     if(error != null) {
       console.log('file open error')
     }
@@ -198,10 +199,12 @@ const templateMenu = [
             }
             const pathes = dialog.showOpenDialogSync(options)
             if(pathes != null && pathes.length > 0) {
-              const path = pathes[0]
-              load(browserWindow, path)
+              const path_ = pathes[0]
+              load(browserWindow, path_)
               // filePathの設定
-              filePath = path
+              filePath = path_
+              const fileName = path.basename(filePath)
+              browserWindow.setTitle(fileName)
             }
           }
           

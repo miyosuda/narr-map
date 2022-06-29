@@ -795,6 +795,23 @@ export class Node {
     return latestChildNode
   }
 
+  checkCopiable(otherNodes) {
+    let p = this.parent
+    while(p != null) {
+      let found = false
+      otherNodes.forEach(otherNode => {
+        if(otherNode === p) {
+          found = true
+        }
+      })
+      if(found) {
+        return false
+      }
+      p = p.parent
+    }
+    return true
+  }
+
   debugDump() {
     console.log('[node ' + this.text + ']')
     console.log('  shiftY=' + this.shiftY)

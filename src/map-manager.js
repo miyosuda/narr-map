@@ -37,6 +37,7 @@ export class MapManager {
     this.handleDraggingNode = null
     this.nodeEdited = false
     this.cursorDepth = 0
+    this.copyingStates = []
     
     this.ghostNode.hide()
     
@@ -76,7 +77,14 @@ export class MapManager {
         this.load(obj)
       } else if( arg == 'new-file' ) {
         this.newFile(obj)
+      } else if( arg == 'copy' ) {
+        this.copy()
+      } else if( arg == 'paste' ) {
+        this.paste()
+      } else if( arg == 'duplicate' ) {
+        this.duplicate()
       }
+      
     })
     this.addGhostNode()
     
@@ -757,6 +765,7 @@ export class MapManager {
   }
 
   cut() {
+    this.copy()
     this.deleteSelectedNodes()
   }
 
@@ -898,6 +907,61 @@ export class MapManager {
     if( state != null ) {
       this.applyMapState(state)
     }
+  }
+
+  collectCopiableNodes() {
+    const candidateNodes = []
+    this.selectedNodes.forEach(node => {
+      if(!node.isRoot) {
+        candidateNodes.push(node)
+      }
+    })
+
+    const copiableNodes = []
+    candidateNodes.forEach(node => {
+      // 親にcandidateNodesが含まれていなければcopy可能とする
+      if(node.checkCopiable(candidateNodes)) {
+        copiableNodes.push(node)
+      }
+    })
+
+    return copiableNodes
+  }
+
+  copy() {
+    const nodes = this.collectCopiableNodes()
+    const copyingStates = []
+    nodes.forEach(node => {
+      copyingStates.push(node.getState())
+    })
+    this.copyingStates = copyingStates
+  }
+
+  modifyStateForCopy(state, isLeft) {
+    state['isLeft'] = isLeft
+    state['selected'] = false
+    state['folded'] = false
+    state['adjustY'] = 0
+
+    state['children'].forEach(childState => {
+      this.modifyStateForCopy(childState, isLeft)
+    })
+  }
+
+  paste() {
+    const isLeft = this.lastNode.isLeft
+    const parentNode = this.lastNode
+
+    this.copyingStates.forEach(state => {
+      this.modifyStateForCopy(state, isLeft)
+      this.applyNodeState(state, parentNode)
+    })
+    
+    this.adjustLayoutWithReset(this.lastNode)
+  }
+
+  duplicate() {
+    // TODO: 未実装
   }
 
   setDirty(dirty) {

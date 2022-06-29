@@ -295,18 +295,6 @@ const templateMenu = [
         type: 'separator',
       },
       {
-        label: 'Duplicate',
-        accelerator: 'CmdOrCtrl+D',
-        click: (menuItem, browserWindow, event) => {
-          browserWindow.webContents.send(
-            'request', 'duplicate'
-          )
-        }
-      },
-      {
-        type: 'separator',
-      },
-      {
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         click: (menuItem, browserWindow, event) => {

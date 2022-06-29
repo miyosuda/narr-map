@@ -81,10 +81,7 @@ export class MapManager {
         this.copy()
       } else if( arg == 'paste' ) {
         this.paste()
-      } else if( arg == 'duplicate' ) {
-        this.duplicate()
       }
-      
     })
     this.addGhostNode()
     
@@ -949,19 +946,15 @@ export class MapManager {
   }
 
   paste() {
-    const isLeft = this.lastNode.isLeft
     const parentNode = this.lastNode
-
+    const isLeft = parentNode.isLeft
+    
     this.copyingStates.forEach(state => {
       this.modifyStateForCopy(state, isLeft)
       this.applyNodeState(state, parentNode)
     })
     
-    this.adjustLayoutWithReset(this.lastNode)
-  }
-
-  duplicate() {
-    // TODO: 未実装
+    this.adjustLayoutWithReset(parentNode)
   }
 
   setDirty(dirty) {

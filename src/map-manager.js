@@ -71,7 +71,8 @@ export class MapManager {
                  arg == 'undo' ||
                  arg == 'redo' ||
                  arg == 'copy' ||
-                 arg == 'paste') {
+                 arg == 'paste',
+                 arg == 'selectall') {
         if( this.textInput.isShown() ) {
           document.execCommand(arg)
           return
@@ -94,6 +95,8 @@ export class MapManager {
         this.copy()
       } else if( arg == 'paste' ) {
         this.paste()
+      } else if( arg == 'selectall') {
+        this.selectAll()
       }
     })
     this.addGhostNode()
@@ -962,6 +965,17 @@ export class MapManager {
     })
     
     this.adjustLayoutWithReset(parentNode)
+  }
+
+  selectAll() {
+    this.selectedNodes = []
+    this.nodes.forEach(node => {
+      if(!node.isDummy) {
+        node.setSelected(true)
+        this.selectedNodes.push(node)
+      }
+    })
+    this.cursorDepth = 0
   }
 
   setDirty(dirty) {

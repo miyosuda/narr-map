@@ -376,7 +376,6 @@ export class Node {
   }
 
   containsPosForHandle(x, y) {
-    // TREAT: left対応, 右側にHandleが来る
     if(!this.isVisible) {
       return false
     }
@@ -384,14 +383,7 @@ export class Node {
     if(this.isRoot) {
       return false
     } else {
-      // TODO: Handleクラスに持っていく
-      if(!this.isLeft) {
-        return (x >= this.left-HANDLE_WIDTH) && (x <= this.left) &&
-          (y >= this.top) && (y <= this.bottom)
-      } else {
-        return (x >= this.right) && (x <= this.right + HANDLE_WIDTH) &&
-          (y >= this.top) && (y <= this.bottom)
-      }
+      return this.handleComponent.containsPos(x, y)
     }
   }
 

@@ -387,6 +387,15 @@ export class MapManager {
         }
       }
       this.ghostNode.hide()
+    } else if(this.dragMode == DRAG_NONE) {
+      // rootのtext editの特殊処理      
+      const localPos = this.getLocalPos(e)
+      const x = localPos.x
+      const y = localPos.y
+
+      if(this.rootNode.containsPos(x, y)) {
+        this.textInput.show(this.rootNode)
+      }
     }
     
     this.dragMode = DRAG_NONE
@@ -431,20 +440,15 @@ export class MapManager {
     } else if(e.key === ' ') {
       this.toggleFold()
       e.preventDefault()
-    } else if(e.key === 'F12') {
-      // TODO: デバッグ中
-      this.debug()
-    } else if(
-      (e.key >= 'a' && e.key <= 'z') ||
-        (e.key >= 'A' && e.key <= 'Z') ||
-        (e.key >= '1' && e.key <= '0')) {
-      if(!e.ctrlKey && !e.metaKey) {
-        // 文字列入力なら
-        //this.editText()
-        // TODO: shiftキーでも反応してしまっている.
-      }
+    } else if(e.keyCode >= 49 && // '1'
+              e.keyCode <= 90 && // 'Z'
+              !e.ctrlKey &&
+              !e.metaKey) {
+      this.editText()
     } else if(e.key === 'F2') {
       this.editText()
+    } else if(e.key === 'F12') {
+      this.debug()
     }
   }
 

@@ -225,10 +225,19 @@ export class HandleComponent {
   setPos(x, y) {
     this.handleElement.setAttribute('cx', x + HANDLE_WIDTH/2)
     this.handleElement.setAttribute('cy', y + HANDLE_HEIGHT/2)
+
+    this.x = x
+    this.y = y
   }
 
   remove() {
     this.handleElement.remove()
+  }
+
+  containsPos(x, y) {
+    return (x >= this.x - 2) && // 2pxだけ広げてtouchしやすくしている
+      (x <= this.x + HANDLE_WIDTH + 2) &&
+      (y >= this.y) && (y <= this.y + HANDLE_HEIGHT)
   }
 }
 

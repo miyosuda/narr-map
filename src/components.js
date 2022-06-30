@@ -13,6 +13,15 @@ export const TEXT_COMPONENT_STYLE_SELECTED    = 4
 
 const FOLD_MARK_RADIUS = 3
 
+const REGEX_RED_CIRCLE     = /^\(r\)/i
+const REGEX_GREEN_CIRCLE   = /^\(g\)/i
+const REGEX_BLUE_CIRCLE    = /^\(b\)/i
+const REGEX_YELLOW_CIRCLE  = /^\(y\)/i
+
+const RED_CIRCLE_EMOJI    = String.fromCodePoint(0x1F534)
+const GREEN_CIRCLE_EMOJI  = String.fromCodePoint(0x1F7E2)
+const BLUE_CIRCLE_EMOJI   = String.fromCodePoint(0x1F535)
+const YELLOW_CIRCLE_EMOJI = String.fromCodePoint(0x1F7E1)
 
 export class TextComponent {
   constructor(container, isRoot) {
@@ -36,15 +45,23 @@ export class TextComponent {
     this.setVisible(true)
   }
 
+  formatEmoji(text) {
+    text = text.replace(REGEX_RED_CIRCLE,    RED_CIRCLE_EMOJI)
+    text = text.replace(REGEX_GREEN_CIRCLE,  GREEN_CIRCLE_EMOJI)
+    text = text.replace(REGEX_BLUE_CIRCLE,   BLUE_CIRCLE_EMOJI)
+    text = text.replace(REGEX_YELLOW_CIRCLE, YELLOW_CIRCLE_EMOJI)
+    return text
+  }
+
   setText(text) {
     this.text = text
-    this.span.textContent = text
-
-    // TODO: classの指定が他にも考慮必要か？
+    this.span.textContent = this.formatEmoji(text)
+    
     const className = 'node'
     const dims = getElementDimension(this.foreignObject.innerHTML, className)
 
-    this.foreignObject.width.baseVal.value = dims.width
+    // ADHOCで1.02倍している
+    this.foreignObject.width.baseVal.value = dims.width * 1.02
     this.foreignObject.height.baseVal.value = dims.height
     
     this.width = dims.width

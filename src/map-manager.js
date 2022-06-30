@@ -61,22 +61,35 @@ export class MapManager {
     this.textInput = new TextInput(this)
 
     nmapi.onReceiveMessage((arg, obj) => {
-      if( this.textInput.isShown() ) {
-        this.textInput.hide()
+      if( arg == 'save' ||
+          arg == 'load' ||
+          arg == 'new-file') {
+        if( this.textInput.isShown() ) {
+          this.textInput.hide()
+        }
+      } else if( arg == 'cut' ||
+                 arg == 'undo' ||
+                 arg == 'redo' ||
+                 arg == 'copy' ||
+                 arg == 'paste') {
+        if( this.textInput.isShown() ) {
+          document.execCommand(arg)
+          return
+        }
       }
       
-      if( arg == 'cut' ) {
-        this.cut()
-      } else if( arg == 'undo' ) {
-        this.undo()
-      } else if( arg == 'redo' ) {
-        this.redo()
-      } else if( arg == 'save' ) {
+      if( arg == 'save' ) {
         this.save()
       } else if( arg == 'load' ) {
         this.load(obj)
       } else if( arg == 'new-file' ) {
         this.newFile(obj)
+      } else if( arg == 'cut' ) {
+        this.cut()
+      } else if( arg == 'undo' ) {
+        this.undo()
+      } else if( arg == 'redo' ) {
+        this.redo()        
       } else if( arg == 'copy' ) {
         this.copy()
       } else if( arg == 'paste' ) {
@@ -312,8 +325,8 @@ export class MapManager {
       }
       
       if(hoverHit != HOVER_HIT_NONE) {
-        if(this.ghostNode.node === hoverHitNode) {
-          // 同じノードの上で離した場合
+        if((this.ghostNode.node === hoverHitNode)) {
+          // 同じノードの上で離した場合 or root上で離した場合
           this.textInput.show(hoverHitNode)
         } else {
           if(hoverHit == HOVER_HIT_CHILD) {
@@ -883,11 +896,6 @@ export class MapManager {
   }
   
   undo() {
-    if( this.textInput.isShown() ) {
-      document.execCommand('undo')
-      return
-    }
-
     const state = this.editHistory.undo()
     if( state != null ) {
       this.applyMapState(state)
@@ -895,11 +903,6 @@ export class MapManager {
   }
 
   redo() {
-    if( this.textInput.isShown() ) {
-      document.execCommand('redo')
-      return
-    }
-    
     const state = this.editHistory.redo()
     if( state != null ) {
       this.applyMapState(state)

@@ -2,7 +2,7 @@
   "name": "narr-map",
   "productName": "narr-map",
   "version": "0.0.1",
-  "description": "Minimal Mind Map",
+  "description": "A minimal mind map editor",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",

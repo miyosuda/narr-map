@@ -61,10 +61,11 @@ export class TextComponent {
     const dims = getElementDimension(this.foreignObject.innerHTML, className)
 
     // ADHOCで1.02倍している
-    this.foreignObject.width.baseVal.value = dims.width * 1.02
+    const width = dims.width * 1.02
+    this.foreignObject.width.baseVal.value = width
     this.foreignObject.height.baseVal.value = dims.height
     
-    this.width = dims.width
+    this.width = width
     this.height = dims.height
   }
 

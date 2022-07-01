@@ -3,7 +3,7 @@ import {getElementDimension} from './text-utils'
 const NAME_SPACE = 'http://www.w3.org/2000/svg'
 
 export const HANDLE_WIDTH  = 10
-export const HANDLE_HEIGHT = 18
+export const HANDLE_HEIGHT = 21
 
 export const TEXT_COMPONENT_STYLE_NONE        = 0
 export const TEXT_COMPONENT_STYLE_HOVER_TOP   = 1
@@ -28,9 +28,10 @@ export class TextComponent {
     const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject')
     this.foreignObject = foreignObject
 
-    foreignObject.classList.add('node')
     if(isRoot) {
       foreignObject.classList.add('root-node')
+    } else {
+      foreignObject.classList.add('node')
     }
 
     container.appendChild(foreignObject)
@@ -41,6 +42,8 @@ export class TextComponent {
     // テキスト選択無効のクラスを指定
     span.className = 'disable-select';
     foreignObject.appendChild(span)
+
+    this.isRoot = isRoot
     
     this.setVisible(true)
   }
@@ -57,16 +60,25 @@ export class TextComponent {
     this.text = text
     this.span.textContent = this.formatEmoji(text)
     
-    const className = 'node'
+    let className = 'node'
+    if(this.isRoot) {
+      className = 'root-node'
+    }
     const dims = getElementDimension(this.foreignObject.innerHTML, className)
+    
+    let width = dims.width * 1.02 + 3
+    let height = dims.height + 2
 
-    // ADHOCで1.02倍している
-    const width = dims.width * 1.02
+    if(text.trim().length == 0) {
+      // 空文字の時文字(16pt)の高さが反映されず3+3+1+2となってしまうので対処を入れる.
+      height = 4 + 1 + 1 + 16 + 2
+    }
+    
     this.foreignObject.width.baseVal.value = width
-    this.foreignObject.height.baseVal.value = dims.height
+    this.foreignObject.height.baseVal.value = height
     
     this.width = width
-    this.height = dims.height
+    this.height = height
   }
 
   setVisible(visible) {
@@ -203,7 +215,7 @@ export class HandleComponent {
     
     handleElement.setAttribute('stroke', '#7f7f7f')
     handleElement.setAttribute('stroke-width', 1)
-    handleElement.setAttribute('fill', 'none')
+    handleElement.setAttribute('fill', '#ffffff')
     
     handleElement.setAttribute('cx', 0)
     handleElement.setAttribute('cy', 0)

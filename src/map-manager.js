@@ -61,44 +61,46 @@ export class MapManager {
     this.textInput = new TextInput(this)
 
     nmapi.onReceiveMessage((arg, obj) => {
-      if( arg == 'save' ||
-          arg == 'load' ||
-          arg == 'new-file') {
-        if( this.textInput.isShown() ) {
+      if( arg === 'save' ||
+          arg === 'load' ||
+          arg === 'new-file') {
+        
+        if( this.textInput.isShown ) {
           this.textInput.hide()
         }
-      } else if( arg == 'cut' ||
-                 arg == 'undo' ||
-                 arg == 'redo' ||
-                 arg == 'copy' ||
-                 arg == 'paste',
-                 arg == 'selectall') {
-        if( this.textInput.isShown() ) {
+      } else if( arg === 'cut' ||
+                 arg === 'undo' ||
+                 arg === 'redo' ||
+                 arg === 'copy' ||
+                 arg === 'paste' ||
+                 arg === 'selectall') {
+        if( this.textInput.isShown ) {
           document.execCommand(arg)
           return
         }
       }
-      
-      if( arg == 'save' ) {
+
+      if( arg === 'save' ) {
         this.save()
-      } else if( arg == 'load' ) {
+      } else if( arg === 'load' ) {
         this.load(obj)
-      } else if( arg == 'new-file' ) {
+      } else if( arg === 'new-file' ) {
         this.newFile(obj)
-      } else if( arg == 'cut' ) {
+      } else if( arg === 'cut' ) {
         this.cut()
-      } else if( arg == 'undo' ) {
+      } else if( arg === 'undo' ) {
         this.undo()
-      } else if( arg == 'redo' ) {
+      } else if( arg === 'redo' ) {
         this.redo()        
-      } else if( arg == 'copy' ) {
+      } else if( arg === 'copy' ) {
         this.copy()
-      } else if( arg == 'paste' ) {
+      } else if( arg === 'paste' ) {
         this.paste()
-      } else if( arg == 'selectall') {
+      } else if( arg === 'selectall') {
         this.selectAll()
       }
     })
+    
     this.addGhostNode()
     
     this.init()
@@ -186,7 +188,7 @@ export class MapManager {
       return
     }
 
-    if( this.textInput.isShown() ) {
+    if( this.textInput.isShown ) {
       // textInput表示中なら何もしない
       return
     }

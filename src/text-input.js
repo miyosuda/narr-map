@@ -3,7 +3,7 @@ import {getElementDimension} from './text-utils'
 const KEY_ENTER = 13
 const KEY_SHIFT = 16
 
-const MARGIN_Y = 5
+const MARGIN_Y = 1
 
 
 // 全角を2文字としてカウントする文字列カウント
@@ -116,7 +116,12 @@ export class TextInput {
 
     // 先にdisplayをセットしておかないとinput.offsetWidth等が取れない
     this.foreignObject.style.display = 'block'
-    this.foreignObject.y.baseVal.value = this.node.y - MARGIN_Y
+
+    let y = this.node.y - MARGIN_Y
+    if(node.isRoot) {
+      y += 2
+    }
+    this.foreignObject.y.baseVal.value = y
     
     this.updateOuterSize()
 
@@ -181,7 +186,7 @@ export class TextInput {
     this.hide()
   }
 
-  isShown() {
+  get isShown() {
     return this.shown
   }
 }

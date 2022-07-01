@@ -25,6 +25,8 @@ const createWindow = () => {
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
 
+  mainWindow.setTitle(DEFAULT_TITLE)
+
   // Open the DevTools.
   //mainWindow.webContents.openDevTools()
 }
@@ -57,6 +59,8 @@ const CONFIRM_ANSWER_CANCEL = 2
 
 let editDirty = false
 let filePath = null
+
+const DEFAULT_TITLE = 'Unnamed'
 
 ipc.on('response', (event, arg, obj) => {
   if( arg == 'set-dirty' ) {
@@ -105,6 +109,8 @@ const save = (browserWindow, onSavedHook=null) => {
       onSavedFunction = onSavedHook
       // filePathの設定
       filePath = path_
+      const fileName = path.basename(filePath)
+      browserWindow.setTitle(fileName)
       browserWindow.webContents.send('request', 'save')
     }
   } else {
@@ -174,6 +180,7 @@ const templateMenu = [
             browserWindow.webContents.send('request', 'new-file')
             // filePathの設定
             filePath = null
+            browserWindow.setTitle(DEFAULT_TITLE)
           }
           
           if( editDirty ) {

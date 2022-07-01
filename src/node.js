@@ -107,9 +107,11 @@ export class Node {
         }        
       }
 
-      this.children.forEach(node => {
-        node.setVisible(visible)
-      })
+      if(!this.folded || !visible) {
+        this.children.forEach(node => {
+          node.setVisible(visible)
+        })
+      }
     }
   }
   
@@ -447,18 +449,19 @@ export class Node {
 
   setFolded(folded) {
     if(folded != this.folded) {
+      this.folded = folded
+      
       if(folded) {
         this.foldMarkComponent.setVisible(true)
         this.children.forEach(node => {
           node.setVisible(false)
-        })  
+        })
       } else {
         this.foldMarkComponent.setVisible(false)
         this.children.forEach(node => {
           node.setVisible(true)
         })
       }
-      this.folded = folded
     }
   }
 

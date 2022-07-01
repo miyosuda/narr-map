@@ -168,7 +168,7 @@ export class Node {
     let top = Number.POSITIVE_INFINITY
     let bottom = Number.NEGATIVE_INFINITY
     
-    if(this.children.length == 0) {
+    if(this.children.length == 0 || this.isFolded) {
       // 子Nodeが無い場合
       top = 0
       bottom = SPAN_Y_PER_NODE
@@ -253,7 +253,7 @@ export class Node {
   
   get height() {
     if(this.isDummy) {
-      return this.accompaniedNode.width
+      return this.accompaniedNode.height
     }
     return this.textComponent.height
   }
@@ -809,6 +809,9 @@ export class Node {
 
   debugDump() {
     console.log('[node ' + this.text + ']')
+    console.log('  x=' + this.x)
+    console.log('  y=' + this.y)
+    console.log('  adjustY=' + this.adjustY)    
     console.log('  shiftY=' + this.shiftY)
     console.log('  adjustY=' + this.adjustY)
     console.log('  isLeft=' + this.isLeft)

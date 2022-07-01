@@ -349,7 +349,7 @@ export class MapManager {
               hoverHitNode.attachChildNodeToTail(newChildNode)
               this.nodeEdited = true
               
-              if(newChildNode != oldParentNode) {
+              if(hoverHitNode != oldParentNode) {
                 this.adjustLayoutWithReset(oldParentNode)
               }
               this.adjustLayoutWithReset(hoverHitNode)
@@ -365,15 +365,14 @@ export class MapManager {
             }
             
             const oldParentNode = newChildNode.detachFromParent()
-            //hoverHitNode.attachChildNodeToTail(newChildNode)
             this.leftRootNode.attachChildNodeToTail(newChildNode)
             
             this.nodeEdited = true
               
-            if(newChildNode != oldParentNode) {
+            if(this.leftRootNode != oldParentNode) {
               this.adjustLayoutWithReset(oldParentNode)
             }
-            this.adjustLayoutWithReset(hoverHitNode)
+            this.adjustLayoutWithReset(this.leftRootNode)
           } else if(hoverHit == HOVER_HIT_SIBLING) {
             const newChildNode = this.ghostNode.node
             
@@ -513,7 +512,8 @@ export class MapManager {
   toggleFold() {
     if(!this.lastNode.isRoot) {
       this.lastNode.toggleFolded()
-      this.clearNodeSelection(this.lastNode) //..
+      this.clearNodeSelection(this.lastNode)
+      this.adjustLayout(this.lastNode)
     }
   }
 
@@ -573,6 +573,7 @@ export class MapManager {
   }
 
   updateLayout() {
+    // 各Nodeのx,yを更新する
     this.rootNode.updateLayout(null, null)
     this.leftRootNode.updateLayout(null, null)
   }
@@ -588,7 +589,7 @@ export class MapManager {
     if(targetParentNode == null) {
       return
     }
-    
+
     const upNodes = []
     const downNodes = []
     let targetNodeIndex = -1

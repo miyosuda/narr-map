@@ -40,6 +40,9 @@ foreignObject {
   -webkit-user-select: none;
   user-select: none;
   padding: 0px;
+
+  /* ADHOC (改行対策) */
+  white-space: nowrap;
 }
 
 

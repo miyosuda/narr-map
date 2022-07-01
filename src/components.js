@@ -65,8 +65,9 @@ export class TextComponent {
       className = 'root-node'
     }
     const dims = getElementDimension(this.foreignObject.innerHTML, className)
-    
-    let width = dims.width * 1.02 + 3
+
+    // ADHOC: 以前はみ出ていたのでサイズの調整をした
+    let width = dims.width + 3
     let height = dims.height + 2
 
     if(text.trim().length == 0) {

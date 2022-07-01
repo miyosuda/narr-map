@@ -93,6 +93,8 @@ export class TextInput {
         this.shiftOn = false
       }
     })
+
+    this.node = null
     
     this.hide()
   }
@@ -131,11 +133,17 @@ export class TextInput {
     
     this.textChanged = false
     this.shown = true
+    
+    this.node.startTempHide()
   }
 
   hide() {
     this.foreignObject.style.display = 'none'
     this.shown = false
+    if(this.node != null) {
+      this.node.stopTempHide()
+      this.node = null
+    }
   }
 
   updateInputSize() {

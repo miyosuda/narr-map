@@ -114,7 +114,15 @@ export class Node {
       }
     }
   }
-  
+
+  startTempHide() {
+    this.textComponent.setVisible(false)
+  }
+
+  stopTempHide() {
+    this.textComponent.setVisible(true)
+  }
+
   addChildNode(node) {
     this.children.push(node)
   }

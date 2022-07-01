@@ -3,8 +3,9 @@ svg {
 }
 
 .root-node {
+  border: solid 1px #7f7f7f;
   border-radius: 5px;
-  background : #bfbfbf;
+  background : #ffffff;
 }
 
 .node {

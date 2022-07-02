@@ -71,7 +71,6 @@ export class Node {
 
   get isVisible() {
     if(this.isDummy) {
-      // TODO: 要確認
       return false
     }
     return this.textComponent.isVisible

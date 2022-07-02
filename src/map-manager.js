@@ -23,6 +23,8 @@ const MOVE_DOWN  = 2
 const MOVE_RIGHT = 3
 const MOVE_LEFT  = 4
 
+const MOUSE_CLICK_INTERVAL_THRESHOLD_MS = 400
+
 
 export class MapManager {
   constructor() {
@@ -38,6 +40,7 @@ export class MapManager {
     this.nodeEdited = false
     this.cursorDepth = 0
     this.copyingStates = []
+    this.lastMouseDownTime = -1
     
     this.ghostNode.hide()
     
@@ -55,6 +58,7 @@ export class MapManager {
     this.onResize()
     
     document.onmousedown = event => this.onMouseDown(event)
+    document.ondblclick  = event => this.onDoubleClick(event)
     document.onmouseup   = event => this.onMouseUp(event)
     document.onmousemove = event => this.onMouseMove(event)
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
@@ -182,7 +186,34 @@ export class MapManager {
     return pickNode
   }
 
+  checkDoubleClick(e) {
+    if(e.which != 1) {
+      return false
+    }
+
+    if(e.shiftKey) {
+      return false
+    }
+    
+    const currentTime = e.timeStamp
+    let wasDoubleClick
+    
+    if(this.lastMouseDownTime >=0 &&
+       (currentTime - this.lastMouseDownTime) < MOUSE_CLICK_INTERVAL_THRESHOLD_MS) {
+      wasDoubleClick = true
+    } else {
+      wasDoubleClick = false
+    }
+
+    this.lastMouseDownTime = currentTime
+    return wasDoubleClick
+  }
+
   onMouseDown(e) {
+    if(this.checkDoubleClick(e)) {
+      return
+    }
+    
     if(e.which == 3) {
       // 右クリックの場合
       return
@@ -248,6 +279,27 @@ export class MapManager {
     }
     
     this.dragMode = dragMode
+  }
+
+  onDoubleClick(e) {
+    if( this.textInput.isShown ) {
+      // textInput表示中なら何もしない
+      return
+    }
+
+    if(e.shiftDown) {
+      return
+    }
+    
+    const localPos = this.getLocalPos(e)
+    const x = localPos.x
+    const y = localPos.y
+
+    const pickNode = this.findPickNode(x, y, false)
+
+    if(pickNode != null) {
+      this.textInput.show(pickNode)
+    }
   }
 
   onMouseMove(e) {
@@ -321,7 +373,7 @@ export class MapManager {
         const node = this.nodes[i]
 
         const ret = node.checkGhostHover(x, y)
-        if(ret != HOVER_HIT_NONE) {
+        if(ret != HOVER_HIT_NONE && node !== this.ghostNode.node) {
           hoverHit = ret
           hoverHitNode = node
         }
@@ -330,76 +382,62 @@ export class MapManager {
       }
       
       if(hoverHit != HOVER_HIT_NONE) {
-        if((this.ghostNode.node === hoverHitNode)) {
-          // 同じノードの上で離した場合 or root上で離した場合
-          this.textInput.show(hoverHitNode)
-        } else {
-          if(hoverHit == HOVER_HIT_CHILD) {
-            const newChildNode = this.ghostNode.node
+        if(hoverHit == HOVER_HIT_CHILD) {
+          const newChildNode = this.ghostNode.node
 
-            if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
-              // hoverHitNodeがnewChildNodeの子孫だったらNG
-              const oldParentNode = newChildNode.detachFromParent()
-
-              // TODO: 要整理
-              if(newChildNode.isLeft != hoverHitNode.isLeft) {
-                newChildNode.changeSideRecursive(hoverHitNode.isLeft)
-              }
-              
-              hoverHitNode.attachChildNodeToTail(newChildNode)
-              this.nodeEdited = true
-              
-              if(hoverHitNode != oldParentNode) {
-                this.adjustLayoutWithReset(oldParentNode)
-              }
-              this.adjustLayoutWithReset(hoverHitNode)
-            }
-          } else if(hoverHit == HOVER_HIT_OTHER_CHILD) {
-            // rootの左側にhitした場合
-            const newChildNode = this.ghostNode.node
+          if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
+            // hoverHitNodeがnewChildNodeの子孫だったらNG
+            const oldParentNode = newChildNode.detachFromParent()
 
             // TODO: 要整理
-            if(!newChildNode.isLeft) {
-              // 右から左へ持ってきた場合
-              newChildNode.changeSideRecursive(true)
+            if(newChildNode.isLeft != hoverHitNode.isLeft) {
+              newChildNode.changeSideRecursive(hoverHitNode.isLeft)
             }
             
-            const oldParentNode = newChildNode.detachFromParent()
-            this.leftRootNode.attachChildNodeToTail(newChildNode)
-            
+            hoverHitNode.attachChildNodeToTail(newChildNode)
             this.nodeEdited = true
-              
-            if(this.leftRootNode != oldParentNode) {
+            
+            if(hoverHitNode != oldParentNode) {
               this.adjustLayoutWithReset(oldParentNode)
             }
-            this.adjustLayoutWithReset(this.leftRootNode)
-          } else if(hoverHit == HOVER_HIT_SIBLING) {
-            const newChildNode = this.ghostNode.node
-            
-            if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
-              const newParentNode = hoverHitNode.parentNode
-              const oldParentNode = newChildNode.detachFromParent()
-              // hoverHitNodeがnewChildNodeの子孫だったら何もしない
-              newParentNode.attachChildNodeAboveSibling(newChildNode, hoverHitNode)
-              this.nodeEdited = true
-              if(newChildNode != oldParentNode) {
-                this.adjustLayoutWithReset(oldParentNode)
-              }
-              this.adjustLayoutWithReset(newParentNode)
+            this.adjustLayoutWithReset(hoverHitNode)
+          }
+        } else if(hoverHit == HOVER_HIT_OTHER_CHILD) {
+          // rootの左側にhitした場合
+          const newChildNode = this.ghostNode.node
+
+          // TODO: 要整理
+          if(!newChildNode.isLeft) {
+            // 右から左へ持ってきた場合
+            newChildNode.changeSideRecursive(true)
+          }
+          
+          const oldParentNode = newChildNode.detachFromParent()
+          this.leftRootNode.attachChildNodeToTail(newChildNode)
+          
+          this.nodeEdited = true
+          
+          if(this.leftRootNode != oldParentNode) {
+            this.adjustLayoutWithReset(oldParentNode)
+          }
+          this.adjustLayoutWithReset(this.leftRootNode)
+        } else if(hoverHit == HOVER_HIT_SIBLING) {
+          const newChildNode = this.ghostNode.node
+          
+          if(!hoverHitNode.hasNodeInAncestor(newChildNode)) {
+            const newParentNode = hoverHitNode.parentNode
+            const oldParentNode = newChildNode.detachFromParent()
+            // hoverHitNodeがnewChildNodeの子孫だったら何もしない
+            newParentNode.attachChildNodeAboveSibling(newChildNode, hoverHitNode)
+            this.nodeEdited = true
+            if(newChildNode != oldParentNode) {
+              this.adjustLayoutWithReset(oldParentNode)
             }
+            this.adjustLayoutWithReset(newParentNode)
           }
         }
       }
       this.ghostNode.hide()
-    } else if(this.dragMode == DRAG_NONE) {
-      // rootのtext editの特殊処理      
-      const localPos = this.getLocalPos(e)
-      const x = localPos.x
-      const y = localPos.y
-
-      if(this.rootNode.containsPos(x, y)) {
-        this.textInput.show(this.rootNode)
-      }
     }
     
     this.dragMode = DRAG_NONE

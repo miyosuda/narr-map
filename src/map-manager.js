@@ -23,8 +23,6 @@ const MOVE_DOWN  = 2
 const MOVE_RIGHT = 3
 const MOVE_LEFT  = 4
 
-const MOUSE_CLICK_INTERVAL_THRESHOLD_MS = 400
-
 
 export class MapManager {
   constructor() {
@@ -186,34 +184,7 @@ export class MapManager {
     return pickNode
   }
 
-  checkDoubleClick(e) {
-    if(e.which != 1) {
-      return false
-    }
-
-    if(e.shiftKey) {
-      return false
-    }
-    
-    const currentTime = e.timeStamp
-    let wasDoubleClick
-    
-    if(this.lastMouseDownTime >=0 &&
-       (currentTime - this.lastMouseDownTime) < MOUSE_CLICK_INTERVAL_THRESHOLD_MS) {
-      wasDoubleClick = true
-    } else {
-      wasDoubleClick = false
-    }
-
-    this.lastMouseDownTime = currentTime
-    return wasDoubleClick
-  }
-
   onMouseDown(e) {
-    if(this.checkDoubleClick(e)) {
-      return
-    }
-    
     if(e.which == 3) {
       // 右クリックの場合
       return

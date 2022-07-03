@@ -589,13 +589,11 @@ export class MapManager {
   
   adjustLayout(targetNode) {
     // targetNodeで指定されたNodeの兄弟ノードに関して、重なりがない様にY方向の位置を調整する.
-    // 現在は重なりをなくす様にshiftYを調整している.
-    
-    this.updateLayout()
-    
     const targetParentNode = targetNode.parentNode
     
     if(targetParentNode == null) {
+      // rootまで登ったのでadjustY, shiftX,Yをx,y座標に反映しておく
+      this.updateLayout()
       return
     }
 
@@ -659,16 +657,13 @@ export class MapManager {
       const newNodeBottom = offsetY + bounds.bottom + node.adjustY
       lastNodeBottom = newNodeBottom
     }
-
-    this.updateLayout()
-
+    
     // 上の階層に上がる
     this.adjustLayout(targetParentNode)
   }
 
   adjustLayoutWithReset(targetParentNode) {
     // targetParentNodeで指定したNodeの子が削除されたり子枝が追加された場合の対処
-    this.updateLayout()
     
     if(targetParentNode == null) {
       return
@@ -682,8 +677,10 @@ export class MapManager {
       const offsetY = SPAN_Y_PER_NODE * i
 
       if(lastNodeBottom == null) {
+        // 一番上のNodeはadjustYは0に
         node.adjustY = 0.0
       } else {
+        // nodeのtopが上Nodeのbottomと被らない様にadjustYを設定
         node.adjustY = lastNodeBottom - (offsetY + bounds.top)
       }
 
@@ -694,8 +691,6 @@ export class MapManager {
     // 上の階層に上がる
     // (ここはadjustLayoutWithReset()ではなくadjustLayout()を利用)
     this.adjustLayout(targetParentNode)
-
-    this.updateLayout()
   }
 
   deleteNode(node) {

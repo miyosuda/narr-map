@@ -131,19 +131,7 @@ export class Node {
     this.children.splice(targetNodeIndex+1, 0, node)
   }
 
-  updateLayout(baseX, baseY) {
-    if(this.isRoot) {
-      // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく
-      baseX = -this.width / 2
-      baseY = -this.height / 2
-    }
-    // baseX,YにshiftX,Yを足してx,yとする
-    this.updatePos(baseX, baseY)
-
-    if(this.children.length == 0) {
-      return
-    }
-    
+  updateChildrenLayout() {
     let childYOffset = 0.0
     if( this.children.length == 1 ) {
       // 子が1ノードしかない場合は少し上に上げておく
@@ -168,10 +156,31 @@ export class Node {
       // 各ノードのx,yを更新する
       const nodeDefaultY = childDefaultStartY + i * SPAN_Y_PER_NODE
       node.updateLayout(childBaseX, nodeDefaultY)
+    }    
+  }
+
+  updateLayout(baseX, baseY) {
+    // 引数で与えられたこのNodeのデフォルト位置を元にshiftX,YおよびadjustYを反映してx,y位置を更新
+    
+    if(this.isRoot) {
+      // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく
+      baseX = -this.width / 2
+      baseY = -this.height / 2
     }
+    // baseX,YにshiftX,Yを足してx,yとする
+    this.updatePos(baseX, baseY)
+
+    if(this.children.length == 0) {
+      return
+    }
+
+    // 子のx,yを更新
+    this.updateChildrenLayout()
   }
 
   calcYBounds() {
+    // このNodeのデフォルト位置を起点として、その位置から子Nodeを含めた上下の範囲を算出.
+    // shiftYも反映されている.
     let top = Number.POSITIVE_INFINITY
     let bottom = Number.NEGATIVE_INFINITY
     

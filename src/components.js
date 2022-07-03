@@ -73,6 +73,8 @@ export class TextComponent {
     if(text.trim().length == 0) {
       // 空文字の時文字(16pt)の高さが反映されず3+3+1+2となってしまうので対処を入れる.
       height = 4 + 1 + 1 + 16 + 2
+      // 空文字のデフォルトの幅だとクリックしにくいので広げておく
+      width = 13
     }
     
     this.foreignObject.width.baseVal.value = width

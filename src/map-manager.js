@@ -965,13 +965,20 @@ export class MapManager {
   paste() {
     const parentNode = this.lastNode
     const isLeft = parentNode.isLeft
+
+    let modified = false
     
     this.copyingStates.forEach(state => {
       this.modifyStateForCopy(state, isLeft)
       this.applyNodeState(state, parentNode)
+      modified = true
     })
     
     this.adjustLayoutWithReset(parentNode)
+
+    if(modified) {
+      this.storeState()
+    }
   }
 
   selectAll() {

@@ -39,11 +39,10 @@ jobs:
       run: npm install
     - name: build
       run: npm run make
-    - name: create release
-      uses: softprops/action-gh-release@v1
+    - name: archive artifacts
+      uses: actions/upload-artifact@v3
       with:
-        draft: true
-        files: |
-          out/make/zip/win32/x64/*.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: out
+        path: |
+          out
+          

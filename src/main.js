@@ -97,7 +97,7 @@ const saveOptions = {
   filters: [
     {
       name: 'Data',
-      extensions: ['.json']
+      extensions: ['.nm']
     }
   ]
 }

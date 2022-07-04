@@ -124,6 +124,8 @@ const saveAs = (browserWindow) => {
   if(path_ != null) {
     // filePathの設定
     filePath = path_
+    const fileName = path.basename(filePath)
+    browserWindow.setTitle(fileName)
     browserWindow.webContents.send('request', 'save')
   }
 }

@@ -1,8 +1,8 @@
 # narr-map
 
-A minimal mind map editor.
+A minimal mind map editor made with Electron.
 
-
+<img src="./docs/screen0.png" width="400px">
 
 ## Icons
 
@@ -19,12 +19,15 @@ A minimal mind map editor.
 
 | Key |     |
 | ---- | ----  |
-| SPACE  | Toggle fold   |
+| Enter   | Add sibling node |
+| Tab     | Add child node |
+| Space   | Toggle fold   |
 | Ctrl+i  | Edit text  |
 | Ctrl+n  | Move down  |
 | Ctrl+p  | Move up  |
 | Ctrl+f  | Move right |
 | Ctrl+b  | Move left |
+| F2      | Edit text  |
 
 
 

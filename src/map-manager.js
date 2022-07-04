@@ -252,6 +252,34 @@ export class MapManager {
     this.dragMode = dragMode
   }
 
+  calcCenter() {
+
+  }
+
+  recenter() {
+    let globalLeft   = Number.NEGATIVE_INFINITY
+    let globalRight  = Number.POSITIVE_INFINITY
+    let globalTop    = Number.NEGATIVE_INFINITY
+    let globalBottom = Number.POSITIVE_INFINITY
+    
+    this.nodes.forEach(node => {
+      if(!node.isDummy) {
+        globalLeft   = Math.max(globalLeft,   node.left)
+        globalRight  = Math.min(globalRight,  node.right)
+        globalTop    = Math.max(globalTop,    node.top)
+        globalBottom = Math.min(globalBottom, node.bottom)
+      }
+    })
+    
+    const centerX = (globalLeft + globalRight)  * 0.5
+    const centerY = (globalTop  + globalBottom) * 0.5
+    
+    const width = this.svg.width.baseVal.value
+    const height = this.svg.height.baseVal.value
+    
+    this.setCanvasTranslate(width/2 - centerX, height/2 - centerY)
+  }
+
   onDoubleClick(e) {
     if( this.textInput.isShown ) {
       // textInput表示中なら何もしない
@@ -270,6 +298,8 @@ export class MapManager {
 
     if(pickNode != null) {
       this.textInput.show(pickNode)
+    } else {
+      this.recenter()
     }
   }
 

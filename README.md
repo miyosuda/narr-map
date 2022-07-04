@@ -1,4 +1,17 @@
-# narr map
+# narr-map
+
+A minimal mind map editor.
+
+
+## Icons
+
+| text | Icon      |
+| ---- | ----  |
+| (r)  | :red_circle:   |
+| (g)  | :green_circle:  |
+| (b)  | :large_blue_circle:   |
+| (y)  | :yellow_circle:  |
+
 
 ## Development
 
@@ -9,7 +22,6 @@ $ npm install
 ```
 
 
-
 ### Debug
 
 ```
@@ -17,10 +29,7 @@ $ npm start
 ```
 
 
-
 ### Build
-
-#### MacOSX
 
 ```
 $ npm run make

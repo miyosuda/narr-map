@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ build ]
 
-
 jobs:
   build_on_mac:
     runs-on: macos-latest
@@ -39,10 +38,11 @@ jobs:
       run: npm install
     - name: build
       run: npm run make
-    - name: archive artifacts
-      uses: actions/upload-artifact@v3
+    - name: create release
+      uses: softprops/action-gh-release@v1
       with:
-        name: out
-        path: |
-          out
-          
+        draft: true
+        files: |
+          out/make/squirrel.windows/x64/*.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

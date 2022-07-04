@@ -1,0 +1,34 @@
+name: Build
+
+on:
+  push:
+    branches: [ build ]
+  pull_request:
+    branches: [ build ]
+
+
+jobs:
+  build_on_mac:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@master
+      with:
+        node-version: 16
+    - name: install dependencies
+      run: npm install
+    - name: build
+      run: npm run make
+    - name: create release
+      uses: softprops/action-gh-release@v1
+      with:
+        draft: true
+        files: |
+          out/make/zip/darwin/x64/*.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: out
+        path: |
+          out/make/zip

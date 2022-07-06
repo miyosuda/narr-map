@@ -646,8 +646,10 @@ export class MapManager {
       }
     }
 
+    // target nodeのbounds算出
     const targetNodeBounds = targetNode.calcYBounds()
-    const targetNodeOffsetY = SPAN_Y_PER_NODE * targetNodeIndex 
+    // target nodeのデフォルトY位置
+    const targetNodeOffsetY = SPAN_Y_PER_NODE * targetNodeIndex
 
     let lastNodeTop    = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.top
     let lastNodeBottom = targetNodeOffsetY + targetNode.adjustY + targetNodeBounds.bottom

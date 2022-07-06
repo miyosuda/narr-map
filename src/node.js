@@ -219,20 +219,26 @@ export class Node {
     }
     
     const bounds = {}
+
+    if(this.shiftY <= 0) {
+      // 上にシフトされている時.
+      // topを上に移動 (上にスペースを作る)
+      top += this.shiftY
+      // bounds bottomの相殺 (bounds.botomを減らす)
+      bottom += this.shiftY
+    } else {
+      // 下にシフトされている時.
+      // bottomを下に移動 (下にスペースを作る)
+      bottom += this.shiftY
+      // bounds topの相殺 (bounds.topの絶対値を小さくする)
+      top += this.shiftY
+    }
     
     if(top > 0) {
       top = 0
     }
     if(bottom < SPAN_Y_PER_NODE) {
       bottom = SPAN_Y_PER_NODE
-    }
-    
-    if(this.shiftY <= 0) {
-      // 上にシフトされているのでtopを上に移動 (上にスペースを作る)
-      top += this.shiftY
-    } else {
-      // 下にシフト. bottomを下に移動 (下にスペースを作る)
-      bottom += this.shiftY
     }
     
     bounds.top = top
@@ -824,19 +830,18 @@ export class Node {
   }
 
   debugDump() {
-    console.log('[node ' + this.text + ']')
-    console.log('  x=' + this.x)
-    console.log('  y=' + this.y)
-    console.log('  adjustY=' + this.adjustY)    
-    console.log('  shiftY=' + this.shiftY)
-    console.log('  adjustY=' + this.adjustY)
-    console.log('  isLeft=' + this.isLeft)
+    console.log('[' + this.text + ']')
+    console.log('  x       : ' + this.x)
+    console.log('  y       : ' + this.y)
+    console.log('  adjustY : ' + this.adjustY)    
+    console.log('  shiftY  : ' + this.shiftY)
+    //console.log('  isLeft: ' + this.isLeft)
     const bounds = this.calcYBounds()
-    console.log('  bounds.top=' + bounds.top)
-    console.log('  bounds.bottom=' + bounds.bottom)
-    console.log('  selected=' + this.selected)
+    console.log('  bounds.top    : ' + bounds.top)
+    console.log('  bounds.bottom : ' + bounds.bottom)
+    //console.log('  selected:' + this.selected)
     if(this.parentNode != null) {
-      console.log('  parent=' + this.parentNode.text)
+      console.log('  parent : ' + this.parentNode.text)
     }
   }
 }

@@ -257,17 +257,17 @@ export class MapManager {
   }
 
   recenter() {
-    let globalLeft   = Number.NEGATIVE_INFINITY
-    let globalRight  = Number.POSITIVE_INFINITY
-    let globalTop    = Number.NEGATIVE_INFINITY
-    let globalBottom = Number.POSITIVE_INFINITY
+    let globalLeft   = Number.POSITIVE_INFINITY
+    let globalRight  = Number.NEGATIVE_INFINITY
+    let globalTop    = Number.POSITIVE_INFINITY
+    let globalBottom = Number.NEGATIVE_INFINITY
     
     this.nodes.forEach(node => {
-      if(!node.isDummy) {
-        globalLeft   = Math.max(globalLeft,   node.left)
-        globalRight  = Math.min(globalRight,  node.right)
-        globalTop    = Math.max(globalTop,    node.top)
-        globalBottom = Math.min(globalBottom, node.bottom)
+      if(!node.isDummy && node.isVisible) {
+        globalLeft   = Math.min(globalLeft,   node.left)
+        globalRight  = Math.max(globalRight,  node.right)
+        globalTop    = Math.min(globalTop,    node.top)
+        globalBottom = Math.max(globalBottom, node.bottom)
       }
     })
     

@@ -57,7 +57,7 @@ export class Node {
 
     this.shiftX = 0
     this.shiftY = 0
-    this.adjustY = 0
+
     
     this.selected = false
     this.hoverState = HOVER_STATE_NONE
@@ -131,13 +131,28 @@ export class Node {
     this.children.splice(targetNodeIndex+1, 0, node)
   }
 
-  updateChildrenLayout() {
+  calcChildStartOffsetY() {
     let childYOffset = 0.0
     if( this.children.length == 1 ) {
       // 子が1ノードしかない場合は少し上に上げておく
       childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
     }
+
+    for(let i=0; i<this.children.length; i++) {
+      const node = this.children[i]
+      //.. TODO: 最適化
+      const childYBounds = node.calcYBounds()
+      if(childYBounds.top < 0) {
+        childYOffset += childYBounds.top
+      }
+    }
     
+    childYOffset -= (this.children.length-1) / 2 * SPAN_Y_PER_NODE
+    
+    return childYOffset
+  }
+
+  updateChildrenLayout() {
     const toLeft = this.children[0].isLeft
     
     let childBaseX = 0
@@ -146,22 +161,24 @@ export class Node {
     } else {
       childBaseX = this.x - GAP_X
     }
-    
+
+    const childStartOffsetY = this.calcChildStartOffsetY()
+
     // 子ノードのY方向の開始位置
-    const childDefaultStartY = this.y + childYOffset -
-          (this.children.length-1) / 2 * SPAN_Y_PER_NODE
+    let childY = this.y + childStartOffsetY
     
     for(let i=0; i<this.children.length; i++) {
       const node = this.children[i]
       // 各ノードのx,yを更新する
-      const nodeDefaultY = childDefaultStartY + i * SPAN_Y_PER_NODE
-      node.updateLayout(childBaseX, nodeDefaultY)
-    }    
+      node.updateLayout(childBaseX, childY)
+
+      // TODO: 最適化
+      const childYBounds = node.calcYBounds()
+      childY += (childYBounds.bottom - childYBounds.top)
+    }
   }
 
   updateLayout(baseX, baseY) {
-    // 引数で与えられたこのNodeのデフォルト位置を元にshiftX,YおよびadjustYを反映してx,y位置を更新
-    
     if(this.isRoot) {
       // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく
       baseX = -this.width / 2
@@ -189,49 +206,46 @@ export class Node {
       top = 0
       bottom = SPAN_Y_PER_NODE
     } else {
-      // 子Nodeがある場合
-      let childYOffset = 0.0
-      if( this.children.length == 1 ) {
-        // 子が1ノードしかない場合は少し上に上げておく
-        childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
-      }
-      
       // 子ノードのY方向の開始位置
-      let offsetY = childYOffset - (this.children.length-1) / 2 * SPAN_Y_PER_NODE
+      top = this.calcChildStartOffsetY()
+      bottom = top
       
       for(let i=0; i<this.children.length; i++) {
         const node = this.children[i]
         // 子Nodeのboundsを算出する
         const childYBounds = node.calcYBounds()
-        const childTop    = offsetY + childYBounds.top    + node.adjustY
-        const childBottom = offsetY + childYBounds.bottom + node.adjustY
-        
-        if(childTop < top) {
-          top = childTop
-        }
-        
-        if(childBottom > bottom) {
-          bottom = childBottom
-        }
-        
-        offsetY += SPAN_Y_PER_NODE
+        const childSpanY = childYBounds.bottom - childYBounds.top
+        bottom += childSpanY
       }
     }
     
     const bounds = {}
 
+    // Nodeを配置するときのこのboundsのtopからの下方向のoffset
+    let locateOffset = -top
+    if(locateOffset < 0) {
+      locateOffset = 0
+    }
+    
     if(this.shiftY <= 0) {
       // 上にシフトされている時.
       // topを上に移動 (上にスペースを作る)
       top += this.shiftY
       // bounds bottomの相殺 (bounds.botomを減らす)
       bottom += this.shiftY
+      
+      //.. すぐにNodeを置いて下にshiftY分のスペースを開ける場合に相当
+      
     } else {
       // 下にシフトされている時.
       // bottomを下に移動 (下にスペースを作る)
       bottom += this.shiftY
       // bounds topの相殺 (bounds.topの絶対値を小さくする)
       top += this.shiftY
+
+      //.. Nodeを置いてから下にshiftY分のスペースを開ける場合に相当
+
+      locateOffset += this.shiftY
     }
     
     if(top > 0) {
@@ -243,6 +257,7 @@ export class Node {
     
     bounds.top = top
     bounds.bottom = bottom
+    bounds.locateOffset = locateOffset
     return bounds
   }
 
@@ -303,7 +318,16 @@ export class Node {
       this.x = baseX + this.shiftX
     }
 
-    this.y = baseY + this.shiftY + this.adjustY
+    if(this.isRoot) {
+      this.y = baseY
+    } else {
+      // TODO: 最適化
+      const bounds = this.calcYBounds()
+      if(this.text == 'target') {
+        console.log('bounds.top' + bounds.top + ' bottom=' + bounds.bottom)
+      }
+      this.y = baseY + bounds.locateOffset
+    }
 
     if(!this.isDummy) {
       this.textComponent.setPos(this.x, this.y)
@@ -670,7 +694,6 @@ export class Node {
       'text'     : this.text,
       'shiftX'   : this.shiftX,
       'shiftY'   : this.shiftY,
-      'adjustY'  : this.adjustY,
       'selected' : this.selected,
       'folded'   : this.folded,
       'isLeft'   : this.isLeft,
@@ -690,7 +713,6 @@ export class Node {
     
     this.shiftX = state['shiftX']
     this.shiftY = state['shiftY']
-    this.adjustY = state['adjustY']
     this.isLeft = state['isLeft']
     
     this.setSelected(state['selected'])
@@ -833,7 +855,6 @@ export class Node {
     console.log('[' + this.text + ']')
     console.log('  x       : ' + this.x)
     console.log('  y       : ' + this.y)
-    console.log('  adjustY : ' + this.adjustY)    
     console.log('  shiftY  : ' + this.shiftY)
     //console.log('  isLeft: ' + this.isLeft)
     const bounds = this.calcYBounds()

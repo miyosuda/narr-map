@@ -22,6 +22,25 @@ const createWindow = () => {
     }
   })
 
+  mainWindow.on('close', (event) => {
+    if( editDirty ) {
+      const quit = () => {
+        app.quit()
+      }
+      
+      const ret = showSaveConfirmDialog()
+      if( ret == CONFIRM_ANSWER_SAVE ) {
+        // save後にquitを実行する
+        event.preventDefault()
+        save(mainWindow, quit)
+      } else if( ret == CONFIRM_ANSWER_DELETE ) {
+        editDirty = false
+      } else {
+        event.preventDefault()
+      }
+    }
+  })  
+
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
 
@@ -76,6 +95,8 @@ ipc.on('response', (event, arg, obj) => {
     
     // TODO: ここのeditDirty処理でOKかどうか要確認
     editDirty = false
+
+    onSaveFinished()
   }
 })
 
@@ -127,6 +148,12 @@ const saveAs = (browserWindow) => {
     const fileName = path.basename(filePath)
     browserWindow.setTitle(fileName)
     browserWindow.webContents.send('request', 'save')
+  }
+}
+
+const onSaveFinished = () => {
+  if( onSavedFunction != null ) {
+    onSavedFunction()
   }
 }
 

@@ -57,7 +57,6 @@ export class Node {
 
     this.shiftX = 0
     this.shiftY = 0
-
     
     this.selected = false
     this.hoverState = HOVER_STATE_NONE
@@ -140,7 +139,7 @@ export class Node {
 
     for(let i=0; i<this.children.length; i++) {
       const node = this.children[i]
-      //.. TODO: 最適化
+      // TODO: 最適化
       const childYBounds = node.calcYBounds()
       if(childYBounds.top < 0) {
         childYOffset += childYBounds.top
@@ -229,22 +228,15 @@ export class Node {
     
     if(this.shiftY <= 0) {
       // 上にシフトされている時.
+      // すぐにNodeを置いて下にshiftY分のスペースを開ける場合に相当
       // topを上に移動 (上にスペースを作る)
       top += this.shiftY
-      // bounds bottomの相殺 (bounds.botomを減らす)
-      bottom += this.shiftY
-      
-      //.. すぐにNodeを置いて下にshiftY分のスペースを開ける場合に相当
-      
     } else {
-      // 下にシフトされている時.
+      // 下にシフトされている時.      
+      // Nodeを置いてから下にshiftY分のスペースを開ける場合に相当
       // bottomを下に移動 (下にスペースを作る)
       bottom += this.shiftY
-      // bounds topの相殺 (bounds.topの絶対値を小さくする)
-      top += this.shiftY
-
-      //.. Nodeを置いてから下にshiftY分のスペースを開ける場合に相当
-
+      
       locateOffset += this.shiftY
     }
     
@@ -323,9 +315,6 @@ export class Node {
     } else {
       // TODO: 最適化
       const bounds = this.calcYBounds()
-      if(this.text == 'target') {
-        console.log('bounds.top' + bounds.top + ' bottom=' + bounds.bottom)
-      }
       this.y = baseY + bounds.locateOffset
     }
 
@@ -340,7 +329,7 @@ export class Node {
       // 子Node側
       const edgeEndPosY = this.y + this.height - 0.5 // lineの幅を考慮している
 
-      let edgeEndPosX      
+      let edgeEndPosX
       if(this.isLeft) {
         edgeEndPosX = this.x + this.width
       } else {

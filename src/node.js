@@ -139,10 +139,8 @@ export class Node {
 
     for(let i=0; i<this.children.length; i++) {
       const node = this.children[i]
-      // TODO: 最適化
-      const childYBounds = node.calcYBounds()
-      if(childYBounds.top < 0) {
-        childYOffset += childYBounds.top
+      if(node.topY < 0) {
+        childYOffset += node.topY
       }
     }
     
@@ -170,10 +168,8 @@ export class Node {
       const node = this.children[i]
       // 各ノードのx,yを更新する
       node.updateLayout(childBaseX, childY)
-
-      // TODO: 最適化
-      const childYBounds = node.calcYBounds()
-      childY += (childYBounds.bottom - childYBounds.top)
+      
+      childY += (node.bottomY - node.topY)
     }
   }
 
@@ -194,7 +190,13 @@ export class Node {
     this.updateChildrenLayout()
   }
 
-  calcYBounds() {
+  updateYBounds() {
+    for(let i=0; i<this.children.length; i++) {
+      const node = this.children[i]
+      // 子Nodeのboundsを更新する
+      node.updateYBounds()
+    }
+    
     // このNodeのデフォルト位置を起点として、その位置から子Nodeを含めた上下の範囲を算出.
     // shiftYも反映されている.
     let top = Number.POSITIVE_INFINITY
@@ -212,14 +214,11 @@ export class Node {
       for(let i=0; i<this.children.length; i++) {
         const node = this.children[i]
         // 子Nodeのboundsを算出する
-        const childYBounds = node.calcYBounds()
-        const childSpanY = childYBounds.bottom - childYBounds.top
+        const childSpanY = node.bottomY - node.topY
         bottom += childSpanY
       }
     }
     
-    const bounds = {}
-
     // Nodeを配置するときのこのboundsのtopからの下方向のoffset
     let locateOffset = -top
     if(locateOffset < 0) {
@@ -246,11 +245,10 @@ export class Node {
     if(bottom < SPAN_Y_PER_NODE) {
       bottom = SPAN_Y_PER_NODE
     }
-    
-    bounds.top = top
-    bounds.bottom = bottom
-    bounds.locateOffset = locateOffset
-    return bounds
+
+    this.topY = top
+    this.bottomY = bottom
+    this.locateOffset = locateOffset
   }
 
   get hasChildren() {
@@ -313,9 +311,7 @@ export class Node {
     if(this.isRoot) {
       this.y = baseY
     } else {
-      // TODO: 最適化
-      const bounds = this.calcYBounds()
-      this.y = baseY + bounds.locateOffset
+      this.y = baseY + this.locateOffset
     }
 
     if(!this.isDummy) {
@@ -846,9 +842,8 @@ export class Node {
     console.log('  y       : ' + this.y)
     console.log('  shiftY  : ' + this.shiftY)
     //console.log('  isLeft: ' + this.isLeft)
-    const bounds = this.calcYBounds()
-    console.log('  bounds.top    : ' + bounds.top)
-    console.log('  bounds.bottom : ' + bounds.bottom)
+    console.log('  topY    : ' + this.topY)
+    console.log('  bottomY : ' + this.bottomY)
     //console.log('  selected:' + this.selected)
     if(this.parentNode != null) {
       console.log('  parent : ' + this.parentNode.text)

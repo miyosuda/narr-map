@@ -322,7 +322,7 @@ export class MapManager {
         const dragTargetNode = this.handleDraggingNode
         dragTargetNode.onDrag(dx, dy)
         this.nodeEdited = true
-        this.adjustLayout(dragTargetNode)
+        this.updateLayout()
       } else if(this.dragMode == DRAG_GHOST) {
         // Ghostを移動
         if(!this.ghostNode.isShown) {
@@ -397,11 +397,8 @@ export class MapManager {
             
             hoverHitNode.attachChildNodeToTail(newChildNode)
             this.nodeEdited = true
-            
-            if(hoverHitNode != oldParentNode) {
-              this.adjustLayoutWithReset(oldParentNode)
-            }
-            this.adjustLayoutWithReset(hoverHitNode)
+
+            this.updateLayout()
           }
         } else if(hoverHit == HOVER_HIT_OTHER_CHILD) {
           // rootの左側にhitした場合
@@ -417,11 +414,7 @@ export class MapManager {
           this.leftRootNode.attachChildNodeToTail(newChildNode)
           
           this.nodeEdited = true
-          
-          if(this.leftRootNode != oldParentNode) {
-            this.adjustLayoutWithReset(oldParentNode)
-          }
-          this.adjustLayoutWithReset(this.leftRootNode)
+          this.updateLayout()
         } else if(hoverHit == HOVER_HIT_SIBLING) {
           const newChildNode = this.ghostNode.node
           
@@ -431,10 +424,7 @@ export class MapManager {
             // hoverHitNodeがnewChildNodeの子孫だったら何もしない
             newParentNode.attachChildNodeAboveSibling(newChildNode, hoverHitNode)
             this.nodeEdited = true
-            if(newChildNode != oldParentNode) {
-              this.adjustLayoutWithReset(oldParentNode)
-            }
-            this.adjustLayoutWithReset(newParentNode)
+            this.updateLayout()
           }
         }
       }
@@ -552,7 +542,7 @@ export class MapManager {
     if(!this.lastNode.isRoot) {
       this.lastNode.toggleFolded()
       this.clearNodeSelection(this.lastNode)
-      this.adjustLayout(this.lastNode)
+      this.updateLayout()
     }
   }
 
@@ -585,7 +575,7 @@ export class MapManager {
     
     this.clearNodeSelection(node)
     
-    this.adjustLayout(node)
+    this.updateLayout()
     
     this.textInput.show(node)
   }
@@ -604,35 +594,22 @@ export class MapManager {
       
       this.clearNodeSelection(node)
       
-      // 前のsiblingをtargetとしてadjustとしている
-      this.adjustLayout(oldLastNode)
+      this.updateLayout()
       
       this.textInput.show(node)
     }
   }
-
+  
   updateLayout() {
+    // 各NodeのtopY, bottomY, locateOffsetを更新
+    this.rootNode.updateYBounds()
+    this.leftRootNode.updateYBounds()
+    
     // 各Nodeのx,yを更新する
     this.rootNode.updateLayout(null, null)
     this.leftRootNode.updateLayout(null, null)
   }
   
-  adjustLayout(targetNode) {
-    // TODO: 整理, 引数不要になる?
-    this.updateLayout()
-  }
-
-  adjustLayoutWithReset(targetParentNode) {
-    // TODO: 整理, 引数不要になる?
-    // targetParentNodeで指定したNodeの子が削除されたり子枝が追加された場合の対処
-    
-    if(targetParentNode == null) {
-      return
-    }
-    
-    this.updateLayout()
-  }
-
   deleteNode(node) {
     const parentNode = node.parent
 
@@ -647,7 +624,7 @@ export class MapManager {
     node.remove(removeNodeCallback)
     
     if(parentNode != null) {
-      this.adjustLayoutWithReset(parentNode)
+      this.updateLayout()
     }
   }
 
@@ -913,7 +890,7 @@ export class MapManager {
       modified = true
     })
     
-    this.adjustLayoutWithReset(parentNode)
+    this.updateLayout()
 
     if(modified) {
       this.storeState()

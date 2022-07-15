@@ -505,7 +505,7 @@ export class MapManager {
         }     
         this.cursorDepth = node.depth
       } else if(this.lastNode.isFolded) {
-        this.lastNode.toggleFolded()
+        this.toggleFold()
       }
     } else if(direction == MOVE_LEFT) {
       if(!this.lastNode.isLeft) {
@@ -520,7 +520,7 @@ export class MapManager {
       if(node != null) {
         this.cursorDepth = node.depth
       } else if(this.lastNode.isFolded) {
-        this.lastNode.toggleFolded()
+        this.toggleFold()
       }
 
     } else if(direction == MOVE_UP) {

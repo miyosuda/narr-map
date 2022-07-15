@@ -540,9 +540,12 @@ export class MapManager {
 
   toggleFold() {
     if(!this.lastNode.isRoot) {
-      this.lastNode.toggleFolded()
-      this.clearNodeSelection(this.lastNode)
-      this.updateLayout()
+      const ret = this.lastNode.toggleFolded()
+      if(ret) {
+        this.clearNodeSelection(this.lastNode)
+        this.updateLayout()
+        this.storeState()
+      }
     }
   }
 

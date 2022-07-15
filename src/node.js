@@ -474,7 +474,9 @@ export class Node {
 
   toggleFolded() {
     if(this.hasChildren) {
-      this.setFolded(!this.folded)
+      return this.setFolded(!this.folded)
+    } else {
+      return false
     }
   }
 
@@ -493,6 +495,10 @@ export class Node {
           node.setVisible(true)
         })
       }
+
+      return true
+    } else {
+      return false
     }
   }
 

@@ -28,6 +28,8 @@ export class TextComponent {
     const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject')
     this.foreignObject = foreignObject
 
+    foreignObject.classList.add('with-back')
+
     if(isRoot) {
       foreignObject.classList.add('root-node')
     } else {
@@ -176,13 +178,18 @@ export class LineComponent {
 
 
 export class FoldMarkComponent {
-  constructor(container) {
+  constructor(container, config) {
     const markElement = document.createElementNS(NAME_SPACE, 'circle')
     this.markElement = markElement
     
     markElement.setAttribute('stroke', '#7f7f7f')
     markElement.setAttribute('stroke-width', 1)
-    markElement.setAttribute('fill', '#ffffff')
+    
+    if(config.darkMode) {
+      markElement.setAttribute('fill', '#000000') // dark-mode
+    } else {
+      markElement.setAttribute('fill', '#ffffff') // light-mode
+    }
     
     markElement.setAttribute('cx', 0)
     markElement.setAttribute('cy', 0)
@@ -212,13 +219,17 @@ export class FoldMarkComponent {
 
 
 export class HandleComponent {
-  constructor(container) {
+  constructor(container, config) {
     const handleElement = document.createElementNS(NAME_SPACE, 'ellipse')
     this.handleElement = handleElement
     
     handleElement.setAttribute('stroke', '#7f7f7f')
     handleElement.setAttribute('stroke-width', 1)
-    handleElement.setAttribute('fill', '#ffffff')
+    if(config.darkMode) {
+      handleElement.setAttribute('fill', '#000000') // dark-mode
+    } else {
+      handleElement.setAttribute('fill', '#ffffff') // light-mode
+    }
     
     handleElement.setAttribute('cx', 0)
     handleElement.setAttribute('cy', 0)

@@ -25,7 +25,8 @@ const MOVE_LEFT  = 4
 
 
 export class MapManager {
-  constructor() {
+  constructor(config) {
+    this.config = config
   }
 
   init() {
@@ -135,13 +136,13 @@ export class MapManager {
   addRootNode() {
     const g = document.getElementById('overlay')
     
-    const rightRootNode = new Node(null, g)
+    const rightRootNode = new Node(null, g, this.config)
     rightRootNode.setText('root')
     this.nodes.push(rightRootNode)
     
     this.setNodeSelected(rightRootNode, true)
 
-    const leftRootNode = new Node(null, g,
+    const leftRootNode = new Node(null, g, this.config,
                                   true,
                                   rightRootNode)
     this.nodes.push(leftRootNode)
@@ -572,7 +573,7 @@ export class MapManager {
       parentNode = this.lastNode
     }
 
-    const node = new Node(parentNode, g, isLeft)
+    const node = new Node(parentNode, g, this.config, isLeft)
     this.nodes.push(node)
     parentNode.addChildNode(node)
     
@@ -591,7 +592,7 @@ export class MapManager {
       const oldLastNode = this.lastNode
       const parentNode = this.lastNode.parent
 
-      const node = new Node(parentNode, g, oldLastNode.isLeft)
+      const node = new Node(parentNode, g, this.config, oldLastNode.isLeft)
       this.nodes.push(node)
       parentNode.addChildNodeBelow(node, oldLastNode)
       
@@ -748,18 +749,18 @@ export class MapManager {
       const g = document.getElementById('overlay')
       if(!state['isLeft'] ) {
         // TOOD: 要整理
-        node = new Node(null, g)
+        node = new Node(null, g, this.config)
         this.rootNode = node
       } else {
         // TOOD: 要整理 (isLeftを後で再設定されている？)
-        node = new Node(null, g, true, this.rootNode)
+        node = new Node(null, g, this.config, true, this.rootNode)
         this.leftRootNode = node
       }
       // ここではまだapplyState(state)しない
       this.nodes.push(node)
     } else {
       const g = document.getElementById('nodes')
-      node = new Node(parentNode, g)
+      node = new Node(parentNode, g, this.config)
       // ここではまだapplyState(state)しない
       this.nodes.push(node)
       parentNode.addChildNode(node)

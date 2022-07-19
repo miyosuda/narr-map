@@ -1,0 +1,20 @@
+.with-back {
+  background: white; /* dark-mode */
+  color: black; /* dark-mode */
+}
+
+.node-selected {
+  background: #cfcfcf;
+}
+
+.node-right-overlapped {
+  background: linear-gradient(to right, white, gray);
+}
+
+.node-left-overlapped {
+  background: linear-gradient(to left, white, gray);
+}
+
+.node-top-overlapped {
+  background: linear-gradient(to top, white, gray);
+}

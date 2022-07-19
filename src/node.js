@@ -29,7 +29,11 @@ const GAP_X = 20
 
 
 export class Node {
-  constructor(parentNode, container, isLeft=false, accompaniedNode=null) {
+  constructor(parentNode,
+              container,
+              config,
+              isLeft=false,
+              accompaniedNode=null) {
     this.parentNode = parentNode
     this.isLeft = isLeft
     this.accompaniedNode = accompaniedNode
@@ -43,8 +47,8 @@ export class Node {
 
     if(!this.isRoot) {
       this.lineComponent = new LineComponent(container)
-      this.handleComponent = new HandleComponent(container)
-      this.foldMarkComponent = new FoldMarkComponent(container)
+      this.handleComponent = new HandleComponent(container, config)
+      this.foldMarkComponent = new FoldMarkComponent(container, config)
     } else {
       this.lineComponent = null
       this.handleCompnent = null

@@ -1,8 +1,3 @@
-.with-back {
-  background: black; /* dark-mode */
-  color: white; /* dark-mode */
-}
-
 svg {
   page-break-after: always;
 }
@@ -16,26 +11,6 @@ svg {
 .node {
   border-bottom: solid 1px #7f7f7f;
   padding: 4px 3px 1px 4px;
-}
-
-.node-selected {
-  /*background: #cfcfcf;*/  /* light-mode */
-  background: #4f4f4f;  /* dark-mode */
-}
-
-.node-right-overlapped {
-  /*background: linear-gradient(to right, white, gray);*/ /* light-mode */
-  background: linear-gradient(to right, black, gray); /* dark-mode*/
-}
-
-.node-left-overlapped {
-  /*background: linear-gradient(to left, white, gray);*/ /* light-mode */
-  background: linear-gradient(to left, black, gray); /* dark-mode */
-}
-
-.node-top-overlapped {
-  /*background: linear-gradient(to top, white, gray);*/ /* light-mode */
-  background: linear-gradient(to top, black, gray); /* light-mode */
 }
 
 foreignObject {

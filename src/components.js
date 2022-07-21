@@ -28,9 +28,8 @@ export class TextComponent {
     const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject')
     this.foreignObject = foreignObject
 
-    foreignObject.classList.add('with-back')
-
     if(isRoot) {
+      foreignObject.classList.add('with-back')
       foreignObject.classList.add('root-node')
     } else {
       foreignObject.classList.add('node')

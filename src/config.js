@@ -1,5 +1,5 @@
 export class Config {
   constructor() {
-    this.darkMode = true
+    this.darkMode = false
   }
 }

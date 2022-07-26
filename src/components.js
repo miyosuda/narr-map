@@ -24,12 +24,16 @@ const BLUE_CIRCLE_EMOJI   = String.fromCodePoint(0x1F535)
 const YELLOW_CIRCLE_EMOJI = String.fromCodePoint(0x1F7E1)
 
 export class TextComponent {
-  constructor(container, isRoot) {
+  constructor(container, isRoot, config) {
     const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject')
     this.foreignObject = foreignObject
 
     if(isRoot) {
-      foreignObject.classList.add('with-back')
+      if(config.darkMode) {
+        foreignObject.classList.add('with-back-dark')
+      } else {
+        foreignObject.classList.add('with-back-light')
+      }
       foreignObject.classList.add('root-node')
     } else {
       foreignObject.classList.add('node')
@@ -43,6 +47,8 @@ export class TextComponent {
     // テキスト選択無効のクラスを指定
     span.className = 'disable-select';
     foreignObject.appendChild(span)
+
+    this.config = config
 
     this.isRoot = isRoot
     
@@ -111,31 +117,48 @@ export class TextComponent {
   }
   
   setStyle(style) {
-    if(style == TEXT_COMPONENT_STYLE_SELECTED) {
-      this.foreignObject.classList.add('node-selected')
-      this.foreignObject.classList.remove('node-top-overlapped')
-      this.foreignObject.classList.remove('node-right-overlapped')
-      this.foreignObject.classList.remove('node-left-overlapped')
-    } else if(style == TEXT_COMPONENT_STYLE_HOVER_TOP) {
-      this.foreignObject.classList.remove('node-selected')
-      this.foreignObject.classList.add('node-top-overlapped')
-      this.foreignObject.classList.remove('node-right-overlapped')
-      this.foreignObject.classList.remove('node-left-overlapped')
-    } else if(style == TEXT_COMPONENT_STYLE_HOVER_RIGHT) {
-      this.foreignObject.classList.remove('node-selected')
-      this.foreignObject.classList.remove('node-top-overlapped')
-      this.foreignObject.classList.add('node-right-overlapped')
-      this.foreignObject.classList.remove('node-left-overlapped')
-    } else if(style == TEXT_COMPONENT_STYLE_HOVER_LEFT) {
-      this.foreignObject.classList.remove('node-selected')
-      this.foreignObject.classList.remove('node-top-overlapped')
-      this.foreignObject.classList.remove('node-right-overlapped')
-      this.foreignObject.classList.add('node-left-overlapped')
+    let node_selected_class
+    let top_overlapped_class
+    let right_overlapped_class
+    let left_overlapped_class
+    
+    if(this.config.darkMode) {
+      node_selected_class = 'node-selected-dark'
+      top_overlapped_class = 'node-top-overlapped-dark'
+      right_overlapped_class = 'node-right-overlapped-dark'
+      left_overlapped_class = 'node-left-overlapped-dark'
     } else {
-      this.foreignObject.classList.remove('node-selected')
-      this.foreignObject.classList.remove('node-top-overlapped')
-      this.foreignObject.classList.remove('node-right-overlapped')
-      this.foreignObject.classList.remove('node-left-overlapped')
+      node_selected_class = 'node-selected-light'
+      top_overlapped_class = 'node-top-overlapped-light'
+      right_overlapped_class = 'node-right-overlapped-light'
+      left_overlapped_class = 'node-left-overlapped-light'
+    }
+    
+    if(style == TEXT_COMPONENT_STYLE_SELECTED) {
+      this.foreignObject.classList.add(node_selected_class)
+      this.foreignObject.classList.remove(top_overlapped_class)
+      this.foreignObject.classList.remove(right_overlapped_class)
+      this.foreignObject.classList.remove(left_overlapped_class)
+    } else if(style == TEXT_COMPONENT_STYLE_HOVER_TOP) {
+      this.foreignObject.classList.remove(node_selected_class)
+      this.foreignObject.classList.add(top_overlapped_class)
+      this.foreignObject.classList.remove(right_overlapped_class)
+      this.foreignObject.classList.remove(left_overlapped_class)
+    } else if(style == TEXT_COMPONENT_STYLE_HOVER_RIGHT) {
+      this.foreignObject.classList.remove(node_selected_class)
+      this.foreignObject.classList.remove(top_overlapped_class)
+      this.foreignObject.classList.add(right_overlapped_class)
+      this.foreignObject.classList.remove(left_overlapped_class)
+    } else if(style == TEXT_COMPONENT_STYLE_HOVER_LEFT) {
+      this.foreignObject.classList.remove(node_selected_class)
+      this.foreignObject.classList.remove(top_overlapped_class)
+      this.foreignObject.classList.remove(right_overlapped_class)
+      this.foreignObject.classList.add(left_overlapped_class)
+    } else {
+      this.foreignObject.classList.remove(node_selected_class)
+      this.foreignObject.classList.remove(top_overlapped_class)
+      this.foreignObject.classList.remove(right_overlapped_class)
+      this.foreignObject.classList.remove(left_overlapped_class)
     }
   }
 }

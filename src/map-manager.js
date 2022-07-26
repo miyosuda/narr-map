@@ -49,7 +49,19 @@ export class MapManager {
   prepare() {
     this.svg = document.getElementById('svg')
     this.canvas = document.getElementById('canvas')
-
+    
+    const body = document.getElementById('body')
+    // TODO: inputはTextInputでクラス指定した方が良いか検討
+    const input = document.getElementById('textInput')
+    
+    if(this.config.darkMode) {
+      body.className = 'with-back-dark'
+      input.className = 'with-back-dark'
+    } else {
+      body.className = 'with-back-light'
+      input.className = 'with-back-light'
+    }
+    
     const width = this.svg.width.baseVal.value
     const height = this.svg.height.baseVal.value
     this.setCanvasTranslate(width/2, height/2)

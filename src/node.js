@@ -40,7 +40,7 @@ export class Node {
     this.children = []
     
     if(!this.isDummy) {
-      this.textComponent = new TextComponent(container, this.isRoot)
+      this.textComponent = new TextComponent(container, this.isRoot, config)
     } else {
       this.textComponent = null
     }

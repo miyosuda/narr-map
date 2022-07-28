@@ -1,14 +1,11 @@
 import {Config} from './config'
 
 import './css/reset.css'
-import './css/style-common.css'
 import './css/style.css'
-
-
-const config = new Config()
 
 import {MapManager} from './map-manager'
 
+const config = new Config()
 const mapManager = new MapManager(config)
 
 window.onload = () => {

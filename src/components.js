@@ -25,20 +25,13 @@ const YELLOW_CIRCLE_EMOJI = String.fromCodePoint(0x1F7E1)
 
 export class TextComponent {
   constructor(container, isRoot, config) {
+    this.isRoot = isRoot
+    
     const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject')
     this.foreignObject = foreignObject
-
-    if(isRoot) {
-      if(config.darkMode) {
-        foreignObject.classList.add('with-back-dark')
-      } else {
-        foreignObject.classList.add('with-back-light')
-      }
-      foreignObject.classList.add('root-node')
-    } else {
-      foreignObject.classList.add('node')
-    }
-
+    
+    this.applyConfig(config)
+    
     container.appendChild(foreignObject)
 
     const span = document.createElement('span')
@@ -50,9 +43,20 @@ export class TextComponent {
 
     this.config = config
 
-    this.isRoot = isRoot
-    
     this.setVisible(true)
+  }
+
+  applyConfig(config) {
+    if(this.isRoot) {
+      if(config.darkMode) {
+        this.foreignObject.classList.add('with-back-dark')
+      } else {
+        this.foreignObject.classList.add('with-back-light')
+      }
+      this.foreignObject.classList.add('root-node')
+    } else {
+      this.foreignObject.classList.add('node')
+    }
   }
 
   formatEmoji(text) {

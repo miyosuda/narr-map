@@ -11,7 +11,7 @@ import {GhostNode} from './ghost-node.js'
 import {TextInput} from './text-input'
 import {EditHistory} from './edit-history'
 const { nmapi } = window
-
+import {Config} from './config'
 
 const DRAG_NONE  = 0
 const DRAG_NODE  = 1
@@ -25,8 +25,7 @@ const MOVE_LEFT  = 4
 
 
 export class MapManager {
-  constructor(config) {
-    this.config = config
+  constructor() {
   }
 
   init() {
@@ -49,19 +48,7 @@ export class MapManager {
   prepare() {
     this.svg = document.getElementById('svg')
     this.canvas = document.getElementById('canvas')
-    
-    const body = document.getElementById('body')
-    // TODO: inputはTextInputでクラス指定した方が良いか検討
-    const input = document.getElementById('textInput')
-    
-    if(this.config.darkMode) {
-      body.className = 'with-back-dark'
-      input.className = 'with-back-dark'
-    } else {
-      body.className = 'with-back-light'
-      input.className = 'with-back-light'
-    }
-    
+
     const width = this.svg.width.baseVal.value
     const height = this.svg.height.baseVal.value
     this.setCanvasTranslate(width/2, height/2)
@@ -113,15 +100,46 @@ export class MapManager {
         this.paste()
       } else if( arg === 'selectall') {
         this.selectAll()
+      } else if( arg === 'dark-mode') {
+        // TODO: 整理
+        console.log('set dark-mode: ' + obj)
+        const config = new Config()
+        const darkMode = obj
+        config.darkMode = darkMode
+        this.applyConfig(config)
       }
     })
     
     this.addGhostNode()
     
     this.init()
+
+    // TODO: configの生成/設定
+    const config = new Config()
+    this.applyConfig(config)
     
     this.addRootNode()
     this.editHistory = new EditHistory(this.getState())
+  }
+
+  applyConfig(config) {
+    const body = document.getElementById('body')
+    // textInputはTextInputクラスでラップして扱っているがここでは直接変更している
+    const input = document.getElementById('textInput')
+    
+    if(config.darkMode) {
+      body.className = 'with-back-dark'
+      input.className = 'with-back-dark'
+    } else {
+      body.className = 'with-back-light'
+      input.className = 'with-back-light'
+    }
+
+    this.nodes.forEach(node => {
+      node.applyConfig(config)
+    })
+
+    this.config = config
   }
 
   setCanvasTranslate(translateX, translateY) {

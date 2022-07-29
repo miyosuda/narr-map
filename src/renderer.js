@@ -1,12 +1,9 @@
-import {Config} from './config'
-
 import './css/reset.css'
 import './css/style.css'
 
 import {MapManager} from './map-manager'
 
-const config = new Config()
-const mapManager = new MapManager(config)
+const mapManager = new MapManager()
 
 window.onload = () => {
   mapManager.prepare()

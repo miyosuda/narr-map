@@ -3,12 +3,36 @@ const ipc = require('electron').ipcMain
 const dialog = require('electron').dialog
 const fs = require('fs')
 const path = require('path')
+const Store = require('electron-store');
+
+const schema = {
+  darkMode: {
+	type: 'boolean',
+	default: false
+  },
+}
+
+const store = new Store({schema})
+
+
+const setDarkMode = (darkMode) => {
+  globalMainWindow.webContents.send('request', 'dark-mode', darkMode)
+}
+
+const onDarkModeChanged = (newValue, oldValue) => {
+  setDarkMode(newValue)
+}
+
+store.onDidChange('darkMode', onDarkModeChanged)
+
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   // eslint-disable-line global-require
   app.quit()
 }
+
+let globalMainWindow = null
 
 const createWindow = () => {
   // Create the browser window.
@@ -39,7 +63,11 @@ const createWindow = () => {
         event.preventDefault()
       }
     }
-  })  
+  })
+
+  mainWindow.webContents.on('did-finish-load', ()=>{
+    setDarkMode(store.get('darkMode'))
+  })
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
@@ -48,6 +76,8 @@ const createWindow = () => {
 
   // Open the DevTools.
   //mainWindow.webContents.openDevTools()
+
+  globalMainWindow = mainWindow
 }
 
 // This method will be called when Electron has finished
@@ -342,6 +372,21 @@ const templateMenu = [
     ]
   },
   {
+    label: 'Setting',
+    submenu: [
+      {
+        label: 'Dark mode',
+        type: "checkbox",
+        checked: store.get('darkMode'),
+        click: (menuItem, browserWindow, event) => {
+          const newDarkMode = !store.get('darkMode')
+          store.set('darkMode', newDarkMode)
+          //menuItem.checked = newDarkMode
+        }
+      }
+    ]
+  },
+  {
     label: 'View',
     submenu: [
       {
@@ -372,7 +417,6 @@ const templateMenu = [
     ]
   }
 ]
-
 
 const menu = Menu.buildFromTemplate(templateMenu)
 Menu.setApplicationMenu(menu)

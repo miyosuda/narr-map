@@ -67,6 +67,28 @@ export class Node {
     this.handleShown = false
     this.folded = false
   }
+
+  applyConfig(config) {
+    if(this.textComponent != null) {
+      this.textComponent.applyConfig(config)
+      
+      // selected状態もconfigが影響するので再反映しておく
+      if(this.selected) {
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
+      } else {
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
+      }
+    }
+    if(this.handleComponent != null) {
+      this.handleComponent.applyConfig(config)
+    }
+    if(this.foldMarkComponent != null) {
+      this.foldMarkComponent.applyConfig(config)
+    }
+
+    // hoverの状態にconfigが影響するのでクリアしておく
+    this.clearGhostHover()
+  }
   
   get isDummy() {
     return this.isRoot && this.isLeft

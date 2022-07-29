@@ -29,6 +29,12 @@ export class TextComponent {
     
     const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject')
     this.foreignObject = foreignObject
+
+    if(isRoot) {
+      foreignObject.classList.add('root-node')
+    } else {
+      foreignObject.classList.add('node')
+    }
     
     this.applyConfig(config)
     
@@ -41,22 +47,21 @@ export class TextComponent {
     span.className = 'disable-select';
     foreignObject.appendChild(span)
 
-    this.config = config
-
     this.setVisible(true)
   }
 
   applyConfig(config) {
     if(this.isRoot) {
       if(config.darkMode) {
+        this.foreignObject.classList.remove('with-back-light')
         this.foreignObject.classList.add('with-back-dark')
       } else {
+        this.foreignObject.classList.remove('with-back-dark')
         this.foreignObject.classList.add('with-back-light')
       }
-      this.foreignObject.classList.add('root-node')
-    } else {
-      this.foreignObject.classList.add('node')
     }
+
+    this.config = config
   }
 
   formatEmoji(text) {
@@ -121,6 +126,7 @@ export class TextComponent {
   }
   
   setStyle(style) {
+    // TODO: これだとdark/lightを切り替えた時にremoveしきれていないものが出てきてしまっている.
     let node_selected_class
     let top_overlapped_class
     let right_overlapped_class
@@ -207,15 +213,11 @@ export class FoldMarkComponent {
   constructor(container, config) {
     const markElement = document.createElementNS(NAME_SPACE, 'circle')
     this.markElement = markElement
+
+    this.applyConfig(config)
     
     markElement.setAttribute('stroke', '#7f7f7f')
     markElement.setAttribute('stroke-width', 1)
-    
-    if(config.darkMode) {
-      markElement.setAttribute('fill', '#000000') // dark-mode
-    } else {
-      markElement.setAttribute('fill', '#ffffff') // light-mode
-    }
     
     markElement.setAttribute('cx', 0)
     markElement.setAttribute('cy', 0)
@@ -223,6 +225,14 @@ export class FoldMarkComponent {
     container.appendChild(markElement)
   
     this.setVisible(false)
+  }
+
+  applyConfig(config) {
+    if(config.darkMode) {
+      this.markElement.setAttribute('fill', '#000000') // dark-mode
+    } else {
+      this.markElement.setAttribute('fill', '#ffffff') // light-mode
+    }    
   }
 
   setVisible(visible) {
@@ -249,13 +259,10 @@ export class HandleComponent {
     const handleElement = document.createElementNS(NAME_SPACE, 'ellipse')
     this.handleElement = handleElement
     
+    this.applyConfig(config)
+
     handleElement.setAttribute('stroke', '#7f7f7f')
     handleElement.setAttribute('stroke-width', 1)
-    if(config.darkMode) {
-      handleElement.setAttribute('fill', '#000000') // dark-mode
-    } else {
-      handleElement.setAttribute('fill', '#ffffff') // light-mode
-    }
     
     handleElement.setAttribute('cx', 0)
     handleElement.setAttribute('cy', 0)
@@ -264,6 +271,14 @@ export class HandleComponent {
     container.appendChild(handleElement)
 
     this.setVisible(false)
+  }
+
+  applyConfig(config) {
+    if(config.darkMode) {
+      this.handleElement.setAttribute('fill', '#000000') // dark-mode
+    } else {
+      this.handleElement.setAttribute('fill', '#ffffff') // light-mode
+    }    
   }
 
   setVisible(visible) {

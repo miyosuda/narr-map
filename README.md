@@ -1,6 +1,6 @@
 # narr-map
 
-A minimal mind map editor made with Electron.
+A minimal mind map editor made with Electron. The interface is almost compatible with Free-mind.
 
 <img src="./docs/screen0.png" width="400px">
 

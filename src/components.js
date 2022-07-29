@@ -61,6 +61,21 @@ export class TextComponent {
       }
     }
 
+    const nodeClasses = [
+      'node-selected-dark',
+      'node-top-overlapped-dark',
+      'node-right-overlapped-dark',
+      'node-left-overlapped-dark',
+      'node-selected-light',
+      'node-top-overlapped-light',
+      'node-right-overlapped-light',
+      'node-left-overlapped-light',
+    ]
+
+    nodeClasses.forEach(nodeClass => {
+      this.foreignObject.classList.remove(nodeClass)
+    })
+    
     this.config = config
   }
 

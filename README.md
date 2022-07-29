@@ -4,6 +4,12 @@ A minimal mind map editor made with Electron. The interface is almost compatible
 
 <img src="./docs/screen0.png" width="400px">
 
+## Binaries
+
+https://github.com/miyosuda/narr-map/releases
+
+
+
 ## Icons
 
 | Text | Icon    |

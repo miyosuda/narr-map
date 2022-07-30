@@ -8,6 +8,12 @@ A minimal mind map editor made with Electron. The interface is almost compatible
 
 https://github.com/miyosuda/narr-map/releases
 
+The binaries are not signed yet. Recent MacOSX does not allow running an app without signing and notarization. To run them without signining, use xattr to remove extended attributes.
+
+```
+$ xattr -rc narr-map.app
+```
+
 
 
 ## Icons

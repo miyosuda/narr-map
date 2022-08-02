@@ -1,19 +1,26 @@
 require('dotenv').config()
 
+let osxSign = null
+let osxNotarize = null
+
+if(process.env['APPLEIDENTITY'] != null) {
+  osxSign = {
+    "identity": process.env.APPLEIDENTITY,
+    "hardened-runtime": true,
+    "entitlements": "entitlements.plist",
+    "entitlements-inherit": "entitlements.plist",
+    "signature-flags": "library"      
+  }
+  osxNotarize = {
+    "appleId": process.env.APPLEID,
+    "appleIdPassword": process.env.APPLEIDPASS,
+  }
+}
+
+
 const config = {
   "packagerConfig": {
     "icon": "build/icon.icns",
-    "osxSign": {
-      "identity": process.env.APPLEIDENTITY,
-      "hardened-runtime": true,
-      "entitlements": "entitlements.plist",
-      "entitlements-inherit": "entitlements.plist",
-      "signature-flags": "library"      
-    },
-    "osxNotarize": {
-      "appleId": process.env.APPLEID,
-      "appleIdPassword": process.env.APPLEIDPASS,
-    }
   },
   "makers": [
     {
@@ -58,6 +65,13 @@ const config = {
       }
     ]
   ]
+}
+
+if(osxSign != null) {
+  config["packagerConfig"]["osxSign"] = osxSign
+}
+if(osxNotarize != null) {
+  config["packagerConfig"]["osxNotarize"] = osxNotarize
 }
 
 module.exports = config

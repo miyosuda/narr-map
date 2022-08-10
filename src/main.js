@@ -89,9 +89,9 @@ app.on('ready', createWindow)
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  //if (process.platform !== 'darwin') {
+  app.quit()
+  //}
 })
 
 app.on('activate', () => {
@@ -101,6 +101,12 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+app.on('open-file', (event, path_) => {
+  // Open recently used file
+  load(globalMainWindow, path_)
+})
+
 
 const CONFIRM_ANSWER_SAVE   = 0
 const CONFIRM_ANSWER_DELETE = 1
@@ -123,7 +129,6 @@ ipc.on('response', (event, arg, obj) => {
       }
     })
     
-    // TODO: ここのeditDirty処理でOKかどうか要確認
     editDirty = false
 
     onSaveFinished()
@@ -195,9 +200,16 @@ const load = (browserWindow, path_) => {
     if(json != null) {
       const mapData = JSON.parse(json)
       browserWindow.webContents.send('request', 'load', mapData)
-      
-      // TODO: ここのeditDirty処理でOKかどうか要確認
+
       editDirty = false
+
+      // Add to recently used file
+      app.addRecentDocument(path_)
+              
+      // filePathの設定
+      filePath = path_
+      const fileName = path.basename(filePath)
+      browserWindow.setTitle(fileName)
     }
   })
 }
@@ -267,10 +279,6 @@ const templateMenu = [
             if(pathes != null && pathes.length > 0) {
               const path_ = pathes[0]
               load(browserWindow, path_)
-              // filePathの設定
-              filePath = path_
-              const fileName = path.basename(filePath)
-              browserWindow.setTitle(fileName)
             }
           }
           
@@ -286,10 +294,20 @@ const templateMenu = [
             requestOpen()
           }
         },
-      },      
+      },
+      {
+        "label":"Open Recent",
+        "role":"recentdocuments",
+        "submenu":[
+          {
+            "label":"Clear Recent",
+            "role":"clearrecentdocuments"
+          }
+        ]
+      },
       {
         type: 'separator',
-      },
+      },      
       {
         label: 'Save',
         accelerator: 'CmdOrCtrl+S',
@@ -381,7 +399,6 @@ const templateMenu = [
         click: (menuItem, browserWindow, event) => {
           const newDarkMode = !store.get('darkMode')
           store.set('darkMode', newDarkMode)
-          //menuItem.checked = newDarkMode
         }
       }
     ]
@@ -419,4 +436,7 @@ const templateMenu = [
 ]
 
 const menu = Menu.buildFromTemplate(templateMenu)
-Menu.setApplicationMenu(menu)
+
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(menu)
+})

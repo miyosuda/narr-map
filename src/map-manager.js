@@ -508,7 +508,7 @@ export class MapManager {
               e.keyCode <= 90 && // 'Z'
               !e.ctrlKey &&
               !e.metaKey) {
-      this.editText()
+      this.editText(true)
     } else if(e.key === 'F2') {
       this.editText()
     } else if(e.key === 'F12') {
@@ -516,8 +516,8 @@ export class MapManager {
     }
   }
 
-  editText() {
-    this.textInput.show(this.lastNode)
+  editText(directInput=false) {
+    this.textInput.show(this.lastNode, !directInput)
   }
   
   move(direction, shiftDown) {

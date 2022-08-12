@@ -99,7 +99,7 @@ export class TextInput {
     this.hide()
   }
 
-  show(node) {
+  show(node, selectAll=true) {
     this.node = node
 
     if(node.isLeft) {
@@ -127,8 +127,13 @@ export class TextInput {
     
     this.updateOuterSize()
 
-    // テキストをを選択状態に
-    this.input.setSelectionRange(0, text.length)
+    if(selectAll) {
+      // テキストをを選択状態に
+      this.input.setSelectionRange(0, text.length)
+    } else {
+      // 先頭にキャレットを置く
+      this.input.setSelectionRange(0, 0)
+    }
     this.input.focus()
     
     this.textChanged = false

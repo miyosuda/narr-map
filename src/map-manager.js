@@ -845,6 +845,9 @@ export class MapManager {
     this.applyMapState(state)
     
     this.editHistory = new EditHistory(state)
+
+    // load後にrecenterしておく
+    this.recenter()
   }
 
   save() {

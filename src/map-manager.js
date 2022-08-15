@@ -499,8 +499,10 @@ export class MapManager {
       this.move(MOVE_RIGHT, shiftDown)
     } else if(e.key === 'ArrowLeft' || (e.key == 'b' && e.ctrlKey)) {
       this.move(MOVE_LEFT, shiftDown)
-    } else if(e.key === 'F2' || (e.key == 'i' && e.ctrlKey)) {
+    } else if(e.key === 'F2') {
       this.editText()
+    } else if(e.key == 'i' && e.ctrlKey) {
+      this.editText(true)
     } else if(e.key === ' ') {
       this.toggleFold()
       e.preventDefault()

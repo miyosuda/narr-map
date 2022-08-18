@@ -4,7 +4,7 @@ A minimal mind map editor made with Electron. The interface is almost compatible
 
 <img src="./docs/screen0.png" width="400px">
 
-## Latest binaries
+## Downloads
 - [MacOSX (Apple Silicon)](https://github.com/miyosuda/narr-map/releases/download/v0.0.2/narr-map-darwin-arm64-0.0.2.zip)
 
 - [MaxOSX (Intel)](https://github.com/miyosuda/narr-map/releases/download/v0.0.2/narr-map-darwin-x64-0.0.2.zip)

@@ -187,6 +187,10 @@ const saveAs = (browserWindow) => {
 }
 
 const onSaveFinished = () => {
+  // Add to recently used file
+  // (addRecentDocument() should be called after file was created)
+  app.addRecentDocument(filePath)
+  
   if( onSavedFunction != null ) {
     onSavedFunction()
   }

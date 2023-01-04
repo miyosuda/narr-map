@@ -1,4 +1,6 @@
-import {getElementDimension} from './text-utils'
+import { getElementDimension } from './text-utils'
+import { Node } from './node'
+import { MapManager } from './map-manager'
 
 const KEY_ENTER = 13
 const KEY_SHIFT = 16
@@ -7,7 +9,7 @@ const MARGIN_Y = 1
 
 
 // 全角を2文字としてカウントする文字列カウント
-const getStringLength = (str) => {
+const getStringLength = (str : string) => {
   if( str == null ) {
     return 0
   }
@@ -28,7 +30,7 @@ const getStringLength = (str) => {
 }
 
 
-const getStringLengthAndRow = (str, minSize=5) => {
+const getStringLengthAndRow = (str : string, minSize=5) => {
   const texts = str.split('\n')
   const rowSize = texts.length
 
@@ -45,161 +47,176 @@ const getStringLengthAndRow = (str, minSize=5) => {
 }
 
 
+type SvgInHtml = HTMLElement & SVGElement;
+
+
 export class TextInput {
-  constructor(mapManager) {
-    this.mapManager = mapManager
-    this.foreignObject = document.getElementById('textInputObj')
+  mapManager : MapManager;
+  input : HTMLInputElement;
+  foreignObject : SvgInHtml;
+  inputContainer : Element;
+  node : Node | null;  
+  textOnShown : string | null;
+  shown : boolean;
+  textChanged : boolean;
+  shiftOn : boolean;
+  width : number | null;
+  
+  constructor(mapManager : MapManager) {
+    this.mapManager = mapManager;
+    this.foreignObject = document.getElementById('textInputObj') as SvgInHtml;
     
-    const input = document.getElementById('textInput')
-    this.input = input
+    const input = document.getElementById('textInput') as HTMLInputElement;
+    this.input = input;
     
-    this.textChanged = false
-    this.shiftOn = false
+    this.textChanged = false;
+    this.shiftOn = false;
     
-    const inputContainer = document.getElementById('textInputContainer')
-    this.inputContainer = inputContainer
+    const inputContainer = document.getElementById('textInputContainer');
+    this.inputContainer = inputContainer;
     
     input.addEventListener('input', () => {
-      this.onTextInput()
+      this.onTextInput();
     })
 
     input.addEventListener('change', () => {
-      this.onTextChange(input.value)
+      this.onTextChange(input.value);
     })
 
     input.addEventListener('blur', (event) => {
-      this.onTextChange(input.value)
+      this.onTextChange(input.value);
     })
     
     input.addEventListener('keydown', (event) => {
-      const key = event.keyCode || event.charCode || 0
+      const key = event.keyCode || event.charCode || 0;
       
       if(key == KEY_ENTER) { // Enter key
         if(!this.shiftOn) {
           // シフトキーが押されていなかった場合、入力決定とする
-          this.onTextChange(input.value)
+          this.onTextChange(input.value);
         }
       } else if(key == KEY_SHIFT) { // Shift key
         // shiftキー押下
-        this.shiftOn = true
+        this.shiftOn = true;
       }
     })
 
     input.addEventListener('keyup', (event) => {
-      const key = event.keyCode || event.charCode || 0
+      const key = event.keyCode || event.charCode || 0;
       
       if(key == KEY_SHIFT) {
         // shiftキー離した
-        this.shiftOn = false
+        this.shiftOn = false;
       }
     })
 
-    this.node = null
+    this.node = null;
     
-    this.hide()
+    this.hide();
   }
 
-  show(node, selectAll=true) {
-    this.node = node
+  show(node : Node, selectAll=true) {
+    this.node = node;
 
     if(node.isLeft) {
-      this.input.classList.remove('text-input-right')
-      this.input.classList.add('text-input-left')
+      this.input.classList.remove('text-input-right');
+      this.input.classList.add('text-input-left');
     } else {
-      this.input.classList.remove('text-input-left')
-      this.input.classList.add('text-input-right')
+      this.input.classList.remove('text-input-left');
+      this.input.classList.add('text-input-right');
     }
 
-    const text = node.text
-    this.input.value = text
-    this.textOnShown = text
+    const text = node.text;
+    this.input.value = text;
+    this.textOnShown = text;
     
-    this.updateInputSize()
+    this.updateInputSize();
 
     // 先にdisplayをセットしておかないとinput.offsetWidth等が取れない
-    this.foreignObject.style.display = 'block'
+    this.foreignObject.style.display = 'block';
 
-    let y = this.node.y - MARGIN_Y
+    let y = this.node.y - MARGIN_Y;
     if(node.isRoot) {
-      y += 2
+      y += 2;
     }
-    this.foreignObject.y.baseVal.value = y
+    this.foreignObject.setAttribute('y', String(y));
     
-    this.updateOuterSize()
+    this.updateOuterSize();
 
     if(selectAll) {
       // テキストをを選択状態に
-      this.input.setSelectionRange(0, text.length)
+      this.input.setSelectionRange(0, text.length);
     } else {
       // 先頭にキャレットを置く
-      this.input.setSelectionRange(0, 0)
+      this.input.setSelectionRange(0, 0);
     }
-    this.input.focus()
+    this.input.focus();
     
-    this.textChanged = false
-    this.shown = true
+    this.textChanged = false;
+    this.shown = true;
     
-    this.node.startTempHide()
+    this.node.startTempHide();
   }
 
   hide() {
-    this.foreignObject.style.display = 'none'
-    this.shown = false
+    this.foreignObject.style.display = 'none';
+    this.shown = false;
     if(this.node != null) {
-      this.node.stopTempHide()
-      this.node = null
+      this.node.stopTempHide();
+      this.node = null;
     }
   }
 
   updateInputSize() {
     // テキストが変化した
-    let [stringLength, rows] = getStringLengthAndRow(this.input.value)
-    this.input.style.width = (stringLength * 11 + 10) + "px"
-    this.input.setAttribute('rows', rows)
+    let [stringLength, rows] = getStringLengthAndRow(this.input.value);
+    this.input.style.width = (stringLength * 11 + 10) + "px";
+    this.input.setAttribute('rows', String(rows));
   }
 
   updatePos() {
     if(this.node.isLeft) {
-      this.foreignObject.x.baseVal.value = this.node.right - this.width
+      this.foreignObject.setAttribute('x', String(this.node.right - this.width));
     } else {
-      this.foreignObject.x.baseVal.value = this.node.x
+      this.foreignObject.setAttribute('x', String(this.node.x));
     }
   }
 
   updateOuterSize() {
     // foreignObjectのサイズを更新する
-    const dims = getElementDimension(this.inputContainer.innerHTML)
-    this.foreignObject.width.baseVal.value = dims.width
-    this.foreignObject.height.baseVal.value = dims.height
+    const dims = getElementDimension(this.inputContainer.innerHTML);
+    
+    this.foreignObject.setAttribute('width', String(dims.width));
+    this.foreignObject.setAttribute('height', String(dims.height));
 
-    this.width = dims.width
+    this.width = dims.width;
 
-    this.updatePos()
+    this.updatePos();
   }
 
   onTextInput() {
     // テキストが変化した
-    this.textChanged = true
-    this.updateInputSize()
+    this.textChanged = true;
+    this.updateInputSize();
     
     // foreignObjectのサイズも変える
-    this.updateOuterSize()
+    this.updateOuterSize();
   }
   
-  onTextChange(value) {
+  onTextChange(value : string) {
     if(!this.shown) {
       // hide()した後に呼ばれる場合があるのでその場合をskip
-      return
+      return;
     }
     
     // テキスト入力が完了した
-    this.node.setText(value)
-    const textChanged = this.textOnShown != value
-    this.mapManager.onTextDecided(this.node, textChanged)
-    this.hide()
+    this.node.setText(value);
+    const textChanged = this.textOnShown != value;
+    this.mapManager.onTextDecided(this.node, textChanged);
+    this.hide();
   }
 
   get isShown() {
-    return this.shown
+    return this.shown;
   }
 }

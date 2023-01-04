@@ -7,11 +7,11 @@ import {
   HOVER_HIT_OTHER_CHILD,
 } from './node'
 
-import {GhostNode} from './ghost-node'
-import {TextInput} from './text-input'
-import {EditHistory} from './edit-history'
+import { GhostNode } from './ghost-node'
+import { TextInput } from './text-input'
+import { EditHistory } from './edit-history'
+import { Config } from './config'
 const { nmapi } = window
-import {Config} from './config'
 
 const DRAG_NONE  = 0
 const DRAG_NODE  = 1

@@ -2,6 +2,9 @@ const EDIT_HISTORY_MAX = 30
 
 
 export class EditHistory {
+  history : Array;
+  cursor : number;
+  
   constructor(initialState) {
     this.history = new Array()
     this.cursor = -1

@@ -5,9 +5,9 @@ import {
   HOVER_HIT_SIBLING,
   HOVER_HIT_CHILD,
   HOVER_HIT_OTHER_CHILD,
-} from './node.js'
+} from './node'
 
-import {GhostNode} from './ghost-node.js'
+import {GhostNode} from './ghost-node'
 import {TextInput} from './text-input'
 import {EditHistory} from './edit-history'
 const { nmapi } = window

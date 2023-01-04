@@ -21,4 +21,3 @@ export const getElementDimension = (html, className=null) => {
   element.remove()
   return dims
 }
-

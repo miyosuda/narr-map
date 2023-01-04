@@ -10,7 +10,7 @@ import {
   TEXT_COMPONENT_STYLE_HOVER_RIGHT,
   TEXT_COMPONENT_STYLE_HOVER_LEFT,
   TEXT_COMPONENT_STYLE_SELECTED,
-} from './components.js'
+} from './components'
   
 export const SPAN_Y_PER_NODE = 30.0 // 1ノードの取る縦幅
 

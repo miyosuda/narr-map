@@ -1,4 +1,4 @@
-import { RectComponent } from './components.js'
+import { RectComponent } from './components'
 
 
 export class GhostNode {

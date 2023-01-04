@@ -1,4 +1,5 @@
 import {getElementDimension} from './text-utils'
+import { Config } from './config';
 
 const NAME_SPACE = 'http://www.w3.org/2000/svg'
 
@@ -23,11 +24,25 @@ const GREEN_CIRCLE_EMOJI  = String.fromCodePoint(0x1F7E2)
 const BLUE_CIRCLE_EMOJI   = String.fromCodePoint(0x1F535)
 const YELLOW_CIRCLE_EMOJI = String.fromCodePoint(0x1F7E1)
 
+
+type SvgInHtml = HTMLElement & SVGElement;
+
+
 export class TextComponent {
-  constructor(container, isRoot, config) {
+  isRoot : boolean;
+  foreignObject : SvgInHtml;
+  config : Config;
+  text : string | null;
+  span : Element;
+  width : number | null;  
+  height : number | null;
+  
+  constructor(container : Element,
+              isRoot : boolean,
+              config : Config) {
     this.isRoot = isRoot
     
-    const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject')
+    const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject') as SvgInHtml;
     this.foreignObject = foreignObject
 
     if(isRoot) {
@@ -50,7 +65,7 @@ export class TextComponent {
     this.setVisible(true)
   }
 
-  applyConfig(config) {
+  applyConfig(config : Config) {
     if(this.isRoot) {
       if(config.darkMode) {
         this.foreignObject.classList.remove('with-back-light')
@@ -79,7 +94,7 @@ export class TextComponent {
     this.config = config
   }
 
-  formatEmoji(text) {
+  formatEmoji(text : string) {
     text = text.replace(REGEX_RED_CIRCLE,    RED_CIRCLE_EMOJI)
     text = text.replace(REGEX_GREEN_CIRCLE,  GREEN_CIRCLE_EMOJI)
     text = text.replace(REGEX_BLUE_CIRCLE,   BLUE_CIRCLE_EMOJI)
@@ -87,7 +102,7 @@ export class TextComponent {
     return text
   }
 
-  setText(text) {
+  setText(text : string) {
     this.text = text
     this.span.textContent = this.formatEmoji(text)
     
@@ -115,7 +130,7 @@ export class TextComponent {
     this.height = height
   }
 
-  setVisible(visible) {
+  setVisible(visible : boolean) {
     if(visible) {
       this.foreignObject.setAttribute('visibility', 'visible')
     } else {
@@ -128,7 +143,7 @@ export class TextComponent {
     return this.visible
   }
 
-  setPos(x, y) {
+  setPos(x : number, y : number) {
     this.foreignObject.x.baseVal.value = x
     this.foreignObject.y.baseVal.value = y
     
@@ -140,7 +155,7 @@ export class TextComponent {
     this.foreignObject.remove()
   }
   
-  setStyle(style) {
+  setStyle(style : number) {
     // TODO: これだとdark/lightを切り替えた時にremoveしきれていないものが出てきてしまっている.
     let node_selected_class
     let top_overlapped_class
@@ -190,7 +205,7 @@ export class TextComponent {
 
 
 export class LineComponent {
-  constructor(container) {
+  constructor(container : Element) {
     const lineElement = document.createElementNS(NAME_SPACE, 'line')
     this.lineElement = lineElement
     
@@ -203,7 +218,7 @@ export class LineComponent {
     container.appendChild(lineElement)
   }
 
-  setVisible(visible) {
+  setVisible(visible : boolean) {
     if(visible) {
       this.lineElement.setAttribute('visibility', 'visible')
     } else {
@@ -211,7 +226,10 @@ export class LineComponent {
     }
   }
 
-  setPos(sx, sy, ex, ey) {
+  setPos(sx : number,
+         sy : number,
+         ex : number,
+         ey : number) {
     this.lineElement.setAttribute('x1', sx)
     this.lineElement.setAttribute('y1', sy)
     this.lineElement.setAttribute('x2', ex)
@@ -225,7 +243,8 @@ export class LineComponent {
 
 
 export class FoldMarkComponent {
-  constructor(container, config) {
+  constructor(container : Element,
+              config : Config) {
     const markElement = document.createElementNS(NAME_SPACE, 'circle')
     this.markElement = markElement
 
@@ -242,7 +261,7 @@ export class FoldMarkComponent {
     this.setVisible(false)
   }
 
-  applyConfig(config) {
+  applyConfig(config : Config) {
     if(config.darkMode) {
       this.markElement.setAttribute('fill', '#000000') // dark-mode
     } else {
@@ -250,7 +269,7 @@ export class FoldMarkComponent {
     }    
   }
 
-  setVisible(visible) {
+  setVisible(visible : boolean) {
     if(visible) {
       this.markElement.setAttribute('visibility', 'visible')
     } else {
@@ -258,7 +277,8 @@ export class FoldMarkComponent {
     }
   }
 
-  setPos(x, y) {
+  setPos(x : number,
+         y : number) {
     this.markElement.setAttribute('cx', x)
     this.markElement.setAttribute('cy', y)
   }
@@ -270,7 +290,8 @@ export class FoldMarkComponent {
 
 
 export class HandleComponent {
-  constructor(container, config) {
+  constructor(container : Element,
+              config : Config) {
     const handleElement = document.createElementNS(NAME_SPACE, 'ellipse')
     this.handleElement = handleElement
     
@@ -288,7 +309,7 @@ export class HandleComponent {
     this.setVisible(false)
   }
 
-  applyConfig(config) {
+  applyConfig(config : Config) {
     if(config.darkMode) {
       this.handleElement.setAttribute('fill', '#000000') // dark-mode
     } else {
@@ -296,7 +317,7 @@ export class HandleComponent {
     }    
   }
 
-  setVisible(visible) {
+  setVisible(visible : boolean) {
     if(visible) {
       this.handleElement.setAttribute('visibility', 'visible')
     } else {
@@ -304,7 +325,8 @@ export class HandleComponent {
     }
   }
 
-  setPos(x, y) {
+  setPos(x : number,
+         y : number) {
     this.handleElement.setAttribute('cx', x + HANDLE_WIDTH/2)
     this.handleElement.setAttribute('cy', y + HANDLE_HEIGHT/2)
 
@@ -316,7 +338,8 @@ export class HandleComponent {
     this.handleElement.remove()
   }
 
-  containsPos(x, y) {
+  containsPos(x : number,
+              y : number) {
     return (x >= this.x - 2) && // 2pxだけ広げてtouchしやすくしている
       (x <= this.x + HANDLE_WIDTH + 2) &&
       (y >= this.y) && (y <= this.y + HANDLE_HEIGHT)
@@ -325,7 +348,7 @@ export class HandleComponent {
 
 
 export class RectComponent {
-  constructor(container) {
+  constructor(container : Element) {
     const rectElement = document.createElementNS(NAME_SPACE, 'rect')
 
     rectElement.setAttribute('x', 0)
@@ -340,20 +363,20 @@ export class RectComponent {
     this.rectElement = rectElement
   }
 
-  setWidth(width) {
+  setWidth(width : number) {
     this.rectElement.setAttribute('width', width)
   }
   
-  setHeight(height) {
+  setHeight(height : number) {
     this.rectElement.setAttribute('height', height)
   }
 
-  setPos(x, y) {
+  setPos(x : number, y : number) {
     this.rectElement.setAttribute('x', x)
     this.rectElement.setAttribute('y', y)
   }
 
-  setVisible(visible) {
+  setVisible(visible : boolean) {
     if(visible) {
       this.rectElement.setAttribute('visibility', 'visible')
     } else {

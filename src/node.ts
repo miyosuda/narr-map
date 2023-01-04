@@ -11,7 +11,8 @@ import {
   TEXT_COMPONENT_STYLE_HOVER_LEFT,
   TEXT_COMPONENT_STYLE_SELECTED,
 } from './components'
-  
+import { Config } from './config';
+
 export const SPAN_Y_PER_NODE = 30.0 // 1ノードの取る縦幅
 
 const HOVER_STATE_NONE  = 0
@@ -29,69 +30,92 @@ const GAP_X = 20
 
 
 export class Node {
-  constructor(parentNode,
-              container,
-              config,
-              isLeft=false,
-              accompaniedNode=null) {
-    this.parentNode = parentNode
-    this.isLeft = isLeft
-    this.accompaniedNode = accompaniedNode
-    this.children = []
+  parentNode : Node | null;
+  isLeft : boolean;
+  accompaniedNode : Node | null;
+  children : Array<Node>;
+  textComponent : TextComponent | null;
+  lineComponent : LineComponent | null;
+  handleComponent : HandleComponent | null;
+  foldMarkComponent : FoldMarkComponent | null;
+  shiftX : number;
+  shiftY : number;
+  selected : boolean;
+  hoverState : number;
+  handleShown : boolean;
+  folded : boolean;
+  x : number | null; 
+  y : number | null;
+  topY : number | null;
+  bottomY : number | null;
+  locateOffset : number | null;
+  timeStamp : number | null;
+  startElementX : number | null;
+  startElementY : number | null;
+  
+  constructor(parentNode : Node | null,
+              container : Element,
+              config : Config,
+              isLeft : boolean=false,
+              accompaniedNode : Node|null=null) {
+    this.parentNode = parentNode;
+    this.isLeft = isLeft;
+    this.accompaniedNode = accompaniedNode;
+    this.children = [];
     
     if(!this.isDummy) {
-      this.textComponent = new TextComponent(container, this.isRoot, config)
+      this.textComponent = new TextComponent(container, this.isRoot, config);
     } else {
-      this.textComponent = null
+      this.textComponent = null;
     }
 
     if(!this.isRoot) {
-      this.lineComponent = new LineComponent(container)
-      this.handleComponent = new HandleComponent(container, config)
-      this.foldMarkComponent = new FoldMarkComponent(container, config)
+      this.lineComponent = new LineComponent(container);
+      this.handleComponent = new HandleComponent(container, config);
+      this.foldMarkComponent = new FoldMarkComponent(container, config);
     } else {
-      this.lineComponent = null
-      this.handleCompnent = null
-      this.foldMarkComponent = null
+      this.lineComponent = null;
+      this.handleComponent = null;
+      this.foldMarkComponent = null;
     }
 
     if(!this.isDummy) {
-      this.setText('')
+      this.setText('');
     }
 
-    this.shiftX = 0
-    this.shiftY = 0
+    this.shiftX = 0;
+    this.shiftY = 0;
     
-    this.selected = false
-    this.hoverState = HOVER_STATE_NONE
-    this.handleShown = false
-    this.folded = false
+    this.selected = false;
+    this.hoverState = HOVER_STATE_NONE;
+    this.handleShown = false;
+    this.folded = false;
   }
 
-  applyConfig(config) {
+  applyConfig(config : Config) {
     if(this.textComponent != null) {
-      this.textComponent.applyConfig(config)
+      this.textComponent.applyConfig(config);
       
       // selected状態もconfigが影響するので再反映しておく
       if(this.selected) {
-        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED)
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_SELECTED);
       } else {
-        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE)
+        this.textComponent.setStyle(TEXT_COMPONENT_STYLE_NONE);
       }
     }
     if(this.handleComponent != null) {
-      this.handleComponent.applyConfig(config)
+      this.handleComponent.applyConfig(config);
     }
     if(this.foldMarkComponent != null) {
-      this.foldMarkComponent.applyConfig(config)
+      this.foldMarkComponent.applyConfig(config);
     }
 
     // hoverの状態にconfigが影響するのでクリアしておく
-    this.clearGhostHover()
+    this.clearGhostHover();
   }
   
   get isDummy() {
-    return this.isRoot && this.isLeft
+    return this.isRoot && this.isLeft;
   }
 
   get isVisible() {
@@ -101,7 +125,7 @@ export class Node {
     return this.textComponent.isVisible
   }
 
-  setVisible(visible) {
+  setVisible(visible : boolean) {
     if(this.isVisible != visible) {
       this.textComponent.setVisible(visible)
       
@@ -147,11 +171,11 @@ export class Node {
     this.textComponent.setVisible(true)
   }
 
-  addChildNode(node) {
+  addChildNode(node : Node) {
     this.children.push(node)
   }
 
-  addChildNodeBelow(node, targetNode) {
+  addChildNodeBelow(node : Node, targetNode : Node) {
     const targetNodeIndex = this.children.indexOf(targetNode)
     this.children.splice(targetNodeIndex+1, 0, node)
   }
@@ -199,7 +223,7 @@ export class Node {
     }
   }
 
-  updateLayout(baseX, baseY) {
+  updateLayout(baseX : number, baseY : number) {
     if(this.isRoot) {
       // baseX,Yが原点(0,0)なのでbaseX,Yを左上に変更しておく
       baseX = -this.width / 2
@@ -277,11 +301,11 @@ export class Node {
     this.locateOffset = locateOffset
   }
 
-  get hasChildren() {
+  get hasChildren() : boolean {
     return this.children.length > 0
   }
 
-  get hasVisibleChildren() {
+  get hasVisibleChildren() : boolean {
     if(this.folded) {
       return false
     } else {
@@ -289,29 +313,29 @@ export class Node {
     }
   }
 
-  get hasParent() {
+  get hasParent() : boolean {
     return this.parentNode != null
   }
   
-  get parent() {
+  get parent() : Node | null {
     return this.parentNode
   }
 
-  get width() {
+  get width() : number {
     if(this.isDummy) {
       return this.accompaniedNode.width
     }
     return this.textComponent.width
   }
   
-  get height() {
+  get height() : number {
     if(this.isDummy) {
       return this.accompaniedNode.height
     }
     return this.textComponent.height
   }
 
-  get text() {
+  get text() : string | null {
     if(this.isDummy) {
       return null
     } else {
@@ -319,7 +343,7 @@ export class Node {
     }
   }
   
-  setText(text) {
+  setText(text : string) {
     if(this.isDummy) {
       return
     }
@@ -327,7 +351,7 @@ export class Node {
     this.updateTimeStamp()
   }
 
-  updatePos(baseX, baseY) {
+  updatePos(baseX : number, baseY : number) {
     if(this.isLeft && !this.isRoot) {
       this.x = baseX - this.width + this.shiftX
     } else {
@@ -381,18 +405,18 @@ export class Node {
   
   get edgeOutPos() {
     // 親Nodeの出口
-    const pos = {}
+    const pos : {[key: string]: any;} = {}
     
     if(this.isRoot) {
-      pos.x = this.x + this.width / 2
-      pos.y = this.y + this.height / 2
+      pos['x'] = this.x + this.width / 2
+      pos['y'] = this.y + this.height / 2
     } else {
       if(this.isLeft) {
-        pos.x = this.x
-        pos.y = this.y + this.height - 0.5 // lineの幅を考慮している
+        pos['x'] = this.x
+        pos['y'] = this.y + this.height - 0.5 // lineの幅を考慮している
       } else {
-        pos.x = this.x + this.width
-        pos.y = this.y + this.height - 0.5 // lineの幅を考慮している
+        pos['x'] = this.x + this.width
+        pos['y'] = this.y + this.height - 0.5 // lineの幅を考慮している
       }
     }
     
@@ -420,21 +444,22 @@ export class Node {
     this.startElementY = this.shiftY
   }
 
-  onDrag(dx, dy) {
+  onDrag(dx : number, dy : number) {
     this.shiftX = this.startElementX + dx
     this.shiftY = this.startElementY + dy
 
     // ここではforeignObjectのx,y座標はまだ更新していない
   }
 
-  containsPos(x, y) {
+  containsPos(x : number, y : number) {
     if(!this.isVisible) {
       return false
     }
     return (x >= this.left) && (x <= this.right) && (y >= this.top) && (y <= this.bottom)
   }
 
-  containsPosForHandle(x, y) {
+  containsPosForHandle(x : number,
+                       y : number) {
     if(!this.isVisible) {
       return false
     }
@@ -446,7 +471,9 @@ export class Node {
     }
   }
 
-  containsPosHalf(x, y, leftHalf) {
+  containsPosHalf(x : number,
+                  y : number,
+                  leftHalf : boolean) {
     if(!this.isVisible) {
       return false
     }
@@ -464,7 +491,7 @@ export class Node {
     }
   }
 
-  setHoverState(hoverState) {
+  setHoverState(hoverState : number) {
     if(hoverState != this.hoverState) {
       if(hoverState == HOVER_STATE_TOP) {
         this.textComponent.setStyle(TEXT_COMPONENT_STYLE_HOVER_TOP)
@@ -483,7 +510,7 @@ export class Node {
     }
   }
 
-  setSelected(selected) {
+  setSelected(selected : boolean) {
     if(selected) {
       this.updateTimeStamp()
     }
@@ -506,7 +533,7 @@ export class Node {
     }
   }
 
-  setFolded(folded) {
+  setFolded(folded : boolean) {
     if(folded != this.folded) {
       this.folded = folded
       
@@ -528,7 +555,7 @@ export class Node {
     }
   }
 
-  setHandleShown(handleShown) {
+  setHandleShown(handleShown : boolean) {
     if(handleShown != this.handleShown) {
       if(handleShown) {
         this.handleComponent.setVisible(true)
@@ -539,7 +566,8 @@ export class Node {
     }
   }
 
-  checkHover(x, y) {
+  checkHover(x : number,
+             y : number) {
     if(this.isDummy) {
       return false
     }
@@ -551,7 +579,8 @@ export class Node {
     }
   }
   
-  checkGhostHover(x, y) {
+  checkGhostHover(x : number,
+                  y : number) {
     if(this.isDummy) {
       return false
     }
@@ -608,7 +637,7 @@ export class Node {
     return this.folded
   }
 
-  remove(removeNodeCallback) {
+  remove(removeNodeCallback : (node: Node) => void) {
     for(let i=this.children.length-1; i>=0; i-=1) {
       this.children[i].remove(removeNodeCallback)
     }
@@ -637,7 +666,7 @@ export class Node {
     removeNodeCallback(this)
   }
 
-  removeChild(node) {
+  removeChild(node : Node) {
     let nodeIndex = this.children.indexOf(node)
     if(nodeIndex >= 0) {
       this.children.splice(nodeIndex, 1)
@@ -648,7 +677,7 @@ export class Node {
     }
   }
 
-  detachFromParent() {
+  detachFromParent() : Node | null {
     if(this.parent != null) {
       this.parent.removeChild(this)
       const oldParent = this.parent
@@ -659,7 +688,7 @@ export class Node {
     }
   }
 
-  attachChildNodeToTail(node) {
+  attachChildNodeToTail(node : Node) {
     if(this.folded) {
       // foldされていたら開いておく
       this.setFolded(false)
@@ -670,7 +699,8 @@ export class Node {
     this.addChildNode(node)
   }
 
-  attachChildNodeAboveSibling(node, siblingNode) {
+  attachChildNodeAboveSibling(node : Node,
+                              siblingNode : Node) {
     // nodeをsiblingNodeの上の兄弟にする
     node.parentNode = this
 
@@ -684,7 +714,7 @@ export class Node {
     }
   }
 
-  changeSideRecursive(isLeft) {
+  changeSideRecursive(isLeft : boolean) {
     // TREAT: handleとfold markの位置の変更が必要かどうかを調査
     
     this.isLeft = isLeft
@@ -694,7 +724,7 @@ export class Node {
     })
   }
 
-  hasNodeInAncestor(node) {
+  hasNodeInAncestor(node : Node) {
     let tmpNode = this.parent
     
     while(tmpNode != null) {
@@ -707,7 +737,7 @@ export class Node {
   }
   
   getState() {
-    const state = {
+    const state : {[key: string]: any;} = {
       'text'     : this.text,
       'shiftX'   : this.shiftX,
       'shiftY'   : this.shiftY,
@@ -716,7 +746,7 @@ export class Node {
       'isLeft'   : this.isLeft,
     }
     
-    const childStates = []
+    const childStates = new Array<{[key: string]: any;}>();
     this.children.forEach(node => {
       childStates.push(node.getState())
     })
@@ -725,7 +755,7 @@ export class Node {
     return state
   }
   
-  applyState(state) {
+  applyState(state : {[key: string]: any;}) {
     this.setText(state['text'])
     
     this.shiftX = state['shiftX']
@@ -742,7 +772,7 @@ export class Node {
     this.timeStamp = Date.now()
   }
 
-  getBottomDescendant(cursorDepth) {
+  getBottomDescendant(cursorDepth : number) : Node {
     let bottomChild = this.children[this.children.length-1]
     if(bottomChild.depth < cursorDepth && bottomChild.hasVisibleChildren) {
       return bottomChild.getBottomDescendant(cursorDepth)
@@ -751,7 +781,7 @@ export class Node {
     }
   }
 
-  getTopDescendant(cursorDepth) {
+  getTopDescendant(cursorDepth : number) : Node {
     let topChild = this.children[0]
     if(topChild.depth < cursorDepth && topChild.hasVisibleChildren) {
       return topChild.getTopDescendant(cursorDepth)
@@ -760,7 +790,9 @@ export class Node {
     }
   } 
 
-  getSiblingOfChild(node, above, cursorDepth) {
+  getSiblingOfChild(node : Node,
+                    above : boolean,
+                    cursorDepth : number ) : Node | null {
     let targetChildren = this.children
     
     let nodeIndex
@@ -814,7 +846,8 @@ export class Node {
     }
   }
   
-  getSibling(above, cursorDepth) {
+  getSibling(above : boolean,
+             cursorDepth : number) {
     // カーソル上下移動時に利用
     if(this.parent == null) {
       return null
@@ -823,7 +856,7 @@ export class Node {
     return this.parent.getSiblingOfChild(this, above, cursorDepth)
   }
   
-  get depth() {
+  get depth() : number {
     let p = this.parent
     let depth = 0
     while(p != null) {
@@ -833,7 +866,7 @@ export class Node {
     return depth
   }
 
-  getLatestVisibleChild() {
+  getLatestVisibleChild() : Node | null {
     if(!this.hasVisibleChildren) {
       return null
     }
@@ -851,7 +884,7 @@ export class Node {
     return latestChildNode
   }
 
-  checkCopiable(otherNodes) {
+  checkCopiable(otherNodes : Array<Node>) : boolean {
     let p = this.parent
     while(p != null) {
       let found = false

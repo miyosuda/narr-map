@@ -350,7 +350,7 @@ export class RectComponent {
 
   setPos(x, y) {
     this.rectElement.setAttribute('x', x)
-    this.rectElement.setAttribute('y', y)    
+    this.rectElement.setAttribute('y', y)
   }
 
   setVisible(visible) {

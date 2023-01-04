@@ -11,7 +11,7 @@ import { GhostNode } from './ghost-node'
 import { TextInput } from './text-input'
 import { EditHistory } from './edit-history'
 import { Config } from './config'
-const { nmapi } = window
+const { nmapi } = window;
 
 const DRAG_NONE  = 0
 const DRAG_NODE  = 1
@@ -24,7 +24,34 @@ const MOVE_RIGHT = 3
 const MOVE_LEFT  = 4
 
 
+// TODO: 共通化
+type StateType = {[key: string]: any;};
+
+
 export class MapManager {
+  dragMode : number;
+  dragStartX : number;
+  dragStartY : number;
+  nodes : Array<Node>;
+  selectedNodes : Array<Node>;
+  handleDraggingNode : Node | null;
+  nodeEdited : boolean;
+  cursorDepth : number;
+  copyingStates : Array<StateType>;
+  lastMouseDownTime : number;
+  ghostNode : GhostNode;  
+  svg : SVGSVGElement;
+  canvas : SVGGraphicsElement;
+  textInput : TextInput;
+  editHistory : EditHistory
+  canvasTranslateX : number;
+  canvasTranslateY : number;
+  rootNode : Node | null;
+  leftRootNode : Node | null;
+  config : Config | null;
+  startCanvasTranslateX : number | null;
+  startCanvasTranslateY : number | null;
+  
   constructor() {
   }
 
@@ -46,8 +73,8 @@ export class MapManager {
   }
 
   prepare() {
-    this.svg = document.getElementById('svg')
-    this.canvas = document.getElementById('canvas')
+    this.svg = document.getElementById('svg') as SVGSVGElement;
+    this.canvas = document.getElementById('canvas') as SVGGraphicsElement;
 
     const width = this.svg.width.baseVal.value
     const height = this.svg.height.baseVal.value
@@ -62,20 +89,20 @@ export class MapManager {
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
     this.textInput = new TextInput(this)
 
-    nmapi.onReceiveMessage((arg, obj) => {
+    nmapi.onReceiveMessage((arg : string, obj : any) => {
       if( arg === 'save' ||
-          arg === 'load' ||
-          arg === 'new-file') {
+        arg === 'load' ||
+        arg === 'new-file') {
         
         if( this.textInput.isShown ) {
           this.textInput.hide()
         }
       } else if( arg === 'cut' ||
-                 arg === 'undo' ||
-                 arg === 'redo' ||
-                 arg === 'copy' ||
-                 arg === 'paste' ||
-                 arg === 'selectall') {
+        arg === 'undo' ||
+        arg === 'redo' ||
+        arg === 'copy' ||
+        arg === 'paste' ||
+        arg === 'selectall') {
         if( this.textInput.isShown ) {
           document.execCommand(arg)
           return
@@ -87,7 +114,7 @@ export class MapManager {
       } else if( arg === 'load' ) {
         this.load(obj)
       } else if( arg === 'new-file' ) {
-        this.newFile(obj)
+        this.newFile()
       } else if( arg === 'cut' ) {
         this.cut()
       } else if( arg === 'undo' ) {
@@ -122,7 +149,7 @@ export class MapManager {
     this.editHistory = new EditHistory(this.getState())
   }
 
-  applyConfig(config) {
+  applyConfig(config : Config) {
     const body = document.getElementById('body')
     // textInputはTextInputクラスでラップして扱っているがここでは直接変更している
     const input = document.getElementById('textInput')
@@ -142,13 +169,13 @@ export class MapManager {
     this.config = config
   }
 
-  setCanvasTranslate(translateX, translateY) {
+  setCanvasTranslate(translateX : number, translateY : number) {
     this.canvasTranslateX = translateX
     this.canvasTranslateY = translateY
     
     this.canvas.setAttribute('transform', 'translate(' +
-                             this.canvasTranslateX + ',' +
-                             this.canvasTranslateY + ')')
+      this.canvasTranslateX + ',' +
+      this.canvasTranslateY + ')')
   }
   
   onBackDragStart() {
@@ -156,7 +183,7 @@ export class MapManager {
     this.startCanvasTranslateY = this.canvasTranslateY
   }
 
-  onBackDrag(dx, dy) {
+  onBackDrag(dx : number, dy : number) {
     const translateX = this.startCanvasTranslateX + dx
     const translateY = this.startCanvasTranslateY + dy
 
@@ -192,11 +219,13 @@ export class MapManager {
     // なぜかmarginをつけないとスクロールバーが出てしまう
     const margin = 2
     
-    this.svg.setAttribute('width', window.innerWidth - margin)
-    this.svg.setAttribute('height', window.innerHeight - margin)
+    this.svg.setAttribute('width', String(window.innerWidth - margin))
+    this.svg.setAttribute('height', String(window.innerHeight - margin))
   }
 
-  findPickNode(x, y, forHandle) {
+  findPickNode(x : number,
+               y : number,
+               forHandle : boolean) {
     let pickNode = null
     
     for(let i=0; i<this.nodes.length; i++) {
@@ -215,7 +244,7 @@ export class MapManager {
     return pickNode
   }
 
-  onMouseDown(e) {
+  onMouseDown(e : MouseEvent) {
     if(e.which == 3) {
       // 右クリックの場合
       return
@@ -311,13 +340,14 @@ export class MapManager {
     this.setCanvasTranslate(width/2 - centerX, height/2 - centerY)
   }
 
-  onDoubleClick(e) {
+  onDoubleClick(e : MouseEvent) {
     if( this.textInput.isShown ) {
       // textInput表示中なら何もしない
       return
     }
 
-    if(e.shiftDown) {
+    //if(e.shiftDown) {
+    if(e.shiftKey) {
       return
     }
     
@@ -334,7 +364,7 @@ export class MapManager {
     }
   }
 
-  onMouseMove(e) {
+  onMouseMove(e : MouseEvent) {
     if(e.which == 3) {
       // 右クリックの場合
       return
@@ -386,7 +416,7 @@ export class MapManager {
     }
   }
 
-  onMouseUp(e) {
+  onMouseUp(e : MouseEvent) {
     if(e.which == 3) {
       // 右クリックの場合
       return
@@ -471,7 +501,7 @@ export class MapManager {
     }
   }
   
-  onKeyDown(e) {
+  onKeyDown(e : KeyboardEvent) {
     if( e.target != document.body ) {
       // input入力時のkey押下は無視する
       return
@@ -507,9 +537,9 @@ export class MapManager {
       this.toggleFold()
       e.preventDefault()
     } else if(e.keyCode >= 49 && // '1'
-              e.keyCode <= 90 && // 'Z'
-              !e.ctrlKey &&
-              !e.metaKey) {
+      e.keyCode <= 90 && // 'Z'
+      !e.ctrlKey &&
+      !e.metaKey) {
       this.editText(true)
     } else if(e.key === 'F2') {
       this.editText()
@@ -522,7 +552,8 @@ export class MapManager {
     this.textInput.show(this.lastNode, !directInput)
   }
   
-  move(direction, shiftDown) {
+  move(direction : number,
+       shiftDown : boolean) {
     let node = null
 
     if(direction == MOVE_RIGHT) {
@@ -582,12 +613,12 @@ export class MapManager {
     }
   }
 
-  getLocalPos(e) {
+  getLocalPos(e : MouseEvent) {
     const rect = this.svg.getBoundingClientRect()
     const pos = this.svg.createSVGPoint()
     pos.x = e.clientX - rect.left
     pos.y = e.clientY - rect.top
-    const canvasLocalPos = pos.matrixTransform(canvas.getScreenCTM().inverse())
+    const canvasLocalPos = pos.matrixTransform(this.canvas.getScreenCTM().inverse())
     return canvasLocalPos
   }
   
@@ -646,10 +677,10 @@ export class MapManager {
     this.leftRootNode.updateLayout(null, null)
   }
   
-  deleteNode(node) {
+  deleteNode(node : Node) {
     const parentNode = node.parent
 
-    const removeNodeCallback = (node) => {
+    const removeNodeCallback = (node : Node) => {
       // nodes[]から削除する
       const nodeIndex = this.nodes.indexOf(node)
       if(nodeIndex >= 0) {
@@ -664,11 +695,13 @@ export class MapManager {
     }
   }
 
-  get lastNode() {
+  get lastNode() : Node {
     return this.selectedNodes[this.selectedNodes.length-1]
   }
 
-  setNodeSelected(node, selected, updateCursorDepth=true) {
+  setNodeSelected(node : Node,
+                  selected : boolean,
+                  updateCursorDepth=true) {
     if(node.isSelected != selected) {
       node.setSelected(selected)
       
@@ -683,7 +716,7 @@ export class MapManager {
         }
       }
     } else if(node.isSelected) {
-       // nodeを最後に持ってくる
+      // nodeを最後に持ってくる
       const nodeIndex = this.selectedNodes.indexOf(node)
       if(nodeIndex >= 0) {
         this.selectedNodes.splice(nodeIndex, 1)
@@ -696,7 +729,8 @@ export class MapManager {
     }
   }
 
-  clearNodeSelection(leftNode, updateCursorDepth=true) {
+  clearNodeSelection(leftNode : Node,
+                     updateCursorDepth=true) {
     this.selectedNodes.forEach(node => {
       node.setSelected(false)
     })
@@ -746,7 +780,7 @@ export class MapManager {
     this.deleteSelectedNodes()
   }
 
-  onTextDecided(node, changed) {
+  onTextDecided(node : Node, changed : boolean) {
     this.cursorDepth = node.depth
     if( changed ) {
       // 文字列が変更された場合
@@ -775,8 +809,9 @@ export class MapManager {
     this.setDirty(true)
   }
 
-  applyNodeState(state, parentNode) {
-    let node = null
+  applyNodeState(state : StateType,
+                 parentNode : Node | null) {
+    let node : Node|null = null
     if(parentNode == null) {
       const g = document.getElementById('overlay')
       if(!state['isLeft'] ) {
@@ -810,7 +845,7 @@ export class MapManager {
     }    
   }
 
-  applyMapState(state) {
+  applyMapState(state : StateType) {
     this.clearAllNodes()
 
     this.init()
@@ -840,7 +875,7 @@ export class MapManager {
     return mapState
   }
 
-  load(mapData) {
+  load(mapData : StateType) {
     const version = mapData['version']
     const state = mapData['state']
     
@@ -880,14 +915,14 @@ export class MapManager {
   }
 
   collectCopiableNodes() {
-    const candidateNodes = []
+    const candidateNodes = new Array<Node>();
     this.selectedNodes.forEach(node => {
       if(!node.isRoot) {
         candidateNodes.push(node)
       }
     })
 
-    const copiableNodes = []
+    const copiableNodes = new Array<Node>();
     candidateNodes.forEach(node => {
       // 親にcandidateNodesが含まれていなければcopy可能とする
       if(node.checkCopiable(candidateNodes)) {
@@ -900,19 +935,22 @@ export class MapManager {
 
   copy() {
     const nodes = this.collectCopiableNodes()
-    const copyingStates = []
+    const copyingStates = new Array<StateType>();
     nodes.forEach(node => {
       copyingStates.push(node.getState())
     })
     this.copyingStates = copyingStates
   }
 
-  modifyStateForCopy(state, isLeft) {
+  modifyStateForCopy(state : StateType,
+                     isLeft : boolean) {
     state['isLeft'] = isLeft
     state['selected'] = false
     state['folded'] = false
 
-    state['children'].forEach(childState => {
+    const childrenState : Array<StateType> = state['children'];
+
+    childrenState.forEach(childState => {
       this.modifyStateForCopy(childState, isLeft)
     })
   }
@@ -947,7 +985,7 @@ export class MapManager {
     this.cursorDepth = 0
   }
 
-  setDirty(dirty) {
+  setDirty(dirty : boolean) {
     nmapi.sendMessage('set-dirty', dirty)
   }
 

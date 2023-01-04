@@ -1,17 +1,21 @@
 const EDIT_HISTORY_MAX = 30
 
 
+// TODO: 共通化
+type StateType = {[key: string]: any;};
+
+
 export class EditHistory {
-  history : Array;
+  history : Array<StateType>;
   cursor : number;
   
-  constructor(initialState) {
+  constructor(initialState : StateType) {
     this.history = new Array()
     this.cursor = -1
     this.addHistory(initialState)
   }
 
-  addHistory(state) {
+  addHistory(state : StateType) {
     if( this.cursor != this.history.length-1 ) {
       // cursorが終端以外の場所にある時の対応
       this.history.splice(this.cursor+1, this.history.length-(this.cursor+1))

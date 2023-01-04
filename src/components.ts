@@ -36,6 +36,9 @@ export class TextComponent {
   span : Element;
   width : number | null;  
   height : number | null;
+  x : number | null;
+  y : number | null;
+  visible : boolean | null;
   
   constructor(container : Element,
               isRoot : boolean,
@@ -123,8 +126,8 @@ export class TextComponent {
       width = 13
     }
     
-    this.foreignObject.width.baseVal.value = width
-    this.foreignObject.height.baseVal.value = height
+    this.foreignObject.setAttribute('width', String(width))
+    this.foreignObject.setAttribute('height', String(height))
     
     this.width = width
     this.height = height
@@ -144,8 +147,8 @@ export class TextComponent {
   }
 
   setPos(x : number, y : number) {
-    this.foreignObject.x.baseVal.value = x
-    this.foreignObject.y.baseVal.value = y
+    this.foreignObject.setAttribute('x', String(x))
+    this.foreignObject.setAttribute('y', String(y))
     
     this.x = x
     this.y = y
@@ -205,6 +208,8 @@ export class TextComponent {
 
 
 export class LineComponent {
+  lineElement : Element;
+  
   constructor(container : Element) {
     const lineElement = document.createElementNS(NAME_SPACE, 'line')
     this.lineElement = lineElement
@@ -213,7 +218,7 @@ export class LineComponent {
     this.setPos(0, 0, 0, 0)
     
     lineElement.setAttribute('stroke', '#7f7f7f')
-    lineElement.setAttribute('stroke-width', 1)
+    lineElement.setAttribute('stroke-width', String(1))
     
     container.appendChild(lineElement)
   }
@@ -230,10 +235,10 @@ export class LineComponent {
          sy : number,
          ex : number,
          ey : number) {
-    this.lineElement.setAttribute('x1', sx)
-    this.lineElement.setAttribute('y1', sy)
-    this.lineElement.setAttribute('x2', ex)
-    this.lineElement.setAttribute('y2', ey)
+    this.lineElement.setAttribute('x1', String(sx))
+    this.lineElement.setAttribute('y1', String(sy))
+    this.lineElement.setAttribute('x2', String(ex))
+    this.lineElement.setAttribute('y2', String(ey))
   }
 
   remove() {
@@ -243,6 +248,8 @@ export class LineComponent {
 
 
 export class FoldMarkComponent {
+  markElement : Element;
+  
   constructor(container : Element,
               config : Config) {
     const markElement = document.createElementNS(NAME_SPACE, 'circle')
@@ -251,11 +258,11 @@ export class FoldMarkComponent {
     this.applyConfig(config)
     
     markElement.setAttribute('stroke', '#7f7f7f')
-    markElement.setAttribute('stroke-width', 1)
+    markElement.setAttribute('stroke-width', String(1))
     
-    markElement.setAttribute('cx', 0)
-    markElement.setAttribute('cy', 0)
-    markElement.setAttribute('r', FOLD_MARK_RADIUS)
+    markElement.setAttribute('cx', String(0))
+    markElement.setAttribute('cy', String(0))
+    markElement.setAttribute('r', String(FOLD_MARK_RADIUS))
     container.appendChild(markElement)
   
     this.setVisible(false)
@@ -279,8 +286,8 @@ export class FoldMarkComponent {
 
   setPos(x : number,
          y : number) {
-    this.markElement.setAttribute('cx', x)
-    this.markElement.setAttribute('cy', y)
+    this.markElement.setAttribute('cx', String(x))
+    this.markElement.setAttribute('cy', String(y))
   }
 
   remove() {
@@ -290,6 +297,10 @@ export class FoldMarkComponent {
 
 
 export class HandleComponent {
+  handleElement : Element;
+  x : number | null;
+  y : number | null;  
+  
   constructor(container : Element,
               config : Config) {
     const handleElement = document.createElementNS(NAME_SPACE, 'ellipse')
@@ -298,12 +309,12 @@ export class HandleComponent {
     this.applyConfig(config)
 
     handleElement.setAttribute('stroke', '#7f7f7f')
-    handleElement.setAttribute('stroke-width', 1)
+    handleElement.setAttribute('stroke-width', String(1))
     
-    handleElement.setAttribute('cx', 0)
-    handleElement.setAttribute('cy', 0)
-    handleElement.setAttribute('rx', HANDLE_WIDTH/2)
-    handleElement.setAttribute('ry', HANDLE_HEIGHT/2+1)
+    handleElement.setAttribute('cx', String(0))
+    handleElement.setAttribute('cy', String(0))
+    handleElement.setAttribute('rx', String(HANDLE_WIDTH/2))
+    handleElement.setAttribute('ry', String(HANDLE_HEIGHT/2+1))
     container.appendChild(handleElement)
 
     this.setVisible(false)
@@ -327,8 +338,8 @@ export class HandleComponent {
 
   setPos(x : number,
          y : number) {
-    this.handleElement.setAttribute('cx', x + HANDLE_WIDTH/2)
-    this.handleElement.setAttribute('cy', y + HANDLE_HEIGHT/2)
+    this.handleElement.setAttribute('cx', String(x + HANDLE_WIDTH/2))
+    this.handleElement.setAttribute('cy', String(y + HANDLE_HEIGHT/2))
 
     this.x = x
     this.y = y
@@ -348,32 +359,34 @@ export class HandleComponent {
 
 
 export class RectComponent {
+  rectElement : Element;
+  
   constructor(container : Element) {
     const rectElement = document.createElementNS(NAME_SPACE, 'rect')
 
-    rectElement.setAttribute('x', 0)
-    rectElement.setAttribute('y', 0)
-    rectElement.setAttribute('width', 100)
-    rectElement.setAttribute('height', 30)
+    rectElement.setAttribute('x', String(0))
+    rectElement.setAttribute('y', String(0))
+    rectElement.setAttribute('width', String(100))
+    rectElement.setAttribute('height', String(30))
     rectElement.setAttribute('fill', 'none')
     rectElement.setAttribute('stroke', '#7f7f7f')
-    rectElement.setAttribute('stroke-width', 2)
+    rectElement.setAttribute('stroke-width', String(2))
 
     container.appendChild(rectElement)
     this.rectElement = rectElement
   }
 
   setWidth(width : number) {
-    this.rectElement.setAttribute('width', width)
+    this.rectElement.setAttribute('width', String(width))
   }
   
   setHeight(height : number) {
-    this.rectElement.setAttribute('height', height)
+    this.rectElement.setAttribute('height', String(height))
   }
 
   setPos(x : number, y : number) {
-    this.rectElement.setAttribute('x', x)
-    this.rectElement.setAttribute('y', y)
+    this.rectElement.setAttribute('x', String(x))
+    this.rectElement.setAttribute('y', String(y))
   }
 
   setVisible(visible : boolean) {

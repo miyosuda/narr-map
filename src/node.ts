@@ -29,6 +29,10 @@ const OFFSET_Y_FOR_SINGLE_CHILD = -3.0
 const GAP_X = 20
 
 
+// TODO: 共通化
+type StateType = {[key: string]: any;};
+
+
 export class Node {
   parentNode : Node | null;
   isLeft : boolean;
@@ -405,7 +409,7 @@ export class Node {
   
   get edgeOutPos() {
     // 親Nodeの出口
-    const pos : {[key: string]: any;} = {}
+    const pos : {[key: string]: number;} = {}
     
     if(this.isRoot) {
       pos['x'] = this.x + this.width / 2
@@ -582,7 +586,7 @@ export class Node {
   checkGhostHover(x : number,
                   y : number) {
     if(this.isDummy) {
-      return false
+      return HOVER_STATE_NONE
     }
     
     if(this.containsPosHalf(x, y, true)) {
@@ -737,7 +741,7 @@ export class Node {
   }
   
   getState() {
-    const state : {[key: string]: any;} = {
+    const state : StateType = {
       'text'     : this.text,
       'shiftX'   : this.shiftX,
       'shiftY'   : this.shiftY,
@@ -746,7 +750,7 @@ export class Node {
       'isLeft'   : this.isLeft,
     }
     
-    const childStates = new Array<{[key: string]: any;}>();
+    const childStates = new Array<StateType>();
     this.children.forEach(node => {
       childStates.push(node.getState())
     })
@@ -755,7 +759,7 @@ export class Node {
     return state
   }
   
-  applyState(state : {[key: string]: any;}) {
+  applyState(state : StateType) {
     this.setText(state['text'])
     
     this.shiftX = state['shiftX']

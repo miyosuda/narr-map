@@ -1,5 +1,4 @@
-import { app, BrowserWindow } from 'electron';
-const { app, Menu, BrowserWindow } = require('electron');
+import { app, BrowserWindow, Menu, MenuItem } from 'electron';
 const ipc = require('electron').ipcMain;
 const dialog = require('electron').dialog;
 const fs = require('fs');
@@ -15,11 +14,11 @@ const schema = {
 
 const store = new Store({schema})
 
-const setDarkMode = (darkMode) => {
+const setDarkMode = (darkMode : boolean) => {
   globalMainWindow.webContents.send('request', 'dark-mode', darkMode)
 }
 
-const onDarkModeChanged = (newValue, oldValue) => {
+const onDarkModeChanged = (newValue : boolean, oldValue : boolean) => {
   setDarkMode(newValue)
 }
 
@@ -37,7 +36,7 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-let globalMainWindow = null;
+let globalMainWindow : BrowserWindow | null = null;
 
 const createWindow = (): void => {
   // Create the browser window.
@@ -51,7 +50,7 @@ const createWindow = (): void => {
     },
   });
 
-  mainWindow.on('close', (event) => {
+  mainWindow.on('close', (event : Event) => {
     if( editDirty ) {
       const quit = () => {
         app.quit()
@@ -121,18 +120,20 @@ const CONFIRM_ANSWER_DELETE = 1;
 const CONFIRM_ANSWER_CANCEL = 2;
 
 let editDirty = false;
-let filePath = null;
+let filePath : string = null;
 
 const DEFAULT_TITLE = 'Unnamed';
 
 
-ipc.on('response', (event, arg, obj) => {
+ipc.on('response', (event : Event,
+                    arg : string,
+                    obj : any) => {
   if( arg == 'set-dirty' ) {
     editDirty = obj
   } else if( arg == 'response-save' ) {
     const json = JSON.stringify(obj, null , '  ')
 
-    fs.writeFile(filePath, json, (error) => {
+    fs.writeFile(filePath, json, (error : string) => {
       if(error != null) {
         console.log('save error')
       }
@@ -155,7 +156,7 @@ const showSaveConfirmDialog = () => {
   return ret
 }
 
-let onSavedFunction = null
+let onSavedFunction : ()=>void = null
 
 const saveOptions = {
   title: 'Save',
@@ -167,9 +168,10 @@ const saveOptions = {
   ]
 }
 
-const save = (browserWindow, onSavedHook=null) => {
-  if(filePath == null) {
-    const path_ = dialog.showSaveDialogSync(saveOptions)
+const save = (browserWindow : BrowserWindow,
+              onSavedHook : (()=>void)|null=null) => {
+    if(filePath == null) {
+      const path_ = dialog.showSaveDialogSync(saveOptions)
     if(path_ != null) {
       onSavedFunction = onSavedHook
       // filePathの設定
@@ -184,7 +186,7 @@ const save = (browserWindow, onSavedHook=null) => {
   }
 }
 
-const saveAs = (browserWindow) => {
+const saveAs = (browserWindow : BrowserWindow) => {
   const path_ = dialog.showSaveDialogSync(saveOptions)
   if(path_ != null) {
     // filePathの設定
@@ -205,25 +207,26 @@ const onSaveFinished = () => {
   }
 }
 
-const load = (browserWindow, path_) => {
-  fs.readFile(path_, (error, json) => {
-    if(error != null) {
-      console.log('file open error')
-    }
-    if(json != null) {
-      const mapData = JSON.parse(json)
-      browserWindow.webContents.send('request', 'load', mapData)
+const load = (browserWindow : BrowserWindow,
+              path_ : string) => {
+      fs.readFile(path_, (error : string, json : string) => {
+      if(error != null) {
+        console.log('file open error')
+      }
+      if(json != null) {
+        const mapData = JSON.parse(json)
+        browserWindow.webContents.send('request', 'load', mapData)
 
-      editDirty = false
+        editDirty = false
 
-      // Add to recently used file
-      app.addRecentDocument(path_)
-              
-      // filePathの設定
-      filePath = path_
-      const fileName = path.basename(filePath)
-      browserWindow.setTitle(fileName)
-    }
+        // Add to recently used file
+        app.addRecentDocument(path_)
+        
+        // filePathの設定
+        filePath = path_
+        const fileName = path.basename(filePath)
+        browserWindow.setTitle(fileName)
+      }
   })
 }
 
@@ -243,7 +246,9 @@ const templateMenu = [
       {
         label: 'Quit',
         accelerator: 'CmdOrCtrl+Q',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem,
+                browserWindow : BrowserWindow,
+                event : Event) => {
           const quit = () => {
             app.quit()
           }
@@ -259,7 +264,9 @@ const templateMenu = [
       {
         label: 'New',
         accelerator: 'CmdOrCtrl+N',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem,
+                browserWindow : BrowserWindow,
+                event : Event) => {
           const requestNewFile = () => {
             browserWindow.webContents.send('request', 'new-file')
             // filePathの設定
@@ -283,7 +290,9 @@ const templateMenu = [
       {
         label: 'Open',
         accelerator: 'CmdOrCtrl+O',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem,
+                browserWindow : BrowserWindow,
+                event : Event) => {
           const requestOpen = () => {
             const options = {
               properties: ['openFile']
@@ -324,14 +333,14 @@ const templateMenu = [
       {
         label: 'Save',
         accelerator: 'CmdOrCtrl+S',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           save(browserWindow)
         }
       },
       {
         label: 'Save As',
         accelerator: 'CmdOrCtrl+Shift+S',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           saveAs(browserWindow)
         }
       },      
@@ -343,7 +352,7 @@ const templateMenu = [
       {
         label: 'Undo',
         accelerator: 'CmdOrCtrl+Z',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           browserWindow.webContents.send(
             'request', 'undo'
           )
@@ -352,7 +361,7 @@ const templateMenu = [
       {
         label: 'Redo',
         accelerator: 'CmdOrCtrl+Shift+Z',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           browserWindow.webContents.send(
             'request', 'redo'
           )
@@ -364,7 +373,7 @@ const templateMenu = [
       {
         label: 'Cut',
         accelerator: 'CmdOrCtrl+X',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           browserWindow.webContents.send(
             'request', 'cut'
           )
@@ -373,7 +382,7 @@ const templateMenu = [
       {
         label: 'Copy',
         accelerator: 'CmdOrCtrl+C',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           browserWindow.webContents.send(
             'request', 'copy'
           )
@@ -382,7 +391,7 @@ const templateMenu = [
       {
         label: 'Paste',
         accelerator: 'CmdOrCtrl+V',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           browserWindow.webContents.send(
             'request', 'paste'
           )
@@ -394,7 +403,7 @@ const templateMenu = [
       {
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           browserWindow.webContents.send(
             'request', 'selectall'
           )
@@ -409,7 +418,7 @@ const templateMenu = [
         label: 'Dark mode',
         type: "checkbox",
         checked: store.get('darkMode'),
-        click: (menuItem, browserWindow, event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
           const newDarkMode = !store.get('darkMode')
           store.set('darkMode', newDarkMode)
         }

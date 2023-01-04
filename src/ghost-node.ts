@@ -1,13 +1,20 @@
 import { RectComponent } from './components'
+import { Node } from './node'
 
 
 export class GhostNode {
-  constructor(container) {
+  rectComponent : RectComponent;
+  node : Node | null;
+  startElementX : number | null;
+  startElementY : number | null;
+  shown : boolean | null;
+  
+  constructor(container : Element) {
     this.rectComponent = new RectComponent(container)
     this.hide()
   }
 
-  prepare(node) {
+  prepare(node : Node) {
     this.node = node
   }
 
@@ -37,7 +44,7 @@ export class GhostNode {
     return this.shown
   }
 
-  onDrag(dx, dy) {
+  onDrag(dx : number, dy : number) {
     const x = this.startElementX + dx
     const y = this.startElementY + dy
     

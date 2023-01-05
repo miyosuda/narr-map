@@ -1,8 +1,6 @@
+import { StateType } from './types'
+
 const EDIT_HISTORY_MAX = 30
-
-
-// TODO: 共通化
-type StateType = {[key: string]: any;};
 
 
 export class EditHistory {

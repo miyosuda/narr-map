@@ -1,10 +1,12 @@
 declare global {
   interface Window {
-    nmapi: NMAPI;
+    nmAPI: NMAPI;
   }
 }
 
+type ListenerType = (arg: string, obj : any) => void;
+
 export interface NMAPI {
   sendMessage: (arg: string, obj : any) => void;
-  onReceiveMessage: (listener: (arg: string, obj : any) => void) => () => void;
+  onReceiveMessage: (listener: ListenerType) => () => void;
 }

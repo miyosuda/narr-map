@@ -6,12 +6,12 @@ import {
   HOVER_HIT_CHILD,
   HOVER_HIT_OTHER_CHILD,
 } from './node'
-
 import { GhostNode } from './ghost-node'
 import { TextInput } from './text-input'
 import { EditHistory } from './edit-history'
 import { Config } from './config'
-const { nmapi } = window;
+import { StateType } from './types'
+const { nmAPI } = window;
 
 const DRAG_NONE  = 0
 const DRAG_NODE  = 1
@@ -24,8 +24,6 @@ const MOVE_RIGHT = 3
 const MOVE_LEFT  = 4
 
 
-// TODO: 共通化
-type StateType = {[key: string]: any;};
 type SVGType = HTMLElement & SVGSVGElement;
 type CanvasType = HTMLElement & SVGGraphicsElement;
 
@@ -43,7 +41,7 @@ export class MapManager {
   lastMouseDownTime : number;
   ghostNode : GhostNode;  
   svg : SVGType;
-  canvas : SVGGraphicsElement;
+  canvas : CanvasType;
   textInput : TextInput;
   editHistory : EditHistory
   canvasTranslateX : number;
@@ -91,7 +89,7 @@ export class MapManager {
     document.body.addEventListener('keydown',  event => this.onKeyDown(event))
     this.textInput = new TextInput(this)
 
-    nmapi.onReceiveMessage((arg : string, obj : any) => {
+    nmAPI.onReceiveMessage((arg : string, obj : any) => {
       if( arg === 'save' ||
         arg === 'load' ||
         arg === 'new-file') {
@@ -314,10 +312,6 @@ export class MapManager {
     this.dragMode = dragMode
   }
 
-  calcCenter() {
-
-  }
-
   recenter() {
     let globalLeft   = Number.POSITIVE_INFINITY
     let globalRight  = Number.NEGATIVE_INFINITY
@@ -348,7 +342,6 @@ export class MapManager {
       return
     }
 
-    //if(e.shiftDown) {
     if(e.shiftKey) {
       return
     }
@@ -790,6 +783,15 @@ export class MapManager {
       
       // undoバッファ対応
       this.storeState()
+
+      // ファイル新規保存時用にファイル名設定
+      if(node.isRoot && !node.isDummy) {
+        if(node.text.length > 0) {
+          nmAPI.sendMessage('set-root-text', node.text);
+        } else {
+          nmAPI.sendMessage('set-root-text', null);
+        }
+      }
     }
   }
 
@@ -899,7 +901,7 @@ export class MapManager {
       'state' : state,
     }
     
-    nmapi.sendMessage('response-save', mapData)
+    nmAPI.sendMessage('response-save', mapData)
   }
   
   undo() {
@@ -988,7 +990,7 @@ export class MapManager {
   }
 
   setDirty(dirty : boolean) {
-    nmapi.sendMessage('set-dirty', dirty)
+    nmAPI.sendMessage('set-dirty', dirty)
   }
 
   debugDump() {

@@ -26,6 +26,8 @@ const MOVE_LEFT  = 4
 
 // TODO: 共通化
 type StateType = {[key: string]: any;};
+type SVGType = HTMLElement & SVGSVGElement;
+type CanvasType = HTMLElement & SVGGraphicsElement;
 
 
 export class MapManager {
@@ -40,7 +42,7 @@ export class MapManager {
   copyingStates : Array<StateType>;
   lastMouseDownTime : number;
   ghostNode : GhostNode;  
-  svg : SVGSVGElement;
+  svg : SVGType;
   canvas : SVGGraphicsElement;
   textInput : TextInput;
   editHistory : EditHistory
@@ -73,8 +75,8 @@ export class MapManager {
   }
 
   prepare() {
-    this.svg = document.getElementById('svg') as SVGSVGElement;
-    this.canvas = document.getElementById('canvas') as SVGGraphicsElement;
+    this.svg = document.getElementById('svg') as SVGType;
+    this.canvas = document.getElementById('canvas') as CanvasType;
 
     const width = this.svg.width.baseVal.value
     const height = this.svg.height.baseVal.value
@@ -833,7 +835,7 @@ export class MapManager {
       parentNode.addChildNode(node)
     }
     
-    state.children.forEach(childState => {
+    state.children.forEach((childState : StateType) => {
       this.applyNodeState(childState, node)
     })
 
@@ -950,7 +952,7 @@ export class MapManager {
 
     const childrenState : Array<StateType> = state['children'];
 
-    childrenState.forEach(childState => {
+    childrenState.forEach((childState : StateType) => {
       this.modifyStateForCopy(childState, isLeft)
     })
   }

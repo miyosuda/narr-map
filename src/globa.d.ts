@@ -6,6 +6,5 @@ declare global {
 
 export interface NMAPI {
   sendMessage: (arg: string, obj : any) => void;
-  // TODO: 要修正
-  onReceiveMessage: (listener: (message: string) => void) => () => void;
+  onReceiveMessage: (listener: (arg: string, obj : any) => void) => () => void;
 }

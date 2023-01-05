@@ -11,8 +11,10 @@ contextBridge.exposeInMainWorld('nmapi', {
     ipcRenderer.send('response', arg, obj)
   },
   // main -> renderer
-  onReceiveMessage : (listener : (event: IpcRendererEvent, ...args: any[])) => {
-    ipcRenderer.on('request', (event, arg, obj) => {
+  onReceiveMessage : (listener : (arg : string, obj : any)=>void) => {
+    ipcRenderer.on('request', (event: IpcRendererEvent,
+                               arg : string,
+                               obj : any) => {
       listener(arg, obj)
     })
   },

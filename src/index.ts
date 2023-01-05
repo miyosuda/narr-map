@@ -231,7 +231,7 @@ const load = (browserWindow : BrowserWindow,
 }
 
 // ElectronのMenuの設定
-const templateMenu = [
+const templateMenu : Electron.MenuItemConstructorOptions[] = [
   {
     label: app.name,
     submenu: [
@@ -240,7 +240,7 @@ const templateMenu = [
       { role: 'services' },
       { type: 'separator' },
       { role: 'hide' },
-      { role: 'hideothers' },
+      { role: 'hideOthers' },
       { role: 'unhide' },
       { type: 'separator' },
       {
@@ -248,7 +248,7 @@ const templateMenu = [
         accelerator: 'CmdOrCtrl+Q',
         click: (menuItem : MenuItem,
                 browserWindow : BrowserWindow,
-                event : Event) => {
+                event : KeyboardEvent) => {
           const quit = () => {
             app.quit()
           }
@@ -266,7 +266,7 @@ const templateMenu = [
         accelerator: 'CmdOrCtrl+N',
         click: (menuItem : MenuItem,
                 browserWindow : BrowserWindow,
-                event : Event) => {
+                event : KeyboardEvent) => {
           const requestNewFile = () => {
             browserWindow.webContents.send('request', 'new-file')
             // filePathの設定
@@ -294,7 +294,7 @@ const templateMenu = [
                 browserWindow : BrowserWindow,
                 event : Event) => {
           const requestOpen = () => {
-            const options = {
+            const options : Electron.OpenDialogSyncOptions = {
               properties: ['openFile']
             }
             const pathes = dialog.showOpenDialogSync(options)
@@ -319,11 +319,11 @@ const templateMenu = [
       },
       {
         "label":"Open Recent",
-        "role":"recentdocuments",
+        "role":"recentDocuments",
         "submenu":[
           {
             "label":"Clear Recent",
-            "role":"clearrecentdocuments"
+            "role":"clearRecentDocuments"
           }
         ]
       },
@@ -333,14 +333,14 @@ const templateMenu = [
       {
         label: 'Save',
         accelerator: 'CmdOrCtrl+S',
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           save(browserWindow)
         }
       },
       {
         label: 'Save As',
         accelerator: 'CmdOrCtrl+Shift+S',
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           saveAs(browserWindow)
         }
       },      
@@ -352,7 +352,7 @@ const templateMenu = [
       {
         label: 'Undo',
         accelerator: 'CmdOrCtrl+Z',
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           browserWindow.webContents.send(
             'request', 'undo'
           )
@@ -361,7 +361,7 @@ const templateMenu = [
       {
         label: 'Redo',
         accelerator: 'CmdOrCtrl+Shift+Z',
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           browserWindow.webContents.send(
             'request', 'redo'
           )
@@ -373,7 +373,7 @@ const templateMenu = [
       {
         label: 'Cut',
         accelerator: 'CmdOrCtrl+X',
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           browserWindow.webContents.send(
             'request', 'cut'
           )
@@ -382,7 +382,7 @@ const templateMenu = [
       {
         label: 'Copy',
         accelerator: 'CmdOrCtrl+C',
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           browserWindow.webContents.send(
             'request', 'copy'
           )
@@ -391,7 +391,7 @@ const templateMenu = [
       {
         label: 'Paste',
         accelerator: 'CmdOrCtrl+V',
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           browserWindow.webContents.send(
             'request', 'paste'
           )
@@ -403,7 +403,7 @@ const templateMenu = [
       {
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           browserWindow.webContents.send(
             'request', 'selectall'
           )
@@ -418,7 +418,7 @@ const templateMenu = [
         label: 'Dark mode',
         type: "checkbox",
         checked: store.get('darkMode'),
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : Event) => {
+        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           const newDarkMode = !store.get('darkMode')
           store.set('darkMode', newDarkMode)
         }
@@ -435,13 +435,13 @@ const templateMenu = [
         type: 'separator',
       },
       {
-        role: 'resetzoom',
+        role: 'resetZoom',
       },
       {
-        role: 'zoomin',
+        role: 'zoomIn',
       },
       {
-        role: 'zoomout',
+        role: 'zoomOut',
       },
       {
         type: 'separator',

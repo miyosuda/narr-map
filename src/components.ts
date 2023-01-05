@@ -25,16 +25,16 @@ const BLUE_CIRCLE_EMOJI   = String.fromCodePoint(0x1F535)
 const YELLOW_CIRCLE_EMOJI = String.fromCodePoint(0x1F7E1)
 
 
-type SvgInHtml = HTMLElement & SVGElement;
+type ForeignObjectType = HTMLElement & SVGForeignObjectElement;
 
 
 export class TextComponent {
   isRoot : boolean;
-  foreignObject : SvgInHtml;
+  foreignObject : ForeignObjectType;
   config : Config;
   text : string | null;
   span : Element;
-  width : number | null;  
+  width : number | null;
   height : number | null;
   x : number | null;
   y : number | null;
@@ -45,7 +45,8 @@ export class TextComponent {
               config : Config) {
     this.isRoot = isRoot
     
-    const foreignObject = document.createElementNS(NAME_SPACE, 'foreignObject') as SvgInHtml;
+    const foreignObject = document.createElementNS(
+      NAME_SPACE, 'foreignObject') as ForeignObjectType;
     this.foreignObject = foreignObject
 
     if(isRoot) {

@@ -12,6 +12,7 @@ import {
   TEXT_COMPONENT_STYLE_SELECTED,
 } from './components'
 import { Config } from './config';
+import { StateType } from './types'
 
 export const SPAN_Y_PER_NODE = 30.0 // 1ノードの取る縦幅
 
@@ -28,9 +29,6 @@ export const HOVER_HIT_OTHER_CHILD = 3
 const OFFSET_Y_FOR_SINGLE_CHILD = -3.0
 const GAP_X = 20
 
-
-// TODO: 共通化
-type StateType = {[key: string]: any;};
 
 
 export class Node {

@@ -1,9 +1,10 @@
 import { app, BrowserWindow, Menu, MenuItem } from 'electron';
-const ipc = require('electron').ipcMain;
-const dialog = require('electron').dialog;
-const fs = require('fs');
-const path = require('path');
-const Store = require('electron-store');
+import { ipcMain as ipc } from 'electron';
+import { dialog } from 'electron';
+import fs from 'fs';
+import path from 'path';
+import Store from 'electron-store';
+
 
 const schema = {
   darkMode: {
@@ -121,6 +122,7 @@ const CONFIRM_ANSWER_CANCEL = 2;
 
 let editDirty = false;
 let filePath : string = null;
+let rootText : string = null;
 
 const DEFAULT_TITLE = 'Unnamed';
 
@@ -130,6 +132,8 @@ ipc.on('response', (event : Event,
                     obj : any) => {
   if( arg == 'set-dirty' ) {
     editDirty = obj
+  } else if( arg == 'set-root-text' ) {
+    rootText = obj;
   } else if( arg == 'response-save' ) {
     const json = JSON.stringify(obj, null , '  ')
 
@@ -170,8 +174,13 @@ const saveOptions = {
 
 const save = (browserWindow : BrowserWindow,
               onSavedHook : (()=>void)|null=null) => {
-    if(filePath == null) {
-      const path_ = dialog.showSaveDialogSync(saveOptions)
+  if(filePath == null) {
+    // rootTextを使ってデフォルトファイル名表示
+    const saveOptions_ = Object.create(saveOptions);
+    if(rootText != null) {
+      saveOptions_['defaultPath'] = rootText;
+    }
+    const path_ = dialog.showSaveDialogSync(saveOptions_)
     if(path_ != null) {
       onSavedFunction = onSavedHook
       // filePathの設定
@@ -187,7 +196,12 @@ const save = (browserWindow : BrowserWindow,
 }
 
 const saveAs = (browserWindow : BrowserWindow) => {
-  const path_ = dialog.showSaveDialogSync(saveOptions)
+  // rootTextを使ってデフォルトファイル名表示
+  const saveOptions_ = Object.create(saveOptions);
+  if(rootText != null) {
+    saveOptions_['defaultPath'] = rootText;
+  }
+  const path_ = dialog.showSaveDialogSync(saveOptions_)
   if(path_ != null) {
     // filePathの設定
     filePath = path_
@@ -268,10 +282,11 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
                 browserWindow : BrowserWindow,
                 event : KeyboardEvent) => {
           const requestNewFile = () => {
-            browserWindow.webContents.send('request', 'new-file')
+            browserWindow.webContents.send('request', 'new-file');
             // filePathの設定
-            filePath = null
-            browserWindow.setTitle(DEFAULT_TITLE)
+            filePath = null;
+            rootText = null;
+            browserWindow.setTitle(DEFAULT_TITLE);
           }
           
           if( editDirty ) {

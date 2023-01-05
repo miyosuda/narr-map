@@ -3,10 +3,13 @@ import { ipcMain as ipc } from 'electron';
 import { dialog } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import Store from 'electron-store';
+import Store, { Schema } from 'electron-store';
 
+interface StoreSchema {
+  darkMode : boolean;
+}
 
-const schema = {
+const schema : Schema<StoreSchema> = {
   darkMode: {
 	type: 'boolean',
 	default: false
@@ -137,7 +140,7 @@ ipc.on('response', (event : Event,
   } else if( arg == 'response-save' ) {
     const json = JSON.stringify(obj, null , '  ')
 
-    fs.writeFile(filePath, json, (error : string) => {
+    fs.writeFile(filePath, json, (error : NodeJS.ErrnoException) => {
       if(error != null) {
         console.log('save error')
       }
@@ -223,24 +226,26 @@ const onSaveFinished = () => {
 
 const load = (browserWindow : BrowserWindow,
               path_ : string) => {
-      fs.readFile(path_, (error : string, json : string) => {
-      if(error != null) {
-        console.log('file open error')
-      }
-      if(json != null) {
-        const mapData = JSON.parse(json)
-        browserWindow.webContents.send('request', 'load', mapData)
+  fs.readFile(path_, (error : NodeJS.ErrnoException, buffer : Buffer) => {
+    if(error != null) {
+      console.log('file open error')
+    }
+    
+    if(buffer != null) {
+      const json = buffer.toString('utf8');
+      const mapData = JSON.parse(json);
+      browserWindow.webContents.send('request', 'load', mapData);
 
-        editDirty = false
+      editDirty = false;
 
-        // Add to recently used file
-        app.addRecentDocument(path_)
-        
-        // filePathの設定
-        filePath = path_
-        const fileName = path.basename(filePath)
-        browserWindow.setTitle(fileName)
-      }
+      // Add to recently used file
+      app.addRecentDocument(path_);
+      
+      // filePathの設定
+      filePath = path_;
+      const fileName = path.basename(filePath);
+      browserWindow.setTitle(fileName);
+    }
   })
 }
 

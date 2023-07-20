@@ -4,6 +4,7 @@ import { dialog } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import Store, { Schema } from 'electron-store';
+import { convertStateToPlanetUML } from './uml';
 
 interface StoreSchema {
   darkMode : boolean;
@@ -126,6 +127,7 @@ const CONFIRM_ANSWER_CANCEL = 2;
 let editDirty = false;
 let filePath : string = null;
 let rootText : string = null;
+let exportFilePath : string = null;
 
 const DEFAULT_TITLE = 'Unnamed';
 
@@ -149,6 +151,16 @@ ipc.on('response', (event : Event,
     editDirty = false
 
     onSaveFinished()
+  } else if( arg == 'response-export' ) {
+    const uml = convertStateToPlanetUML(obj);
+    
+    fs.writeFile(exportFilePath, uml, (error : NodeJS.ErrnoException) => {
+      if(error != null) {
+        console.log('save error')
+      }
+    })
+
+    exportFilePath = null;
   }
 })
 
@@ -171,6 +183,16 @@ const saveOptions = {
     {
       name: 'Data',
       extensions: ['.nm']
+    }
+  ]
+}
+
+const exportOptions = {
+  title: 'Export (PlanetUML)',
+  filters: [
+    {
+      name: 'Data',
+      extensions: ['.pu']
     }
   ]
 }
@@ -211,6 +233,21 @@ const saveAs = (browserWindow : BrowserWindow) => {
     const fileName = path.basename(filePath)
     browserWindow.setTitle(fileName)
     browserWindow.webContents.send('request', 'save')
+  }
+}
+
+const exportAs = (browserWindow : BrowserWindow) => {
+  const exportOptions_ = Object.create(exportOptions);
+  if(rootText != null) {
+    exportOptions_['defaultPath'] = rootText;
+  }
+  const path_ = dialog.showSaveDialogSync(exportOptions_)
+  if(path_ != null) {
+    // exportFilePathの設定
+    exportFilePath = path_
+    const fileName = path.basename(exportFilePath)
+    browserWindow.setTitle(fileName)
+    browserWindow.webContents.send('request', 'export')
   }
 }
 
@@ -363,6 +400,18 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
         click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
           saveAs(browserWindow)
         }
+      },
+      {
+        label: 'Export',
+        "submenu":[
+          {
+            label: 'PlanetUML',
+            accelerator: 'CmdOrCtrl+Shift+E',
+            click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
+              exportAs(browserWindow)
+            }
+          }
+        ]
       },      
     ]
   },

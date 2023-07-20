@@ -134,6 +134,8 @@ export class MapManager {
         const darkMode = obj
         config.darkMode = darkMode
         this.applyConfig(config)
+      } else if( arg === 'export') {
+        this.export();
       }
     })
     
@@ -902,6 +904,11 @@ export class MapManager {
     }
     
     nmAPI.sendMessage('response-save', mapData)
+  }
+
+  export() {
+    const state = this.getState()
+    nmAPI.sendMessage('response-export', state)
   }
   
   undo() {

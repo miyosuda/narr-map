@@ -238,8 +238,14 @@ const saveAs = (browserWindow : BrowserWindow) => {
 
 const exportAs = (browserWindow : BrowserWindow) => {
   const exportOptions_ = Object.create(exportOptions);
-  if(rootText != null) {
-    exportOptions_['defaultPath'] = rootText;
+
+  if(filePath != null) {
+    const baseName = path.basename(filePath, '.nm');
+    exportOptions_['defaultPath'] = baseName;
+  } else {
+    if(rootText != null) {
+      exportOptions_['defaultPath'] = rootText;
+    }
   }
   const path_ = dialog.showSaveDialogSync(exportOptions_)
   if(path_ != null) {

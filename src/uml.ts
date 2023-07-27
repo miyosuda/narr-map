@@ -71,16 +71,18 @@ class UMLNode {
   }
 
   getState() : StateType {
+    const selected = this.level == 1
+    
     const state : StateType = {
       'text'     : this.text,
-      'shiftX'   : 0.0,
-      'shiftY'   : 0.0,
-      'selected' : false,
+      'shiftX'   : 0,
+      'shiftY'   : 0,
+      'selected' : selected,
       'folded'   : false,
       'isLeft'   : false,
     }
     
-    const childStates = new Array<StateType>();
+    const childStates = new Array<StateType>()
     this.children.forEach(node => {
       childStates.push(node.getState())
     })
@@ -136,7 +138,7 @@ export function convertPlanetUMLToState(uml : string) : StateType {
       if(stack.isEmpty()) {
         stack.push(node)
       } else {
-        const poppedNodes : UMLNode[] = [];
+        const poppedNodes : UMLNode[] = []
         
         while(true) {
           const tmpNode = stack.pop()
@@ -161,8 +163,8 @@ export function convertPlanetUMLToState(uml : string) : StateType {
 
   const leftState : StateType = {
     'text'     : null,
-    'shiftX'   : 0.0,
-    'shiftY'   : 0.0,
+    'shiftX'   : 0,
+    'shiftY'   : 0,
     'selected' : false,
     'folded'   : false,
     'isLeft'   : true,

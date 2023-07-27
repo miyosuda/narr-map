@@ -4,7 +4,7 @@ import { dialog } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import Store, { Schema } from 'electron-store';
-import { convertStateToPlanetUML } from './uml';
+import { convertStateToPlanetUML, convertPlanetUMLToState } from './uml';
 
 interface StoreSchema {
   darkMode : boolean;
@@ -292,6 +292,31 @@ const load = (browserWindow : BrowserWindow,
   })
 }
 
+const importUML = (browserWindow : BrowserWindow,
+                   path_ : string) => {
+  fs.readFile(path_, (error : NodeJS.ErrnoException, buffer : Buffer) => {
+    if(error != null) {
+      console.log('file open error')
+    }
+    
+    if(buffer != null) {
+      const uml = buffer.toString('utf8');
+      const state = convertPlanetUMLToState(uml);
+      const mapData = {
+        'state' : state,
+        'version' : 0,
+      }
+      browserWindow.webContents.send('request', 'load', mapData);
+
+      editDirty = true;
+      
+      filePath = null;
+      rootText = null;
+      browserWindow.setTitle(DEFAULT_TITLE);
+    }
+  })
+}
+
 // ElectronのMenuの設定
 const templateMenu : Electron.MenuItemConstructorOptions[] = [
   {
@@ -416,6 +441,45 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
             click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
               exportAs(browserWindow)
             }
+          }
+        ]
+      },
+      {
+        label: 'Import',
+        "submenu":[
+          {
+            label: 'PlanetUML',
+            accelerator: 'CmdOrCtrl+Shift+O',
+            click: (menuItem : MenuItem,
+                    browserWindow : BrowserWindow,
+                    event : Event) => {
+                      const requestImport = () => {
+                        const options : Electron.OpenDialogSyncOptions = {
+                          properties: ['openFile'],
+                          filters: [
+                            { name: 'PlanetUML',
+                              extensions: ['pu', 'wsd', 'puml', 'planetuml', 'iuml'] },
+                          ]
+                        }
+                        const pathes = dialog.showOpenDialogSync(options)
+                        if(pathes != null && pathes.length > 0) {
+                          const path_ = pathes[0]
+                          importUML(browserWindow, path_)
+                        }
+                      }
+                      
+                      if( editDirty ) {
+                        const ret = showSaveConfirmDialog()
+                        if( ret == CONFIRM_ANSWER_SAVE ) {
+                          // save後にopenする
+                          save(browserWindow, requestImport)
+                        } else if( ret == CONFIRM_ANSWER_DELETE ) {
+                          requestImport()
+                        }
+                      } else {
+                        requestImport()
+                      }
+                    },
           }
         ]
       },      

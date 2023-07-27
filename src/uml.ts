@@ -3,13 +3,15 @@ import { StateType } from './types'
 
 function getStateUMLStr(state : StateType,
                         level : number,
-                        skip : boolean) : string {
+                        skip : boolean,
+                        isLeft : boolean) : string {
 
   let uml = ''
+  const char = isLeft ? '-' : '+'
 
   if(!skip) {
     for(let i=0; i<level; i++) {
-      uml += '+'
+      uml += char
     }
     uml += ' '
     uml += state['text']
@@ -17,7 +19,7 @@ function getStateUMLStr(state : StateType,
   }
   
   state.children.forEach((childState : StateType) => {
-    uml += getStateUMLStr(childState, level+1, false)
+    uml += getStateUMLStr(childState, level+1, false, isLeft)
   })
 
   return uml
@@ -27,8 +29,8 @@ function getStateUMLStr(state : StateType,
 export function convertStateToPlanetUML(state : StateType) : string {
   let uml = '@startmindmap\n'
 
-  uml += getStateUMLStr(state['right'], 1, false)
-  uml += getStateUMLStr(state['left'], 1, true)
+  uml += getStateUMLStr(state['right'], 1, false, false)
+  uml += getStateUMLStr(state['left'], 1, true, true)
   
   uml += '@endmindmap\n'
   return uml
@@ -56,14 +58,18 @@ function getMapNodeStr(line : string, level : number) {
 
 
 class UMLNode {
-  text : string
+  text : string | null
   level : number
+  isLeft : boolean
 
   children : UMLNode[] = []
   
-  constructor(text : string, level : number) {
+  constructor(text : string | null,
+              level : number,
+              isLeft : boolean) {
     this.text = text
     this.level = level
+    this.isLeft = isLeft
   }
 
   addChild(node : UMLNode) {
@@ -71,15 +77,13 @@ class UMLNode {
   }
 
   getState() : StateType {
-    const selected = this.level == 1
-    
     const state : StateType = {
       'text'     : this.text,
       'shiftX'   : 0,
       'shiftY'   : 0,
-      'selected' : selected,
+      'selected' : false,
       'folded'   : false,
-      'isLeft'   : false,
+      'isLeft'   : this.isLeft,
     }
     
     const childStates = new Array<StateType>()
@@ -121,7 +125,10 @@ class Stack<T> {
 export function convertPlanetUMLToState(uml : string) : StateType {
   const lines = uml.split('\n')
   
-  const stack = new Stack<UMLNode>()
+  const rightStack = new Stack<UMLNode>()
+  const leftStack = new Stack<UMLNode>()
+  
+  leftStack.push(new UMLNode(null, 1, true))
   
   for(let i=0; i<lines.length; i++) {
     const line = lines[i]
@@ -133,15 +140,15 @@ export function convertPlanetUMLToState(uml : string) : StateType {
       const level = countNodeLevelPlus(line)
       const text = getMapNodeStr(line, level)
       
-      const node = new UMLNode(text, level)
+      const node = new UMLNode(text, level, false)
       
-      if(stack.isEmpty()) {
-        stack.push(node)
+      if(rightStack.isEmpty()) {
+        rightStack.push(node)
       } else {
         const poppedNodes : UMLNode[] = []
         
         while(true) {
-          const tmpNode = stack.pop()
+          const tmpNode = rightStack.pop()
           poppedNodes.push(tmpNode)
           
           if(tmpNode.level < node.level) {
@@ -153,24 +160,45 @@ export function convertPlanetUMLToState(uml : string) : StateType {
         
         for(let i=poppedNodes.length-1; i>=0; i--) {
           const poppedNode = poppedNodes[i]
-          stack.push(poppedNode)
+          rightStack.push(poppedNode)
         }
+      }
+    } else if(line.startsWith('-')) {
+      const level = countNodeLevelMinus(line)
+      const text = getMapNodeStr(line, level)
+      
+      const node = new UMLNode(text, level, true)
+      
+      if(leftStack.isEmpty()) {
+        leftStack.push(node)
+      } else {
+        const poppedNodes : UMLNode[] = []
+        
+        while(true) {
+          const tmpNode = leftStack.pop()
+          poppedNodes.push(tmpNode)
+          
+          if(tmpNode.level < node.level) {
+            poppedNodes.unshift(node)
+            tmpNode.addChild(node)
+            break
+          }
+        }
+        
+        for(let i=poppedNodes.length-1; i>=0; i--) {
+          const poppedNode = poppedNodes[i]
+          leftStack.push(poppedNode)
+        }        
       }
     }
   }
+                 
+  const rightState = rightStack.items[0].getState()
+  const leftState = leftStack.items[0].getState()
 
-  const rightState = stack.items[0].getState()
+  // There should be at least one selected nodes.
+  rightState.selected = true
 
-  const leftState : StateType = {
-    'text'     : null,
-    'shiftX'   : 0,
-    'shiftY'   : 0,
-    'selected' : false,
-    'folded'   : false,
-    'isLeft'   : true,
-    'children' : []
-  }
-  
   const mapState = {
     'right' : rightState,
     'left' : leftState,

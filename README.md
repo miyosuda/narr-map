@@ -61,3 +61,9 @@ $ npm start
 ```
 $ npm run make
 ```
+
+### Test
+
+```
+$ npm run test
+```

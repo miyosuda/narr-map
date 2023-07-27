@@ -18,8 +18,13 @@ describe('UML', () => {
         ]
       },
       'left' : {
-        'text' : '',
-        'children' : []
+        'text' : null,
+        'children' : [
+          {
+            'text' : 'd',
+            'children' : []
+          },
+        ]
       }
     };
     
@@ -29,6 +34,7 @@ describe('UML', () => {
 + a
 ++ b
 ++ c
+-- d
 @endmindmap
 `;
     
@@ -50,10 +56,12 @@ describe('UML', () => {
 ++ 9
 +++ 10
 +++ 11
+-- L1
+--- L2
 @endmindmap
 `;
 
     const state = convertPlanetUMLToState(uml);
     console.log(state);
-  });  
+  });
 })

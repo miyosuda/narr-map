@@ -136,9 +136,9 @@ ipc.on('response', (event : Event,
                     arg : string,
                     obj : any) => {
   if( arg == 'set-dirty' ) {
-    editDirty = obj
+    editDirty = true
   } else if( arg == 'set-root-text' ) {
-    rootText = obj;
+    rootText = obj
   } else if( arg == 'response-save' ) {
     const json = JSON.stringify(obj, null , '  ')
 
@@ -359,6 +359,7 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
             // filePathの設定
             filePath = null;
             rootText = null;
+            editDirty = false;
             browserWindow.setTitle(DEFAULT_TITLE);
           }
           

@@ -68,8 +68,6 @@ export class MapManager {
     this.lastMouseDownTime = -1
     
     this.ghostNode.hide()
-    
-    this.setDirty(false)
   }
 
   prepare() {
@@ -812,7 +810,7 @@ export class MapManager {
     const state = this.getState()
     this.editHistory.addHistory(state)
     
-    this.setDirty(true)
+    this.setDirty()
   }
 
   applyNodeState(state : StateType,
@@ -996,8 +994,8 @@ export class MapManager {
     this.cursorDepth = 0
   }
 
-  setDirty(dirty : boolean) {
-    nmAPI.sendMessage('set-dirty', dirty)
+  setDirty() {
+    nmAPI.sendMessage('set-dirty', null)
   }
 
   debugDump() {

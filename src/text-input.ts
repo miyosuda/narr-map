@@ -213,6 +213,10 @@ export class TextInput {
     this.node.setText(value);
     const textChanged = this.textOnShown != value;
     this.mapManager.onTextDecided(this.node, textChanged);
+
+    // 明示的にフォーカスを外す
+    this.input.blur();
+    
     this.hide();
   }
 

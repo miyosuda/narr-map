@@ -1,3 +1,11 @@
+body {
+  font-family: "ヒラギノ角ゴ Pro W3","Hiragino Kaku Gothic Pro",sans-serif;
+  font-size: 1.0em;
+
+  /* スクロールバーを表示させない */
+  overflow: hidden;
+}
+
 svg {
   page-break-after: always;
 }

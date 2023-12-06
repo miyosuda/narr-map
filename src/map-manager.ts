@@ -11,6 +11,7 @@ import { TextInput } from './text-input'
 import { EditHistory } from './edit-history'
 import { Config } from './config'
 import { StateType } from './types'
+import { checkIsWindows } from './utils'
 const { nmAPI } = window;
 
 const DRAG_NONE  = 0
@@ -22,6 +23,11 @@ const MOVE_UP    = 1
 const MOVE_DOWN  = 2
 const MOVE_RIGHT = 3
 const MOVE_LEFT  = 4
+
+const KEYCODE_A = 65
+const KEYCODE_C = 67
+const KEYCODE_V = 86
+const KEYCODE_X = 88
 
 
 type SVGType = HTMLElement & SVGSVGElement;
@@ -127,7 +133,6 @@ export class MapManager {
         this.selectAll()
       } else if( arg === 'dark-mode') {
         // TODO: 整理
-        console.log('set dark-mode: ' + obj)
         const config = new Config()
         const darkMode = obj
         config.darkMode = darkMode
@@ -500,7 +505,8 @@ export class MapManager {
       return
     }
 
-    const shiftDown = e.shiftKey
+    const shiftDown = e.shiftKey;
+	const isWindows = checkIsWindows();
 
     if(e.key === 'Tab' ) {
       this.addChildNode()
@@ -529,6 +535,16 @@ export class MapManager {
     } else if(e.key === ' ') {
       this.toggleFold()
       e.preventDefault()
+	} else if(e.keyCode == KEYCODE_C && e.ctrlKey && isWindows) {
+	  // Original Copy, Paste, Cut short cut is not working on Windows, so
+	  // manuall process these commands.
+	  this.copy()	  
+	} else if(e.keyCode == KEYCODE_V && e.ctrlKey && isWindows) {
+	  this.paste()
+	} else if(e.keyCode == KEYCODE_X && e.ctrlKey && isWindows) {
+	  this.cut()
+	} else if(e.keyCode == KEYCODE_A && e.ctrlKey && isWindows) {
+	  this.selectAll();
     } else if(e.keyCode >= 49 && // '1'
       e.keyCode <= 90 && // 'Z'
       !e.ctrlKey &&

@@ -2,8 +2,8 @@ import { getElementDimension } from './text-utils'
 import { Node } from './node'
 import { MapManager } from './map-manager'
 
-const KEY_ENTER = 13
-const KEY_SHIFT = 16
+const KEYCODE_ENTER = 13
+const KEYCODE_SHIFT = 16
 
 const MARGIN_Y = 1
 
@@ -241,12 +241,12 @@ export class TextInput {
   onKeyDown(event: KeyboardEvent) {
     const key = event.keyCode || event.charCode || 0;
 	
-    if(key == KEY_ENTER) { // Enter key
+    if(key == KEYCODE_ENTER) { // Enter key
       if(!this.shiftOn) {
         // シフトキーが押されていなかった場合、入力決定とする
         this.onTextChange(this.input.value);
       }
-    } else if(key == KEY_SHIFT) { // Shift key
+    } else if(key == KEYCODE_SHIFT) { // Shift key
       // shiftキー押下
       this.shiftOn = true;
     }
@@ -255,7 +255,7 @@ export class TextInput {
   onKeyUp(event: KeyboardEvent) {
     const key = event.keyCode || event.charCode || 0;
       
-    if(key == KEY_SHIFT) {
+    if(key == KEYCODE_SHIFT) {
       // shiftキー離した
       this.shiftOn = false;
     }

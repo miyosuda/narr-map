@@ -150,16 +150,14 @@ export class MapManager {
   }
 
   applyConfig(config : Config) {
+	this.textInput.applyConfig(config);
+	
     const body = document.getElementById('body')
-    // textInputはTextInputクラスでラップして扱っているがここでは直接変更している
-    const input = document.getElementById('textInput')
     
     if(config.darkMode) {
       body.className = 'with-back-dark'
-      input.className = 'with-back-dark'
     } else {
       body.className = 'with-back-light'
-      input.className = 'with-back-light'
     }
 
     this.nodes.forEach(node => {

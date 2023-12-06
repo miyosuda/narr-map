@@ -498,7 +498,6 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
         label: 'Undo',
         accelerator: 'CmdOrCtrl+Z',
         click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
-		  console.log('ctrl-z'); //..
           browserWindow.webContents.send(
             'request', 'undo'
           )

@@ -55,26 +55,24 @@ export class TextInput {
   input : HTMLInputElement;
   foreignObject : SvgInHtml;
   inputContainer : Element;
-  node : Node | null;  
+  node : Node | null;
   textOnShown : string | null;
   shown : boolean;
   textChanged : boolean;
   shiftOn : boolean;
   width : number | null;
+  config : Config | null;
   
   constructor(mapManager : MapManager) {
     this.mapManager = mapManager;
     this.foreignObject = document.getElementById('textInputObj') as SvgInHtml;
-    
-    const input = document.getElementById('textInput') as HTMLInputElement;
-    this.input = input;
-    
+
     this.textChanged = false;
     this.shiftOn = false;
     
     const inputContainer = document.getElementById('textInputContainer');
     this.inputContainer = inputContainer;
-    
+
     this.node = null;
 
 	this.onTextInput = this.onTextInput.bind(this);
@@ -82,27 +80,46 @@ export class TextInput {
 	this.onKeyDown = this.onKeyDown.bind(this);
 	this.onKeyUp = this.onKeyUp.bind(this);
 
-    this.hide();
+    this.hideSub();
   }
 
-  setListeners() {
-    this.input.addEventListener('input', this.onTextInput);
-    this.input.addEventListener('change', this.onTextChange);
-    this.input.addEventListener('blur', this.onTextChange);
-    this.input.addEventListener('keydown', this.onKeyDown);
-    this.input.addEventListener('keyup', this.onKeyUp);
+  applyConfig(config : Config) {
+	this.config = config;
+	this.applyConfigSub();
   }
 
-  removeListeners() {
-    this.input.removeEventListener('input', this.onTextInput);
-    this.input.removeEventListener('change', this.onTextChange);
-    this.input.removeEventListener('blur', this.onTextChange);
-    this.input.removeEventListener('keydown', this.onKeyDown);
-    this.input.removeEventListener('keyup', this.onKeyUp);
+  applyConfigSub() {
+	if(this.input != null) {
+	  if(this.config.darkMode) {
+		this.input.className = 'with-back-dark';
+	  } else {
+		this.input.className = 'with-back-light';
+	  }
+	}	
+  }
+
+  setListeners(input: HTMLInputElement) {
+    input.addEventListener('input', this.onTextInput);
+    input.addEventListener('change', this.onTextChange);
+    input.addEventListener('blur', this.onTextChange);
+    input.addEventListener('keydown', this.onKeyDown);
+    input.addEventListener('keyup', this.onKeyUp);
+  }
+
+  removeListeners(input: HTMLInputElement) {
+    input.removeEventListener('input', this.onTextInput);
+    input.removeEventListener('change', this.onTextChange);
+    input.removeEventListener('blur', this.onTextChange);
+    input.removeEventListener('keydown', this.onKeyDown);
+    input.removeEventListener('keyup', this.onKeyUp);
   }
 
   show(node : Node, selectAll=true) {
-	this.setListeners();
+	this.input = document.createElement('textarea') as HTMLInputElement;
+	this.inputContainer.appendChild(this.input);
+	this.setListeners(this.input);
+	
+	this.applyConfigSub();	
 	
     this.node = node;
 
@@ -147,14 +164,21 @@ export class TextInput {
   }
 
   hide() {
-	this.removeListeners();
+	this.removeListeners(this.input);
+	this.inputContainer.removeChild(this.input);
+	this.input = null;
 	
+	this.hideSub();
+  }
+
+  hideSub() {
     this.foreignObject.style.display = 'none';
+	
     this.shown = false;
     if(this.node != null) {
       this.node.stopTempHide();
       this.node = null;
-    }
+    }	
   }
 
   updateInputSize() {

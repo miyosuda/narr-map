@@ -908,10 +908,10 @@ export class Node {
     console.log('  x       : ' + this.x)
     console.log('  y       : ' + this.y)
     console.log('  shiftY  : ' + this.shiftY)
-    //console.log('  isLeft: ' + this.isLeft)
+    console.log('  isLeft  : ' + this.isLeft)
     console.log('  topY    : ' + this.topY)
     console.log('  bottomY : ' + this.bottomY)
-    //console.log('  selected:' + this.selected)
+    console.log('  selected: ' + this.selected)
     if(this.parentNode != null) {
       console.log('  parent : ' + this.parentNode.text)
     }

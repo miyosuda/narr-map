@@ -130,6 +130,7 @@ let rootText : string = null;
 let exportFilePath : string = null;
 
 const DEFAULT_TITLE = 'Unnamed';
+const DATA_VERSION = 1;
 
 
 ipc.on('response', (event : Event,
@@ -140,8 +141,13 @@ ipc.on('response', (event : Event,
   } else if( arg == 'set-root-text' ) {
     rootText = obj
   } else if( arg == 'response-save' ) {
-    const json = JSON.stringify(obj, null , '  ')
-
+    const mapData = {
+      'version' : DATA_VERSION,
+      'state' : obj,
+    }
+    
+    const json = JSON.stringify(mapData, null , '  ')
+    
     fs.writeFile(filePath, json, (error : NodeJS.ErrnoException) => {
       if(error != null) {
         console.log('save error')
@@ -275,12 +281,15 @@ const load = (browserWindow : BrowserWindow,
     }
     
     if(buffer != null) {
-      const json = buffer.toString('utf8');
-      const mapData = JSON.parse(json);
-      browserWindow.webContents.send('request', 'load', mapData);
-
+      const json = buffer.toString('utf8')
+      const mapData = JSON.parse(json)
+      const version = mapData['version']
+      const state = mapData['state']
+      
+      browserWindow.webContents.send('request', 'load', state);
+      
       editDirty = false;
-
+      
       // Add to recently used file
       app.addRecentDocument(path_);
       
@@ -302,11 +311,7 @@ const importUML = (browserWindow : BrowserWindow,
     if(buffer != null) {
       const uml = buffer.toString('utf8');
       const state = convertPlanetUMLToState(uml);
-      const mapData = {
-        'state' : state,
-        'version' : 0,
-      }
-      browserWindow.webContents.send('request', 'load', mapData);
+      browserWindow.webContents.send('request', 'load', state);
 
       editDirty = true;
       
@@ -418,7 +423,7 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
       },
       {
         type: 'separator',
-      },      
+      },
       {
         label: 'Save',
         accelerator: 'CmdOrCtrl+S',

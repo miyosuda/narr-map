@@ -879,10 +879,7 @@ export class MapManager {
     return mapState
   }
 
-  load(mapData : StateType) {
-    const version = mapData['version']
-    const state = mapData['state']
-    
+  load(state : StateType) {
     this.applyMapState(state)
     
     this.editHistory = new EditHistory(state)
@@ -892,16 +889,8 @@ export class MapManager {
   }
 
   save() {
-    const DATA_VERSION = 1
-    
     const state = this.getState()
-    
-    const mapData = {
-      'version' : DATA_VERSION,
-      'state' : state,
-    }
-    
-    nmAPI.sendMessage('response-save', mapData)
+    nmAPI.sendMessage('response-save', state)
   }
 
   export() {

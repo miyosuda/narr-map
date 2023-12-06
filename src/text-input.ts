@@ -75,47 +75,35 @@ export class TextInput {
     const inputContainer = document.getElementById('textInputContainer');
     this.inputContainer = inputContainer;
     
-    input.addEventListener('input', () => {
-      this.onTextInput();
-    })
-
-    input.addEventListener('change', () => {
-      this.onTextChange(input.value);
-    })
-
-    input.addEventListener('blur', (event) => {
-      this.onTextChange(input.value);
-    })
-    
-    input.addEventListener('keydown', (event) => {
-      const key = event.keyCode || event.charCode || 0;
-      
-      if(key == KEY_ENTER) { // Enter key
-        if(!this.shiftOn) {
-          // シフトキーが押されていなかった場合、入力決定とする
-          this.onTextChange(input.value);
-        }
-      } else if(key == KEY_SHIFT) { // Shift key
-        // shiftキー押下
-        this.shiftOn = true;
-      }
-    })
-
-    input.addEventListener('keyup', (event) => {
-      const key = event.keyCode || event.charCode || 0;
-      
-      if(key == KEY_SHIFT) {
-        // shiftキー離した
-        this.shiftOn = false;
-      }
-    })
-
     this.node = null;
-    
+
+	this.onTextInput = this.onTextInput.bind(this);
+	this.onTextChange = this.onTextChange.bind(this);
+	this.onKeyDown = this.onKeyDown.bind(this);
+	this.onKeyUp = this.onKeyUp.bind(this);
+
     this.hide();
   }
 
+  setListeners() {
+    this.input.addEventListener('input', this.onTextInput);
+    this.input.addEventListener('change', this.onTextChange);
+    this.input.addEventListener('blur', this.onTextChange);
+    this.input.addEventListener('keydown', this.onKeyDown);
+    this.input.addEventListener('keyup', this.onKeyUp);
+  }
+
+  removeListeners() {
+    this.input.removeEventListener('input', this.onTextInput);
+    this.input.removeEventListener('change', this.onTextChange);
+    this.input.removeEventListener('blur', this.onTextChange);
+    this.input.removeEventListener('keydown', this.onKeyDown);
+    this.input.removeEventListener('keyup', this.onKeyUp);
+  }
+
   show(node : Node, selectAll=true) {
+	this.setListeners();
+	
     this.node = node;
 
     if(node.isLeft) {
@@ -159,6 +147,8 @@ export class TextInput {
   }
 
   hide() {
+	this.removeListeners();
+	
     this.foreignObject.style.display = 'none';
     this.shown = false;
     if(this.node != null) {
@@ -195,6 +185,11 @@ export class TextInput {
   }
 
   onTextInput() {
+    if(!this.shown) {
+      // hide()した後に呼ばれる場合があるのでその場合をskip
+      return;
+    }
+	  
     // テキストが変化した
     this.textChanged = true;
     this.updateInputSize();
@@ -203,21 +198,43 @@ export class TextInput {
     this.updateOuterSize();
   }
   
-  onTextChange(value : string) {
+  onTextChange() {
     if(!this.shown) {
       // hide()した後に呼ばれる場合があるのでその場合をskip
       return;
     }
+	
+	const value = this.input.value;
     
     // テキスト入力が完了した
     this.node.setText(value);
     const textChanged = this.textOnShown != value;
     this.mapManager.onTextDecided(this.node, textChanged);
-
-    // 明示的にフォーカスを外す
-    this.input.blur();
     
     this.hide();
+  }
+
+  onKeyDown(event: KeyboardEvent) {
+    const key = event.keyCode || event.charCode || 0;
+	
+    if(key == KEY_ENTER) { // Enter key
+      if(!this.shiftOn) {
+        // シフトキーが押されていなかった場合、入力決定とする
+        this.onTextChange(this.input.value);
+      }
+    } else if(key == KEY_SHIFT) { // Shift key
+      // shiftキー押下
+      this.shiftOn = true;
+    }
+  }
+
+  onKeyUp(event: KeyboardEvent) {
+    const key = event.keyCode || event.charCode || 0;
+      
+    if(key == KEY_SHIFT) {
+      // shiftキー離した
+      this.shiftOn = false;
+    }
   }
 
   get isShown() {

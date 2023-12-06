@@ -188,7 +188,7 @@ const saveOptions = {
   filters: [
     {
       name: 'Data',
-      extensions: ['.nm']
+      extensions: ['nm']
     }
   ]
 }
@@ -198,7 +198,7 @@ const exportOptions = {
   filters: [
     {
       name: 'Data',
-      extensions: ['.pu']
+      extensions: ['pu']
     }
   ]
 }
@@ -389,7 +389,13 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
                 event : Event) => {
           const requestOpen = () => {
             const options : Electron.OpenDialogSyncOptions = {
-              properties: ['openFile']
+              properties: ['openFile'],
+              filters: [
+                {
+                  name: 'narr-map',
+                  extensions: ['nm', 'json']
+                },
+              ]
             }
             const pathes = dialog.showOpenDialogSync(options)
             if(pathes != null && pathes.length > 0) {

@@ -25,6 +25,7 @@ if(process.env['APPLEIDENTITY'] != null) {
   osxNotarize = {
     "appleId": process.env.APPLEID,
     "appleIdPassword": process.env.APPLEIDPASS,
+    "teamId": process.env.APPLETEAMID,
   }
 }
 

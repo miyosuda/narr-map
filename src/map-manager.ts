@@ -1,6 +1,5 @@
 import {
   Node,
-  SPAN_Y_PER_NODE,
   HOVER_HIT_NONE,
   HOVER_HIT_SIBLING,
   HOVER_HIT_CHILD,
@@ -219,12 +218,8 @@ export class MapManager {
   }
 
   onResize() {
-    // TODO:    
-    // なぜかmarginをつけないとスクロールバーが出てしまう
-    const margin = 2;
-    
-    this.svg.setAttribute('width', String(window.innerWidth - margin));
-    this.svg.setAttribute('height', String(window.innerHeight - margin));
+    this.svg.setAttribute('width', String(window.innerWidth));
+    this.svg.setAttribute('height', String(window.innerHeight));
   }
 
   findPickNode(x : number,

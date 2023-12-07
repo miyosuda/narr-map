@@ -16,10 +16,6 @@ let osxNotarize = null
 if(process.env['APPLEIDENTITY'] != null) {
   osxSign = {
     "identity": process.env.APPLEIDENTITY,
-    //"hardened-runtime": true,
-    //"entitlements": "entitlements.plist",
-    //"entitlements-inherit": "entitlements.plist",
-    //"signature-flags": "library",
     optionsForFile: (filePath : string) => {
         return {
           entitlements: 'entitlements.plist'

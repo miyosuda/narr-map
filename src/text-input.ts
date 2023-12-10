@@ -1,49 +1,50 @@
-import { getElementDimension } from './text-utils'
-import { Node } from './node'
-import { MapManager } from './map-manager'
+import { getElementDimension } from './text-utils';
+import { Node } from './node';
 
-const KEYCODE_ENTER = 13
-const KEYCODE_SHIFT = 16
+const KEYCODE_ENTER = 13;
+const KEYCODE_SHIFT = 16;
 
-const MARGIN_Y = 1
+const MARGIN_Y = 1;
+
+export type OnTextDecidedCallbackType = (node : Node, changed : boolean) => void;
 
 
 // 全角を2文字としてカウントする文字列カウント
 const getStringLength = (str : string) => {
   if( str == null ) {
-    return 0
+    return 0;
   }
   
-  let result = 0
+  let result = 0;
   for(let i=0; i<str.length; i++) {
     const chr = str.charCodeAt(i)
     if((chr >= 0x00 && chr < 0x81) ||
        (chr === 0xf8f0) ||
        (chr >= 0xff61 && chr < 0xffa0) ||
        (chr >= 0xf8f1 && chr < 0xf8f4)) {
-      result += 1
+      result += 1;
     } else {
-      result += 2
+      result += 2;
     }
   }
-  return result
+  return result;
 }
 
 
 const getStringLengthAndRow = (str : string, minSize=5) => {
-  const texts = str.split('\n')
-  const rowSize = texts.length
+  const texts = str.split('\n');
+  const rowSize = texts.length;
 
   let maxLength = minSize
   for(let i=0; i<texts.length; i++) {
-    const text = texts[i]
-    const length = getStringLength(text)
+    const text = texts[i];
+    const length = getStringLength(text);
     if(length > maxLength) {
-      maxLength = length
+      maxLength = length;
     }
   }
 
-  return [maxLength, rowSize]
+  return [maxLength, rowSize];
 }
 
 
@@ -51,7 +52,7 @@ type SvgInHtml = HTMLElement & SVGElement;
 
 
 export class TextInput {
-  mapManager : MapManager;
+  onTextDecidedCallback : OnTextDecidedCallbackType;
   input : HTMLInputElement;
   foreignObject : SvgInHtml;
   inputContainer : Element;
@@ -62,24 +63,25 @@ export class TextInput {
   shiftOn : boolean;
   width : number | null;
   config : Config | null;
-  
-  constructor(mapManager : MapManager) {
-    this.mapManager = mapManager;
-    this.foreignObject = document.getElementById('textInputObj') as SvgInHtml;
 
+  
+  constructor(onTextDecidedCallback : OnTextDecidedCallbackType) {
+    this.onTextDecidedCallback = onTextDecidedCallback;
+    this.foreignObject = document.getElementById('textInputObj') as SvgInHtml;
+    
     this.textChanged = false;
     this.shiftOn = false;
     
     const inputContainer = document.getElementById('textInputContainer');
     this.inputContainer = inputContainer;
-
+    
     this.node = null;
-
+    
 	this.onTextInput = this.onTextInput.bind(this);
 	this.onTextChange = this.onTextChange.bind(this);
 	this.onKeyDown = this.onKeyDown.bind(this);
 	this.onKeyUp = this.onKeyUp.bind(this);
-
+    
     this.hideSub();
   }
 
@@ -95,7 +97,7 @@ export class TextInput {
 	  } else {
 		this.input.className = 'with-back-light';
 	  }
-	}	
+	}
   }
 
   setListeners(input: HTMLInputElement) {
@@ -119,7 +121,7 @@ export class TextInput {
 	this.inputContainer.appendChild(this.input);
 	this.setListeners(this.input);
 	
-	this.applyConfigSub();	
+	this.applyConfigSub();
 	
     this.node = node;
 
@@ -178,7 +180,7 @@ export class TextInput {
     if(this.node != null) {
       this.node.stopTempHide();
       this.node = null;
-    }	
+    }
   }
 
   updateInputSize() {
@@ -233,7 +235,7 @@ export class TextInput {
     // テキスト入力が完了した
     this.node.setText(value);
     const textChanged = this.textOnShown != value;
-    this.mapManager.onTextDecided(this.node, textChanged);
+    this.onTextDecidedCallback(this.node, textChanged);
     
     this.hide();
   }

@@ -90,7 +90,11 @@ export class MapManager {
     document.onmouseup   = event => this.onMouseUp(event);
     document.onmousemove = event => this.onMouseMove(event);
     document.body.addEventListener('keydown',  event => this.onKeyDown(event));
-    this.textInput = new TextInput(this);
+
+    const onTextDecidedCallback = (node : Node, changed : boolean) => {
+      this.onTextDecided(node, changed);
+    };
+    this.textInput = new TextInput(onTextDecidedCallback);
 
     nmAPI.onReceiveMessage((arg : string, obj : any) => {
       if( arg === 'save' ||

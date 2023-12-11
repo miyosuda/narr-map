@@ -1,14 +1,14 @@
-import './css/reset.css'
-import './css/style.css'
+import './css/reset.css';
+import './css/style.css';
 
-import {MapManager} from './map-manager'
+import {MapManager} from './map-manager';
 
-const mapManager = new MapManager()
+const mapManager = new MapManager();
 
 window.onload = () => {
-  mapManager.prepare()
+  mapManager.prepare();
 }
 
 window.addEventListener( 'resize', () => {
-  mapManager.onResize()
-}, false)
+  mapManager.onResize();
+}, false);

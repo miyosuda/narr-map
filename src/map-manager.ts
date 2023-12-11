@@ -13,19 +13,19 @@ import { StateType } from './types';
 import { checkIsWindows } from './utils';
 const { nmAPI } = window;
 
-const DRAG_NONE  = 0
-const DRAG_NODE  = 1
-const DRAG_GHOST = 2
-const DRAG_BACK  = 3
+const DRAG_NONE  = 0;
+const DRAG_NODE  = 1;
+const DRAG_GHOST = 2;
+const DRAG_BACK  = 3;
 
-const MOVE_UP    = 1
-const MOVE_DOWN  = 2
-const MOVE_RIGHT = 3
-const MOVE_LEFT  = 4
+const MOVE_UP    = 1;
+const MOVE_DOWN  = 2;
+const MOVE_RIGHT = 3;
+const MOVE_LEFT  = 4;
 
-const KEYCODE_A = 65
-const KEYCODE_C = 67
-const KEYCODE_V = 86
+const KEYCODE_A = 65;
+const KEYCODE_C = 67;
+const KEYCODE_V = 86;
 const KEYCODE_X = 88
 
 

@@ -1,5 +1,5 @@
-import { RectComponent } from './components'
-import { Node } from './node'
+import { RectComponent } from './components';
+import { Node } from './node';
 
 
 export class GhostNode {
@@ -10,43 +10,43 @@ export class GhostNode {
   shown : boolean | null;
   
   constructor(container : Element) {
-    this.rectComponent = new RectComponent(container)
-    this.hide()
+    this.rectComponent = new RectComponent(container);
+    this.hide();
   }
 
   prepare(node : Node) {
-    this.node = node
+    this.node = node;
   }
 
   show() {
-    const x = this.node.left
-    const y = this.node.top
+    const x = this.node.left;
+    const y = this.node.top;
 
-    this.rectComponent.setPos(x, y)
-    this.rectComponent.setWidth(this.node.width)
-    this.rectComponent.setHeight(this.node.height)
-    this.rectComponent.setVisible(true)
+    this.rectComponent.setPos(x, y);
+    this.rectComponent.setWidth(this.node.width);
+    this.rectComponent.setHeight(this.node.height);
+    this.rectComponent.setVisible(true);
     
-    this.startElementX = x
-    this.startElementY = y
+    this.startElementX = x;
+    this.startElementY = y;
 
-    this.shown = true
+    this.shown = true;
   }
   
   hide() {
-    this.rectComponent.setVisible(false)
+    this.rectComponent.setVisible(false);
     
-    this.shown = false
-    this.node = null
+    this.shown = false;
+    this.node = null;
   }
 
   get isShown() {
-    return this.shown
+    return this.shown;
   }
 
   onDrag(dx : number, dy : number) {
-    const x = this.startElementX + dx
-    const y = this.startElementY + dy
+    const x = this.startElementX + dx;
+    const y = this.startElementY + dy;
     
     this.rectComponent.setPos(x, y)
   }

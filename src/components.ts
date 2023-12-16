@@ -28,6 +28,35 @@ const YELLOW_CIRCLE_EMOJI = String.fromCodePoint(0x1F7E1);
 type ForeignObjectType = HTMLElement & SVGForeignObjectElement;
 
 
+// ElementのsetAttribute()ラップするためのProxy
+function createProxyElementNS(qualifiedName: string) {
+  const proxyHandler = {
+    set: function(target: any, prop: string, value: any) {
+      // '_'は'-'に置き換える.
+      prop = prop.replace(/_/g, '-');
+      
+      if(typeof(value) != String) {
+        target.setAttribute(prop, String(value));
+      } else {
+        target.setAttribute(prop, value);
+      } 
+      return true;
+    },
+    
+    get(target, prop) {
+      if(prop === 'target') {
+        return target;
+      }
+      return Reflect.get(...arguments);
+    }
+  };
+  
+  const element = document.createElementNS(NAME_SPACE, qualifiedName);
+  const proxy = new Proxy(element, proxyHandler);
+  return proxy;
+}
+
+
 export class TextComponent {
   isRoot : boolean;
   foreignObject : ForeignObjectType;
@@ -212,23 +241,23 @@ export class LineComponent {
   lineElement : Element;
   
   constructor(container : Element) {
-    const lineElement = document.createElementNS(NAME_SPACE, 'line');
+    const lineElement = createProxyElementNS('line');
     this.lineElement = lineElement;
     
     // ラインの位置後ほどupdateLayout()時に設定
     this.setPos(0, 0, 0, 0);
     
-    lineElement.setAttribute('stroke', '#7f7f7f');
-    lineElement.setAttribute('stroke-width', String(1));
+    lineElement.stroke = '#7f7f7f';
+    lineElement.stroke_width = 1;
     
-    container.appendChild(lineElement);
+    container.appendChild(lineElement.target);
   }
 
   setVisible(visible : boolean) {
     if(visible) {
-      this.lineElement.setAttribute('visibility', 'visible');
+      this.lineElement.visibility = 'visible';
     } else {
-      this.lineElement.setAttribute('visibility', 'hidden');
+      this.lineElement.visibility = 'hidden';
     }
   }
 
@@ -236,10 +265,10 @@ export class LineComponent {
          sy : number,
          ex : number,
          ey : number) {
-    this.lineElement.setAttribute('x1', String(sx));
-    this.lineElement.setAttribute('y1', String(sy));
-    this.lineElement.setAttribute('x2', String(ex));
-    this.lineElement.setAttribute('y2', String(ey));
+    this.lineElement.x1 = sx;
+    this.lineElement.y1 = sy;
+    this.lineElement.x2 = ex;
+    this.lineElement.y2 = ey;
   }
 
   remove() {
@@ -253,101 +282,102 @@ export class FoldMarkComponent {
   
   constructor(container : Element,
               config : Config) {
-    const markElement = document.createElementNS(NAME_SPACE, 'circle');
+    const markElement = createProxyElementNS('circle');
     this.markElement = markElement;
 
     this.applyConfig(config);
     
-    markElement.setAttribute('stroke', '#7f7f7f');
-    markElement.setAttribute('stroke-width', String(1));
+    markElement.stroke = '#7f7f7f';
+    markElement.stroke_width = 1;
     
-    markElement.setAttribute('cx', String(0));
-    markElement.setAttribute('cy', String(0));
-    markElement.setAttribute('r', String(FOLD_MARK_RADIUS));
-    container.appendChild(markElement);
+    markElement.cx = 0;
+    markElement.cy = 0;
+    markElement.r = FOLD_MARK_RADIUS;
+    container.appendChild(markElement.target);
   
     this.setVisible(false);
   }
 
   applyConfig(config : Config) {
     if(config.darkMode) {
-      this.markElement.setAttribute('fill', '#000000'); // dark-mode
+      this.markElement.fill = '#000000'; // dark-mode
     } else {
-      this.markElement.setAttribute('fill', '#ffffff'); // light-mode
-    }    
+      this.markElement.fill = '#ffffff'; // light-mode
+    }
   }
 
   setVisible(visible : boolean) {
     if(visible) {
-      this.markElement.setAttribute('visibility', 'visible');
+      this.markElement.visibility = 'visible';
     } else {
-      this.markElement.setAttribute('visibility', 'hidden');
+      this.markElement.visibility = 'hidden';
     }
   }
 
   setPos(x : number,
          y : number) {
-    this.markElement.setAttribute('cx', String(x));
-    this.markElement.setAttribute('cy', String(y));
+    this.markElement.cx = x;
+    this.markElement.cy = y;
   }
 
   remove() {
-    this.markElement.remove();
+    this.markElement.target.remove();
   }
 }
 
 
 export class HandleComponent {
-  handleElement : Element;
+  handleElement : Proxy;
   x : number | null;
-  y : number | null;  
+  y : number | null;
   
   constructor(container : Element,
               config : Config) {
-    const handleElement = document.createElementNS(NAME_SPACE, 'ellipse');
+    
+    const handleElement = createProxyElementNS('ellipse');
     this.handleElement = handleElement;
     
     this.applyConfig(config);
-
-    handleElement.setAttribute('stroke', '#7f7f7f');
-    handleElement.setAttribute('stroke-width', String(1));
     
-    handleElement.setAttribute('cx', String(0));
-    handleElement.setAttribute('cy', String(0));
-    handleElement.setAttribute('rx', String(HANDLE_WIDTH/2));
-    handleElement.setAttribute('ry', String(HANDLE_HEIGHT/2+1));
-    container.appendChild(handleElement);
-
+    handleElement.stroke = '#7f7f7f';
+    handleElement.stroke_width = 1;
+  
+    handleElement.cx = 0;
+    handleElement.cy = 0;
+    handleElement.rx = HANDLE_WIDTH/2;
+    handleElement.ry = HANDLE_HEIGHT/2+1;
+    container.appendChild(handleElement.target);
+  
     this.setVisible(false);
   }
 
   applyConfig(config : Config) {
     if(config.darkMode) {
-      this.handleElement.setAttribute('fill', '#000000'); // dark-mode
+      this.handleElement.fill = '#000000'; // dark-mode
     } else {
-      this.handleElement.setAttribute('fill', '#ffffff'); // light-mode
+      this.handleElement.fill = '#ffffff'; // light-mode
     }    
   }
 
   setVisible(visible : boolean) {
     if(visible) {
-      this.handleElement.setAttribute('visibility', 'visible');
+      this.handleElement.visibility = 'visible';
     } else {
-      this.handleElement.setAttribute('visibility', 'hidden');
+      this.handleElement.visibility = 'hidden';
     }
   }
 
   setPos(x : number,
          y : number) {
-    this.handleElement.setAttribute('cx', String(x + HANDLE_WIDTH/2));
-    this.handleElement.setAttribute('cy', String(y + HANDLE_HEIGHT/2));
+    this.handleElement.cx = x + HANDLE_WIDTH/2;
+    this.handleElement.cy = y + HANDLE_HEIGHT/2;
 
     this.x = x;
     this.y = y;
   }
 
   remove() {
-    this.handleElement.remove();
+    this.handleElement.target.remove();
   }
 
   containsPos(x : number,
@@ -360,41 +390,41 @@ export class HandleComponent {
 
 
 export class RectComponent {
-  rectElement : Element;
+  rectElement : Proxy;
   
   constructor(container : Element) {
-    const rectElement = document.createElementNS(NAME_SPACE, 'rect');
+    const rectElement = createProxyElementNS('rect');
 
-    rectElement.setAttribute('x', String(0));
-    rectElement.setAttribute('y', String(0));
-    rectElement.setAttribute('width', String(100));
-    rectElement.setAttribute('height', String(30));
-    rectElement.setAttribute('fill', 'none');
-    rectElement.setAttribute('stroke', '#7f7f7f');
-    rectElement.setAttribute('stroke-width', String(2));
-
-    container.appendChild(rectElement);
+    rectElement.x = 0;
+    rectElement.y =  0;
+    rectElement.width = 100;
+    rectElement.height = 30;
+    rectElement.fill = 'none';
+    rectElement.stroke = '#7f7f7f';
+    rectElement.stroke_width = 2;
+    
+    container.appendChild(rectElement.target);
     this.rectElement = rectElement;
   }
 
   setWidth(width : number) {
-    this.rectElement.setAttribute('width', String(width));
+    this.rectElement.width = width;
   }
   
   setHeight(height : number) {
-    this.rectElement.setAttribute('height', String(height));
+    this.rectElement.height = height;
   }
 
   setPos(x : number, y : number) {
-    this.rectElement.setAttribute('x', String(x));
-    this.rectElement.setAttribute('y', String(y));
+    this.rectElement.x = x;
+    this.rectElement.y = y;
   }
 
   setVisible(visible : boolean) {
     if(visible) {
-      this.rectElement.setAttribute('visibility', 'visible');
+      this.rectElement.visibility = 'visible';
     } else {
-      this.rectElement.setAttribute('visibility', 'hidden');
+      this.rectElement.visibility = 'hidden';
     }
   }
 }

@@ -29,7 +29,7 @@ type ForeignObjectType = HTMLElement & SVGForeignObjectElement;
 
 
 // ElementのsetAttribute()ラップするためのProxy
-function createProxyElementNS(qualifiedName: string) {
+function createProxyElementNS(qualifiedName: string) : Proxy {
   const proxyHandler = {
     set: function(target: any, prop: string, value: any) {
       // '_'は'-'に置き換える.
@@ -57,6 +57,12 @@ function createProxyElementNS(qualifiedName: string) {
 }
 
 
+function setElementClasses(element: ForeignObjectType, classes: Array<String>) {
+  const classListStr = classes.join(' ');
+  element.setAttribute('class', classListStr);
+}
+
+
 export class TextComponent {
   isRoot : boolean;
   foreignObject : ForeignObjectType;
@@ -77,12 +83,6 @@ export class TextComponent {
     const foreignObject = document.createElementNS(
       NAME_SPACE, 'foreignObject') as ForeignObjectType;
     this.foreignObject = foreignObject
-
-    if(isRoot) {
-      foreignObject.classList.add('root-node');
-    } else {
-      foreignObject.classList.add('node');
-    }
     
     this.applyConfig(config);
     
@@ -99,32 +99,9 @@ export class TextComponent {
   }
 
   applyConfig(config : Config) {
-    if(this.isRoot) {
-      if(config.darkMode) {
-        this.foreignObject.classList.remove('with-back-light');
-        this.foreignObject.classList.add('with-back-dark');
-      } else {
-        this.foreignObject.classList.remove('with-back-dark');
-        this.foreignObject.classList.add('with-back-light');
-      }
-    }
-
-    const nodeClasses = [
-      'node-selected-dark',
-      'node-top-overlapped-dark',
-      'node-right-overlapped-dark',
-      'node-left-overlapped-dark',
-      'node-selected-light',
-      'node-top-overlapped-light',
-      'node-right-overlapped-light',
-      'node-left-overlapped-light',
-    ];
-
-    nodeClasses.forEach(nodeClass => {
-      this.foreignObject.classList.remove(nodeClass);
-    })
-    
     this.config = config;
+    // TODO:
+    this.setStyle(TEXT_COMPONENT_STYLE_NONE);
   }
 
   formatEmoji(text : string) {
@@ -189,56 +166,46 @@ export class TextComponent {
   }
   
   setStyle(style : number) {
-    // TODO: これだとdark/lightを切り替えた時にremoveしきれていないものが出てきてしまっている.
-    let node_selected_class;
-    let top_overlapped_class;
-    let right_overlapped_class;
-    let left_overlapped_class;
-    
-    if(this.config.darkMode) {
-      node_selected_class = 'node-selected-dark';
-      top_overlapped_class = 'node-top-overlapped-dark';
-      right_overlapped_class = 'node-right-overlapped-dark';
-      left_overlapped_class = 'node-left-overlapped-dark';
+    const classList : Array<String> = [];
+
+    if(this.isRoot) {
+      classList.push('root-node');
+      if(this.config.darkMode) {
+        classList.push('with-back-dark');
+      } else {
+        classList.push('with-back-light');
+      }
     } else {
-      node_selected_class = 'node-selected-light';
-      top_overlapped_class = 'node-top-overlapped-light';
-      right_overlapped_class = 'node-right-overlapped-light';
-      left_overlapped_class = 'node-left-overlapped-light';
+      classList.push('node');
     }
-    
+
+    let styleClass : String = null;
+
     if(style == TEXT_COMPONENT_STYLE_SELECTED) {
-      this.foreignObject.classList.add(node_selected_class);
-      this.foreignObject.classList.remove(top_overlapped_class);
-      this.foreignObject.classList.remove(right_overlapped_class);
-      this.foreignObject.classList.remove(left_overlapped_class);
+      styleClass = 'node-selected';
     } else if(style == TEXT_COMPONENT_STYLE_HOVER_TOP) {
-      this.foreignObject.classList.remove(node_selected_class);
-      this.foreignObject.classList.add(top_overlapped_class);
-      this.foreignObject.classList.remove(right_overlapped_class);
-      this.foreignObject.classList.remove(left_overlapped_class);
-    } else if(style == TEXT_COMPONENT_STYLE_HOVER_RIGHT) {
-      this.foreignObject.classList.remove(node_selected_class);
-      this.foreignObject.classList.remove(top_overlapped_class);
-      this.foreignObject.classList.add(right_overlapped_class);
-      this.foreignObject.classList.remove(left_overlapped_class);
+      styleClass = 'node-top-overlapped';
     } else if(style == TEXT_COMPONENT_STYLE_HOVER_LEFT) {
-      this.foreignObject.classList.remove(node_selected_class);
-      this.foreignObject.classList.remove(top_overlapped_class);
-      this.foreignObject.classList.remove(right_overlapped_class);
-      this.foreignObject.classList.add(left_overlapped_class)
-    } else {
-      this.foreignObject.classList.remove(node_selected_class);
-      this.foreignObject.classList.remove(top_overlapped_class);
-      this.foreignObject.classList.remove(right_overlapped_class);
-      this.foreignObject.classList.remove(left_overlapped_class);
+      styleClass = 'node-left-overlapped';
+    } else if(style == TEXT_COMPONENT_STYLE_HOVER_RIGHT) {
+      styleClass = 'node-right-overlapped';
     }
+
+    if(styleClass != null) {
+      if(this.config.darkMode) {
+        classList.push(styleClass + '-dark');
+      } else {
+        classList.push(styleClass + '-light');
+      }
+    }
+    
+    setElementClasses(this.foreignObject, classList);
   }
 }
 
 
 export class LineComponent {
-  lineElement : Element;
+  lineElement : Proxy;
   
   constructor(container : Element) {
     const lineElement = createProxyElementNS('line');
@@ -278,7 +245,7 @@ export class LineComponent {
 
 
 export class FoldMarkComponent {
-  markElement : Element;
+  markElement : Proxy;
   
   constructor(container : Element,
               config : Config) {

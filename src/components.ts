@@ -29,13 +29,13 @@ type ForeignObjectType = HTMLElement & SVGForeignObjectElement;
 
 
 // ElementのsetAttribute()ラップするためのProxy
-function createProxyElementNS(qualifiedName: string) : Proxy {
+function createProxyElementNS(qualifiedName: string) : any {
   const proxyHandler = {
     set: function(target: any, prop: string, value: any) {
       // '_'は'-'に置き換える.
       prop = prop.replace(/_/g, '-');
       
-      if(typeof(value) != String) {
+      if(typeof(value) != 'string') {
         target.setAttribute(prop, String(value));
       } else {
         target.setAttribute(prop, value);
@@ -43,16 +43,16 @@ function createProxyElementNS(qualifiedName: string) : Proxy {
       return true;
     },
     
-    get(target, prop) {
+    get(target: any, prop: string) {
       if(prop === 'target') {
         return target;
       }
-      return Reflect.get(...arguments);
+      return Reflect.get(target, prop);
     }
   };
   
-  const element = document.createElementNS(NAME_SPACE, qualifiedName);
-  const proxy = new Proxy(element, proxyHandler);
+  const element : Element = document.createElementNS(NAME_SPACE, qualifiedName);
+  const proxy = new Proxy<Element>(element, proxyHandler);
   return proxy;
 }
 
@@ -205,7 +205,7 @@ export class TextComponent {
 
 
 export class LineComponent {
-  lineElement : Proxy;
+  lineElement : any;
   
   constructor(container : Element) {
     const lineElement = createProxyElementNS('line');
@@ -245,7 +245,7 @@ export class LineComponent {
 
 
 export class FoldMarkComponent {
-  markElement : Proxy;
+  markElement : any;
   
   constructor(container : Element,
               config : Config) {
@@ -294,7 +294,7 @@ export class FoldMarkComponent {
 
 
 export class HandleComponent {
-  handleElement : Proxy;
+  handleElement : any;
   x : number | null;
   y : number | null;
   
@@ -357,7 +357,7 @@ export class HandleComponent {
 
 
 export class RectComponent {
-  rectElement : Proxy;
+  rectElement : any;
   
   constructor(container : Element) {
     const rectElement = createProxyElementNS('rect');

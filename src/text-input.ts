@@ -1,5 +1,6 @@
 import { getElementDimension } from './text-utils';
 import { Node } from './node';
+import { Config } from './config';
 
 const KEYCODE_ENTER = 13;
 const KEYCODE_SHIFT = 16;
@@ -53,7 +54,7 @@ type SvgInHtml = HTMLElement & SVGElement;
 
 export class TextInput {
   onTextDecidedCallback : OnTextDecidedCallbackType;
-  input : HTMLInputElement;
+  input : HTMLTextAreaElement;
   foreignObject : SvgInHtml;
   inputContainer : Element;
   node : Node | null;
@@ -100,7 +101,7 @@ export class TextInput {
 	}
   }
 
-  setListeners(input: HTMLInputElement) {
+  setListeners(input: HTMLTextAreaElement) {
     input.addEventListener('input', this.onTextInput);
     input.addEventListener('change', this.onTextChange);
     input.addEventListener('blur', this.onTextChange);
@@ -108,7 +109,7 @@ export class TextInput {
     input.addEventListener('keyup', this.onKeyUp);
   }
 
-  removeListeners(input: HTMLInputElement) {
+  removeListeners(input: HTMLTextAreaElement) {
     input.removeEventListener('input', this.onTextInput);
     input.removeEventListener('change', this.onTextChange);
     input.removeEventListener('blur', this.onTextChange);
@@ -117,7 +118,7 @@ export class TextInput {
   }
 
   show(node : Node, selectAll=true) {
-	this.input = document.createElement('textarea') as HTMLInputElement;
+	this.input = document.createElement('textarea') as HTMLTextAreaElement;
 	this.inputContainer.appendChild(this.input);
 	this.setListeners(this.input);
 	
@@ -246,7 +247,7 @@ export class TextInput {
     if(key == KEYCODE_ENTER) { // Enter key
       if(!this.shiftOn) {
         // シフトキーが押されていなかった場合、入力決定とする
-        this.onTextChange(this.input.value);
+        this.onTextChange();
       }
     } else if(key == KEYCODE_SHIFT) { // Shift key
       // shiftキー押下

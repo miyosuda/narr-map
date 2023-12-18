@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, MenuItem } from 'electron';
+import { app, BrowserWindow, Menu, MenuItem, IpcMainEvent } from 'electron';
 import { ipcMain as ipc } from 'electron';
 import { dialog } from 'electron';
 import fs from 'fs';
@@ -133,7 +133,7 @@ const DEFAULT_TITLE = 'Unnamed';
 const DATA_VERSION = 1;
 
 
-ipc.on('response', (event : Event,
+ipc.on('response', (event : IpcMainEvent,
                     arg : string,
                     obj : any) => {
   if( arg == 'set-dirty' ) {
@@ -171,13 +171,12 @@ ipc.on('response', (event : Event,
 })
 
 const showSaveConfirmDialog = () => {
-  const options = {
+  const ret = dialog.showMessageBoxSync({
     type: 'info',
     buttons: ['Save', 'Delete', 'Cancel'],
-    message: 'File not saved. Save?',
-  };
+    message: 'File not saved. Save?'
+  });
   
-  const ret = dialog.showMessageBoxSync(options);
   return ret;
 }
 

@@ -239,7 +239,7 @@ export class LineComponent {
   }
 
   remove() {
-    this.lineElement.remove();
+    this.lineElement.target.remove();
   }
 }
 

@@ -25,6 +25,8 @@ let filePath : string;
 let rootText : string;
 let exportFilePath : string;
 
+
+// quit(), requestNewFile(), requestOpen(), requestImport()
 let onSavedFunction : (() => void);
 
 interface StoreSchema {

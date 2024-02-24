@@ -7,6 +7,7 @@ import {
 } from './node';
 import { GhostNode } from './ghost-node';
 import { TextInput } from './text-input';
+import { LoadingIcon } from './loading-icon'
 import { EditHistory } from './edit-history';
 import { Config } from './config';
 import { StateType } from './types';
@@ -48,6 +49,7 @@ export class MapManager {
   svg : SVGType;
   canvas : CanvasType;
   textInput : TextInput;
+  loadingIcon : LoadingIcon;
   editHistory : EditHistory
   canvasTranslateX : number;
   canvasTranslateY : number;
@@ -72,12 +74,14 @@ export class MapManager {
     this.copyingStates = [];
     this.lastMouseDownTime = -1;
     
-    this.ghostNode.hide()
+    this.ghostNode.hide();
+    this.loadingIcon.hide();
   }
 
   prepare() {
     this.svg = document.getElementById('svg') as SVGType;
     this.canvas = document.getElementById('canvas') as CanvasType;
+    this.loadingIcon = new LoadingIcon();
 
     const width = this.svg.width.baseVal.value;
     const height = this.svg.height.baseVal.value;
@@ -99,8 +103,9 @@ export class MapManager {
     nmAPI.onReceiveMessage((arg : string, obj : any) => {
       if( arg === 'save' ||
         arg === 'load' ||
-        arg === 'new-file') {
-        
+        arg === 'new-file' ||
+        arg == 'complete' ||
+        arg == 'completed' ) {
         if( this.textInput.isShown ) {
           this.textInput.hide();
         }
@@ -134,6 +139,10 @@ export class MapManager {
         this.paste();
       } else if( arg === 'selectall') {
         this.selectAll();
+      } else if( arg === 'complete' ) {
+        this.complete();
+      } else if( arg === 'completed' ) {
+        this.onCompleted(obj);
       } else if( arg === 'dark-mode') {
         // TODO: 整理
         const config = new Config();
@@ -171,7 +180,9 @@ export class MapManager {
     this.nodes.forEach(node => {
       node.applyConfig(config);
     })
-
+    
+    this.loadingIcon.applyConfig(config);
+    
     this.config = config;
   }
 
@@ -911,6 +922,18 @@ export class MapManager {
   export() {
     const state = this.getState();
     nmAPI.sendMessage('response-export', state);
+  }
+
+  complete() {
+    this.loadingIcon.show();
+    const state = this.getState();
+    nmAPI.sendMessage('response-complete', state);
+  }
+
+  onCompleted(state : StateType) {
+    this.loadingIcon.hide();
+    this.applyMapState(state);
+    this.storeState();
   }
   
   undo() {

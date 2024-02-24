@@ -68,12 +68,12 @@ export class TextInput {
   
   constructor(onTextDecidedCallback : OnTextDecidedCallbackType) {
     this.onTextDecidedCallback = onTextDecidedCallback;
-    this.foreignObject = document.getElementById('textInputObj') as SvgInHtml;
+    this.foreignObject = document.getElementById('text-input-obj') as SvgInHtml;
     
     this.textChanged = false;
     this.shiftOn = false;
     
-    const inputContainer = document.getElementById('textInputContainer');
+    const inputContainer = document.getElementById('text-input-container');
     this.inputContainer = inputContainer;
     
     this.node = null;

@@ -7,7 +7,7 @@ const openai = new OpenAI({
   apiKey: process.env['OPENAI_API_KEY'],
 });
 
-const COMPLETION_MODEL : string = 'gpt-4';
+const COMPLETION_MODEL : string = 'gpt-4-1106-preview';
 
 
 class CompletionNode {

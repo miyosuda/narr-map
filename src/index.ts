@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, MenuItem, IpcMainEvent } from 'electron';
+import { app, BrowserWindow, Menu, MenuItem, IpcMainEvent, Event, Input } from 'electron';
 import { ipcMain as ipc } from 'electron';
 import { dialog } from 'electron';
 import fs from 'fs';
@@ -26,9 +26,17 @@ let filePath : string;
 let rootText : string;
 let exportFilePath : string;
 
+let completionAbortController : AbortController | null = null;
+
 
 // quit(), requestNewFile(), requestOpen(), requestImport()
 let onSavedFunction : (() => void);
+
+const cancelCompletion = () => {
+  if(completionAbortController != null) {
+    completionAbortController.abort();
+  }
+}
 
 interface StoreSchema {
   darkMode : boolean;
@@ -95,6 +103,16 @@ const createWindow = (): void => {
   mainWindow.webContents.on('did-finish-load', ()=>{
     setDarkMode(store.get('darkMode'));
   });
+
+  mainWindow.webContents.on('before-input-event',
+                            (event : Event,
+                             input : Input) => {
+   if(input.key === 'Escape') {
+     // EscキーにてCompletionをキャンセル
+     cancelCompletion();
+     event.preventDefault()
+   }
+  })
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
@@ -170,18 +188,22 @@ ipc.on('response', (event : IpcMainEvent,
     const state = obj;
 
     const sender = event.sender;
-    completeState(state)
+
+    completionAbortController = new AbortController();
+    
+    completeState(state, completionAbortController)
       .then(completedState => {
         if(completedState != null) {
           sender.send('request', 'completed', completedState);
         } else {
           sender.send('request', 'completed', state);
         }
+        completionAbortController = null;
       })
       .catch(error => {
-        // TODO: エラーハンドリング
         sender.send('request', 'completed', state);
         console.error(error);
+        completionAbortController = null;
       });
   }
 })

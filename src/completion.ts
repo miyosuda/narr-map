@@ -30,7 +30,7 @@ class CompletionNode {
 
   setTargetIndex(targetIndex : number) {
     this.targetIndex = targetIndex;
-    this.state.text = `{{${targetIndex}}}`
+    this.state.text = `{{${targetIndex}}}`;
   }
   
   setText(text : string) {
@@ -93,7 +93,11 @@ function parseCompletionResponse(response : string,
 }
 
 
-export async function completeState(state : StateType) {
+export async function completeState(state : StateType,
+                                    abortController : AbortController) {
+
+  state = structuredClone(state);
+  
   const targetNodes : Array<CompletionNode> = [];
   const targetMap : Array<CompletionNode> = [];
   const targetNodeMap: { [index: number]: CompletionNode } = {};
@@ -121,7 +125,7 @@ export async function completeState(state : StateType) {
     `{{0}}`
     :
     `{{0}} ~ {{${targetNodeSize-1}}}`;
-
+  
   const prompt = `
 \`\`\`
 ${uml}
@@ -135,8 +139,10 @@ ${uml}
 \`\`\`
 {{0}} あいうえお
 \`\`\`
-`;
-  
+  `;
+
+  const signal = abortController.signal;
+
   const chatCompletion = await openai.chat.completions.create({
     messages: [
       {
@@ -145,15 +151,22 @@ ${uml}
       }
     ],
     model: COMPLETION_MODEL,
-  });
+  }, {signal});
+
+  if(chatCompletion.choices.length == 0) {
+    return null;
+  }
   
   const response : string | null = chatCompletion.choices[0].message.content;
-
+  if( response == null ) {
+    return null;
+  }
+  
   parseCompletionResponse(response!, targetNodeMap);
-
+  
   targetNodes.forEach((targetNode : CompletionNode) => {
     targetNode.cleanup();
-  });  
+  });
   
   return state;
 }

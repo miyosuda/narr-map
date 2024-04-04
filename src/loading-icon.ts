@@ -1,3 +1,5 @@
+import { Config } from './config';
+
 export class LoadingIcon {
   element : HTMLElement;
   

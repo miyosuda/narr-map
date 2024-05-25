@@ -13,6 +13,8 @@ import { completeState } from './completion'
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
+declare const SETTINGS_WINDOW_WEBPACK_ENTRY: string;
+
 const CONFIRM_ANSWER_SAVE   = 0;
 const CONFIRM_ANSWER_DELETE = 1;
 const CONFIRM_ANSWER_CANCEL = 2;
@@ -119,6 +121,17 @@ const createWindow = (): void => {
 
   mainWindow.setTitle(DEFAULT_TITLE);
 };
+
+const openSettings = () => {
+  const settingsWindow = new BrowserWindow({
+    width: 480,
+    height: 160,
+    title: 'Settings',
+  });
+  
+  // Load the settings.html of the app.
+  settingsWindow.loadURL(SETTINGS_WEBPACK_ENTRY);
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -366,6 +379,16 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
     label: app.name,
     submenu: [
       { role: 'about' },
+      { type: 'separator' },
+      {
+        label: 'Settings',
+        accelerator: 'CmdOrCtrl+,',
+        click: (menuItem : MenuItem,
+                browserWindow : BrowserWindow,
+                event : KeyboardEvent) => {
+          openSettings();
+        },
+      },
       { type: 'separator' },
       { role: 'services' },
       { type: 'separator' },

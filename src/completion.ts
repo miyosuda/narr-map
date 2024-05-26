@@ -3,9 +3,6 @@ import OpenAI from 'openai';
 import { StateType } from './types'
 import { convertStateToPlanetUML, convertPlanetUMLToState } from './uml';
 
-const openai = new OpenAI({
-  apiKey: process.env['OPENAI_API_KEY'],
-});
 
 const COMPLETION_MODEL : string = 'gpt-4-1106-preview';
 
@@ -93,8 +90,13 @@ function parseCompletionResponse(response : string,
 }
 
 
-export async function completeState(state : StateType,
+export async function completeState(openaiApiKey: string,
+                                    state : StateType,
                                     abortController : AbortController) {
+
+  const openai = new OpenAI({
+    apiKey: openaiApiKey
+  });
 
   state = structuredClone(state);
   

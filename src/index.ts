@@ -13,7 +13,8 @@ import { completeState } from './completion'
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
-declare const SETTINGS_WINDOW_WEBPACK_ENTRY: string;
+declare const SETTINGS_WEBPACK_ENTRY: string;
+declare const SETTINGS_PRELOAD_WEBPACK_ENTRY: string;
 
 const CONFIRM_ANSWER_SAVE   = 0;
 const CONFIRM_ANSWER_DELETE = 1;
@@ -42,6 +43,7 @@ const cancelCompletion = () => {
 
 interface StoreSchema {
   darkMode : boolean;
+  openaiApiKey: string;
 }
 
 const schema : Schema<StoreSchema> = {
@@ -49,11 +51,16 @@ const schema : Schema<StoreSchema> = {
 	type: 'boolean',
 	default: false
   },
+  openaiApiKey: {
+	type: 'string',
+	default: '',
+  },
 };
 
 const store = new Store({schema});
 
 const setDarkMode = (darkMode : boolean) => {
+  // TODO: ここは送るのはmain windowだけで良い
   const windows = BrowserWindow.getAllWindows();
   windows.forEach(window => {
     window.webContents.send('request', 'dark-mode', darkMode);
@@ -100,7 +107,7 @@ const createWindow = (): void => {
         event.preventDefault()
       }
     }
-  })
+  });
 
   mainWindow.webContents.on('did-finish-load', ()=>{
     setDarkMode(store.get('darkMode'));
@@ -112,7 +119,7 @@ const createWindow = (): void => {
    if(input.key === 'Escape') {
      // EscキーにてCompletionをキャンセル
      cancelCompletion();
-     event.preventDefault()
+     event.preventDefault();
    }
   })
 
@@ -127,11 +134,35 @@ const openSettings = () => {
     width: 480,
     height: 160,
     title: 'Settings',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: SETTINGS_PRELOAD_WEBPACK_ENTRY,
+    },
   });
   
   // Load the settings.html of the app.
   settingsWindow.loadURL(SETTINGS_WEBPACK_ENTRY);
 }
+
+ipc.handle('request-settings', async (event) => {
+  const settings = {
+    darkMode: store.get('darkMode'),
+    openaiApiKey: store.get('openaiApiKey'),
+  };
+  return settings;
+});
+
+ipc.on('settings-response', (event : IpcMainEvent, arg : string, obj : any) => {
+  if( arg == 'set-dark-mode' ) {
+    const darkMode = obj as boolean;
+    store.set('darkMode', darkMode);
+  } else if( arg == 'set-openai-api-key' ) {
+    const openaiApiKey = obj as string;
+    store.set('openaiApiKey', openaiApiKey);
+  }
+});
+  
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -203,8 +234,10 @@ ipc.on('response', (event : IpcMainEvent,
     const sender = event.sender;
 
     completionAbortController = new AbortController();
+
+    const openaiApiKey = store.get('openaiApiKey');
     
-    completeState(state, completionAbortController)
+    completeState(openaiApiKey, state, completionAbortController)
       .then(completedState => {
         if(completedState != null) {
           sender.send('request', 'completed', completedState);
@@ -633,20 +666,6 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
           );
         }
       },
-    ]
-  },
-  {
-    label: 'Setting',
-    submenu: [
-      {
-        label: 'Dark mode',
-        type: "checkbox",
-        checked: store.get('darkMode'),
-        click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
-          const newDarkMode = !store.get('darkMode');
-          store.set('darkMode', newDarkMode);
-        }
-      }
     ]
   },
   {

@@ -32,14 +32,14 @@ const Setting = () => {
   
     fetchSettings();
   }, []);
-    
-  const handleDarkModeChange = (event) => {
+  
+  const handleDarkModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newDarkMode = event.target.checked;
     setDarkMode(newDarkMode);
     nmAPI.sendMessage('set-dark-mode', newDarkMode);
   };
 
-  const handleOpenAIApiKeyChange = (event) => {
+  const handleOpenAIApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newOpenaiApiKey = event.target.value;
     setOpenAIApiKey(newOpenaiApiKey);
     nmAPI.sendMessage('set-openai-api-key', newOpenaiApiKey);

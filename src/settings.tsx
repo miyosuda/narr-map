@@ -2,20 +2,36 @@ import { createRoot } from 'react-dom/client';
 import React, { useState, useEffect } from 'react';
 const { nmAPI } = window;
 
+const execCommands = [
+  'copy',
+  'paste',
+  'cut',
+  'undo',
+  'redo',
+  'selectall'
+];
+
+
 const Setting = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [openaiApiKey, setOpenAIApiKey] = useState('');
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSettings = async () => {
       const response = await nmAPI.requestSettings();
       setDarkMode(response.darkMode);
       setOpenAIApiKey(response.openaiApiKey);
     };
-    
-    fetchData();
-  }, []);
 
+    nmAPI.onReceiveMessage((arg : string, obj : any) => {
+      if( execCommands.some(element => element === arg) ) {
+        document.execCommand(arg);
+      }
+    });
+  
+    fetchSettings();
+  }, []);
+    
   const handleDarkModeChange = (event) => {
     const newDarkMode = event.target.checked;
     setDarkMode(newDarkMode);

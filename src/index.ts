@@ -131,7 +131,7 @@ const createWindow = (): void => {
 
 const openSettings = () => {
   const settingsWindow = new BrowserWindow({
-    width: 480,
+    width: 640,
     height: 160,
     title: 'Settings',
     webPreferences: {

@@ -1,3 +1,4 @@
+import './css/settings-style.css';
 import { createRoot } from 'react-dom/client';
 import React, { useState, useEffect } from 'react';
 const { nmAPI } = window;
@@ -42,22 +43,24 @@ const Setting = () => {
     const newOpenaiApiKey = event.target.value;
     setOpenAIApiKey(newOpenaiApiKey);
     nmAPI.sendMessage('set-openai-api-key', newOpenaiApiKey);
-    console.log(newOpenaiApiKey);
   };
   
   return (
 	<div>
-      <div>
-        <input
-          type="checkbox"
-          checked={darkMode}
-          onChange={handleDarkModeChange} 
-        />
-        Dark mode
-      </div>
-      <div>
-        OPENA API KEY
-        <input type="text" value={openaiApiKey} onChange={handleOpenAIApiKeyChange} />
+      <div className="settings-container">
+        <div className="setting-item">
+          <div className="setting-item">
+            <label htmlFor="dark-mode">Dark mode</label>
+            <input type="checkbox" id="dark-mode"
+                   checked={darkMode}
+                   onChange={handleDarkModeChange} 
+            />
+          </div>
+        </div>
+        <div className="setting-item">
+          <label htmlFor="api-key">OpenAI API key</label>
+          <input type="text" id="api-key" value={openaiApiKey} onChange={handleOpenAIApiKeyChange} />
+        </div>        
       </div>
 	</div>
   );

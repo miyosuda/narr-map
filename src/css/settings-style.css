@@ -1,0 +1,33 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.settings-container {
+    display: flex;
+    flex-direction: column;
+    width: 600px;
+    margin: 20px auto;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.setting-item label {
+    font-size: 14px;
+    width: 120px;
+}
+
+.setting-item input[type="checkbox"] {
+    margin-left: 0px;
+}
+
+.setting-item input[type="text"] {
+    flex-grow: 1;
+    padding: 5px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}

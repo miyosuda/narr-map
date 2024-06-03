@@ -61,6 +61,7 @@ const store = new Store({schema});
 
 const setDarkMode = (darkMode : boolean) => {
   // TODO: ここは送るのはmain windowだけで良い
+  // TODO: BrowserWindow.fromId()を利用する
   const windows = BrowserWindow.getAllWindows();
   windows.forEach(window => {
     window.webContents.send('request', 'dark-mode', darkMode);
@@ -145,24 +146,19 @@ const openSettings = () => {
   settingsWindow.loadURL(SETTINGS_WEBPACK_ENTRY);
 }
 
-ipc.handle('request-settings', async (event) => {
-  const settings = {
-    darkMode: store.get('darkMode'),
-    openaiApiKey: store.get('openaiApiKey'),
-  };
-  return settings;
-});
 
-ipc.on('settings-response', (event : IpcMainEvent, arg : string, obj : any) => {
-  if( arg == 'set-dark-mode' ) {
-    const darkMode = obj as boolean;
-    store.set('darkMode', darkMode);
-  } else if( arg == 'set-openai-api-key' ) {
-    const openaiApiKey = obj as string;
-    store.set('openaiApiKey', openaiApiKey);
+ipc.handle('invoke', async (event: IpcMainEvent, arg: string): Promise<any> => {
+  if( arg === 'get-settings' ) {
+    const settings = {
+      darkMode: store.get('darkMode'),
+      openaiApiKey: store.get('openaiApiKey'),
+    };
+    return settings;
+  } else {
+    return null;
   }
 });
-  
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -187,8 +183,9 @@ app.on('activate', () => {
 });
 
 app.on('open-file', (event : Event, path_ : string) => {
+  // TODO: BrowserWindow.fromId()を利用する
   const windows = BrowserWindow.getAllWindows();
-  if( windows.length > 0) {
+  if(windows.length > 0) {
     // TODO: 複数のwindowが出てきた時は要対応
     load(windows[0], path_);
   }
@@ -197,7 +194,14 @@ app.on('open-file', (event : Event, path_ : string) => {
 ipc.on('response', (event : IpcMainEvent,
                     arg : string,
                     obj : any) => {
-  if( arg == 'set-dirty' ) {
+  if( arg == 'settings-set-dark-mode' ) {
+    const darkMode = obj as boolean;
+    store.set('darkMode', darkMode);
+  } else if( arg == 'settings-set-openai-api-key' ) {
+    const openaiApiKey = obj as string;
+    store.set('openaiApiKey', openaiApiKey);
+    
+  } else if( arg == 'set-dirty' ) {
     editDirty = true;
   } else if( arg == 'set-root-text' ) {
     rootText = obj;

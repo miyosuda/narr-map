@@ -4,11 +4,14 @@ type ListenerType = (arg: string, obj : any) => void;
 
 contextBridge.exposeInMainWorld('nmAPI', {
   // renderer -> main
-  sendMessage : (arg : string, obj : any) => {
+  invoke: (arg: string): Promise<any> => {
+    return ipcRenderer.invoke('invoke', arg);
+  },
+  sendMessage: (arg : string, obj : any) => {
     ipcRenderer.send('response', arg, obj);
   },
   // main -> renderer
-  onReceiveMessage : (listener : ListenerType) => {
+  onReceiveMessage: (listener : ListenerType) => {
     ipcRenderer.on('request', (event: IpcRendererEvent,
                                arg : string,
                                obj : any) => {

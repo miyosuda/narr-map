@@ -59,7 +59,7 @@ const config: ForgeConfig = {
             js: './src/settings.tsx',
             name: 'settings',
             preload: {
-              js: './src/settings-preload.ts',
+              js: './src/preload.ts',
             },
           },
         ],

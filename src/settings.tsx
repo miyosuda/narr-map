@@ -19,9 +19,9 @@ const Setting = () => {
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const response = await nmAPI.requestSettings();
-      setDarkMode(response.darkMode);
-      setOpenAIApiKey(response.openaiApiKey);
+      const settingData = await nmAPI.invoke('get-settings');
+      setDarkMode(settingData.darkMode);
+      setOpenAIApiKey(settingData.openaiApiKey);
     };
 
     nmAPI.onReceiveMessage((arg : string, obj : any) => {
@@ -36,13 +36,13 @@ const Setting = () => {
   const handleDarkModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newDarkMode = event.target.checked;
     setDarkMode(newDarkMode);
-    nmAPI.sendMessage('set-dark-mode', newDarkMode);
+    nmAPI.sendMessage('settings-set-dark-mode', newDarkMode);
   };
 
   const handleOpenAIApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newOpenaiApiKey = event.target.value;
     setOpenAIApiKey(newOpenaiApiKey);
-    nmAPI.sendMessage('set-openai-api-key', newOpenaiApiKey);
+    nmAPI.sendMessage('settings-set-openai-api-key', newOpenaiApiKey);
   };
   
   return (

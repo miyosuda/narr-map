@@ -4,7 +4,7 @@ import { StateType } from './types'
 import { convertStateToPlanetUML, convertPlanetUMLToState } from './uml';
 
 
-const COMPLETION_MODEL : string = 'gpt-4-1106-preview';
+const COMPLETION_MODEL : string = 'gpt-4o';
 
 
 class CompletionNode {
@@ -133,7 +133,7 @@ export async function completeState(openaiApiKey: string,
 ${uml}
 \`\`\`
 
-上記はplanet umlフォーマットで表記されたmind mapです。
+上記はPlant UMLフォーマットで表記されたmind mapです。
 このmind map内の${targetListStr}に入るものを考えて列挙してください。
 
 出力は以下の例に従ってください。

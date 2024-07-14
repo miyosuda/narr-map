@@ -46,23 +46,24 @@ const Setting = () => {
   };
   
   return (
-	<div>
-      <div className="settings-container">
-        <div className="setting-item">
-          <div className="setting-item">
-            <label htmlFor="dark-mode">Dark mode</label>
-            <input type="checkbox" id="dark-mode"
-                   checked={darkMode}
-                   onChange={handleDarkModeChange} 
-            />
-          </div>
+    <div>
+      <div className="flex flex-col w-[600px] mx-auto my-5">
+        <div className="flex items-center mb-4">
+          <label htmlFor="dark-mode" className="text-base w-32">Dark mode</label>
+          <input type="checkbox" id="dark-mode"
+                 checked={darkMode}
+                 onChange={handleDarkModeChange} 
+                 className="ml-0"
+          />
         </div>
-        <div className="setting-item">
-          <label htmlFor="api-key">OpenAI API key</label>
-          <input type="text" id="api-key" value={openaiApiKey} onChange={handleOpenAIApiKeyChange} />
+        <div className="flex items-center mb-4">
+          <label htmlFor="api-key" className="text-base w-32">OpenAI API key</label>
+          <input type="text" id="api-key" value={openaiApiKey} onChange={handleOpenAIApiKeyChange}
+                 className="flex-grow p-1 text-base border border-gray-300 rounded"
+          />
         </div>        
       </div>
-	</div>
+    </div>
   );
 };
 

@@ -1,8 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 255, 255, 255;
+}
+
+body {
+  @apply font-hiragino;
+  @apply antialiased;
+  
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/*
 body {
   font-family: "ヒラギノ角ゴ Pro W3","Hiragino Kaku Gothic Pro",sans-serif;
   font-size: 1.0em;
 
-  /* スクロールバーを表示させない */
   overflow: hidden;
 }
 
@@ -25,19 +48,16 @@ foreignObject {
   overflow: visible;
 }
 
-/* textのspanに適用 */
 .disable-select {
   -ms-user-select: none;
   -webkit-user-select: none;
   user-select: none;
   padding: 0px;
 
-  /* ADHOC (改行対策) */
   white-space: nowrap;
 }
 
 
-/* input file style */
 textarea {
   padding: 0 5px 0;
   font-size: 1.0em;
@@ -63,8 +83,6 @@ textarea:focus {
   outline: none;
 }
 
-/* light mode */
-
 .with-back-light {
   background: white;
   color: black;
@@ -85,8 +103,6 @@ textarea:focus {
 .node-top-overlapped-light {
   background: linear-gradient(to top, white, gray);
 }
-
-/* dark mode */
 
 .with-back-dark {
   background: black;
@@ -109,8 +125,6 @@ textarea:focus {
   background: linear-gradient(to top, black, gray);
 }
 
-/* loading icon */
-
 .loading-icon {
   display: inline-block;
   position: absolute;
@@ -130,12 +144,10 @@ textarea:focus {
   animation: loading-icon 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 
-/* light version */
 .loading-icon.dark div {
   border-color: #fff transparent transparent transparent;
 }
 
-/* dark version */
 .loading-icon.light div {
   border-color: #777 transparent transparent transparent;
 }
@@ -160,3 +172,4 @@ textarea:focus {
     transform: rotate(360deg);
   }
 }
+*/

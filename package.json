@@ -1,7 +1,7 @@
 {
   "name": "narr-map",
   "productName": "narr-map",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A minimal mind map editor",
   "main": ".webpack/main",
   "scripts": {

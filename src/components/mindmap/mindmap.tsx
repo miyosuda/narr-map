@@ -17,6 +17,7 @@ import {
   splitSymbolFromText
 } from '@/utils/node-utils';
 import { containsPosForHandle, calcDrawStateMap, containsPos, containsPosHalf } from '@/utils/node-draw-utils';
+const { nmAPI } = window;
 
 const DRAG_NODE  = 1;
 const DRAG_GHOST = 2;
@@ -28,6 +29,15 @@ const MOVE_RIGHT = 3;
 const MOVE_LEFT  = 4;
 
 const EDIT_HISTORY_MAX = 30;
+
+const execCommands = [
+  'copy',
+  'paste',
+  'cut',
+  'undo',
+  'redo',
+  'selectall'
+];
 
 type Range = {
   left: number,
@@ -71,31 +81,24 @@ const getRange = (
 }
 
 
-type MindMapeProps = {
-  rootState: NodeState;
-  setRootState: ((rootState:NodeState) => void);
-  setRootStateWithHistory: (newRootState: NodeState) => void;
-  undo: () => void;  
-  redo: () => void;
+function MindMap() {
+  const initialRootState = getNodeState({
+    id: 0,
+    text: 'root',
+    selected: true,
+    editId: 0,
+    accompaniedState: getNodeState({
+      id: 1,
+      editId: 1,
+      isLeft: true
+    })
+  });
 
-  nextNodeId: number;
-  setNextNodeId: (number) => void;
-  nextEditId: number;
-  setNextEditId: (number) => void;  
-};
-
-function MindMap(props: MindMapeProps) {
-  const {
-    rootState,
-    setRootState,
-    setRootStateWithHistory,
-    undo,
-    redo,
-    nextNodeId,
-    setNextNodeId,
-    nextEditId,
-    setNextEditId
-  } = props;
+  const [rootState, setRootState] = useState(initialRootState);
+  const [stateHistory, setStateHistory] = useState<NodeState[]>([initialRootState]);
+  const [historyCursor, setHistoryCursor] = useState(0);
+  const [nextNodeId, setNextNodeId] = useState(2); // Node ID管理
+  const [nextEditId, setNextEditId] = useState(2); // Edit ID管理  
   
   // SVG, Canvasエレメントへのリファレンス
   const svg = useRef<SVGSVGElement>(null);
@@ -103,7 +106,7 @@ function MindMap(props: MindMapeProps) {
 
   // マウス,キーハンドラの設定
   useEffect(() => {
-    // TODO: 毎秒画後に走ってしまっている
+    // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
     prepareHandlers();
 
     return () => {
@@ -111,11 +114,44 @@ function MindMap(props: MindMapeProps) {
     }
   });
 
+  function handleCommand(command: string) {
+  	if(command === 'copy') {
+  	  copy();
+  	} else if(command === 'paste') {
+  	  paste();
+  	} else if(command === 'cut') {
+  	  cut();
+  	} else if(command === 'selectall') {
+  	  selectAll();
+  	} else if(command === 'redo') {
+      redo();
+    } else if(command === 'undo') {
+  	  undo();
+    }
+  }
+
+  useEffect(() => {
+    // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
+    const offFunc = nmAPI.onReceiveMessage((arg : string, obj : any) => {
+      // textInput表示中かどうか
+      const editingNodeState = findNode(rootState, state => state.editState !== EDIT_STATE_NONE);
+      if(editingNodeState != null) {
+        // textInput表示中であれば、documentにコマンドを実行させてtextInput内のundo,redoに対処
+        if( execCommands.some(element => element === arg) ) {
+          document.execCommand(arg);
+        }
+      } else {
+        handleCommand(arg);
+      }
+    });
+    return offFunc;
+  });
+  
   useEffect(() => {
     // 初回render後にrecenterする
     recenter();
-  }, []);  
-
+  }, []);
+  
   // ルートノードのstate
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [
     rootState]);
@@ -124,7 +160,6 @@ function MindMap(props: MindMapeProps) {
 
   const [ghostState, setGhostState] = useState<NodeGhostState|null>(null);
 
-  
   const [canvasTranslatePos, setCanvasTranslatePos] = useState( 
     {
       x:640, 
@@ -133,6 +168,39 @@ function MindMap(props: MindMapeProps) {
 
   const [cursorDepth, setCursorDepth] = useState(0);
   const [copyingStates, setCopyingStates] = useState<NodeState[]>([]);
+
+  const setRootStateWithHistory = (newRootState: NodeState) : void => {
+    setRootState(newRootState);
+
+    let newStateHistory;
+    if( historyCursor !== stateHistory.length-1 ) {
+      newStateHistory = [...stateHistory.slice(0, historyCursor+1), newRootState];
+    } else {
+      newStateHistory = [...stateHistory, newRootState];
+    }
+
+    if(newStateHistory.length > EDIT_HISTORY_MAX) {
+      newStateHistory = newStateHistory.slice(1);
+      setStateHistory(newStateHistory);
+    } else {
+      setStateHistory(newStateHistory);
+      setHistoryCursor(historyCursor+1);
+    }
+  }
+
+  const undo = () => {
+    if( historyCursor > 0 ) {
+      setRootState(stateHistory[historyCursor-1]);
+      setHistoryCursor(historyCursor-1);
+    }
+  }
+
+  const redo = () => {
+    if( historyCursor < stateHistory.length-1 ) {
+      setRootState(stateHistory[historyCursor+1]);
+      setHistoryCursor(historyCursor+1);
+    }
+  }
 
   function prepareHandlers() {
     document.addEventListener('mouseup', handleMouseUp);
@@ -183,20 +251,6 @@ function MindMap(props: MindMapeProps) {
     } else if(e.key === ' ') {
       toggleFold();
       e.preventDefault();
-  	} else if(e.key === 'c' && ctrlDown) {
-  	  copy();
-  	} else if(e.key === 'v' && ctrlDown) {
-  	  paste();
-  	} else if(e.key === 'x' && ctrlDown) {
-  	  cut();
-  	} else if(e.key === 'a' && ctrlDown) {
-  	  selectAll();
-  	} else if(e.key === 'z' && ctrlDown) {
-      if(shiftDown) {
-        redo();
-      } else {
-  	    undo();
-      }
     } else if(e.keyCode >= 49 && // '1'
               e.keyCode <= 90 && // 'Z'
               !ctrlDown) {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 
-import { 
-  NodeState, NodeDragState, NodeGhostState, NodeDrawStateMapType, 
+import {
+  NodeState, NodeDragState, NodeGhostState, NodeDrawStateMapType, SavingNodeState,
   HOVER_STATE_NONE, HOVER_STATE_LEFT, HOVER_STATE_RIGHT, HOVER_STATE_TOP, 
   EDIT_STATE_NONE, EDIT_STATE_NORMAL, EDIT_STATE_INSERT
 } from '@/types';
@@ -14,7 +14,7 @@ import {
   hasChildren, getExtendedChildren, findNode, findNodes, updateNodes, 
   addChildNode, addChildNodeAbove, addChildNodeBelow,
   removeChildNode, getLatestNode, getLatestVisibleChild, getSibling, isCopiable,
-  splitSymbolFromText
+  splitSymbolFromText, getSavingNodeState
 } from '@/utils/node-utils';
 import { containsPosForHandle, calcDrawStateMap, containsPos, containsPosHalf } from '@/utils/node-draw-utils';
 const { nmAPI } = window;
@@ -36,7 +36,14 @@ const execCommands = [
   'cut',
   'undo',
   'redo',
-  'selectall'
+  'selectall',
+
+  'save',
+  'load',
+  'export',
+  'new-file',
+  'complete',
+  'completed',
 ];
 
 type Range = {
@@ -97,8 +104,8 @@ function MindMap() {
   const [rootState, setRootState] = useState(initialRootState);
   const [stateHistory, setStateHistory] = useState<NodeState[]>([initialRootState]);
   const [historyCursor, setHistoryCursor] = useState(0);
-  const [nextNodeId, setNextNodeId] = useState(2); // Node ID管理
-  const [nextEditId, setNextEditId] = useState(2); // Edit ID管理  
+  const [nextNodeId, setNextNodeId] = useState(2); // Node ID管理 (0,1はrootとdummpyRootで利用)
+  const [nextEditId, setNextEditId] = useState(2); // Edit ID管理 (0,1はrootとdummpyRootで利用)
   
   // SVG, Canvasエレメントへのリファレンス
   const svg = useRef<SVGSVGElement>(null);
@@ -114,7 +121,7 @@ function MindMap() {
     }
   });
 
-  function handleCommand(command: string) {
+  function handleCommand(command: string, obj: any) {
   	if(command === 'copy') {
   	  copy();
   	} else if(command === 'paste') {
@@ -127,6 +134,14 @@ function MindMap() {
       redo();
     } else if(command === 'undo') {
   	  undo();
+    } else if(command === 'save') {
+      save();
+    } else if(command === 'load') {
+      load(obj);
+    } else if(command === 'export') {
+    } else if(command === 'new-file') {
+    } else if(command === 'complete') {
+    } else if(command === 'completed') {
     }
   }
 
@@ -134,6 +149,7 @@ function MindMap() {
     // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
     const offFunc = nmAPI.onReceiveMessage((arg : string, obj : any) => {
       // textInput表示中かどうか
+      // TODO: save等だった場合は、textInputを閉じて対応する.
       const editingNodeState = findNode(rootState, state => state.editState !== EDIT_STATE_NONE);
       if(editingNodeState != null) {
         // textInput表示中であれば、documentにコマンドを実行させてtextInput内のundo,redoに対処
@@ -141,7 +157,7 @@ function MindMap() {
           document.execCommand(arg);
         }
       } else {
-        handleCommand(arg);
+        handleCommand(arg, obj);
       }
     });
     return offFunc;
@@ -186,6 +202,13 @@ function MindMap() {
       setStateHistory(newStateHistory);
       setHistoryCursor(historyCursor+1);
     }
+
+    setDirty();
+  }
+
+  const setDirty = () => {
+    // TODO: useEffectの利用を検討
+    nmAPI.sendMessage('set-dirty', null);
   }
 
   const undo = () => {
@@ -200,6 +223,17 @@ function MindMap() {
       setRootState(stateHistory[historyCursor+1]);
       setHistoryCursor(historyCursor+1);
     }
+  }
+
+  const save = () => {
+    // TODO: useEffectの利用を検討
+    const savingRootState = getSavingNodeState(rootState);
+    nmAPI.sendMessage('response-save', savingRootState);
+  }
+
+  const load = (savingState: SavingState) => {
+    // TODO: 対応中
+    console.log(savingState);
   }
 
   function prepareHandlers() {
@@ -316,13 +350,13 @@ function MindMap() {
         // shift押下時
         // pickしたnodeをselectedに
         newRootState = updateNodes(rootState,
-                                         state => state.id === pickedNode!.id,
-                                         state => ({
-                                           ...state,
-                                           selected: true,
-                                           editId: nextEditId
+                                   state => state.id === pickedNode!.id,
+                                   state => ({
+                                     ...state,
+                                     selected: true,
+                                     editId: nextEditId
         }));
-      } else {        
+      } else {
         // pickしたnode以外のselectedをクリア
         newRootState = updateNodes(rootState,
                                    state => state.selected,
@@ -657,6 +691,15 @@ function MindMap() {
       setRootStateWithHistory(newRootState);
       setNextEditId(nextEditId + 1);
       setCursorDepth(calcDepth(targetState));
+
+      if(isRoot(targetState)) {
+        if(rawText.length > 0) {
+          // TODO: useEffectの利用を検討
+          nmAPI.sendMessage('set-root-text', rawText);
+        } else {
+          nmAPI.sendMessage('set-root-text', null);
+        }
+      }
     }
   }
 
@@ -802,7 +845,7 @@ function MindMap() {
         node = lastNode.parent;
       } else {
         // 子に移動
-        node = getLatestVisibleChild(lastNode);        
+        node = getLatestVisibleChild(lastNode);
       }
 
       if(node != null) {
@@ -816,7 +859,7 @@ function MindMap() {
     } else if(direction === MOVE_LEFT) {
       // 左に移動
       if(lastNode.isLeft) {
-        node = getLatestVisibleChild(lastNode);        
+        node = getLatestVisibleChild(lastNode);
       } else {
         if(isRoot(lastNode)) {
           node = getLatestVisibleChild(lastNode.accompaniedState!);
@@ -829,7 +872,7 @@ function MindMap() {
         setCursorDepth(calcDepth(node));
       } else if(lastNode.folded) {
         toggleFold();
-      }      
+      }
     } else if(direction === MOVE_UP) {
       node = getSibling(lastNode, true, cursorDepth);
     } else if(direction === MOVE_DOWN) {

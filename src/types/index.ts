@@ -62,3 +62,18 @@ export type NodeGhostState = {
 
 
 export type NodeDrawStateMapType = {[key: number]: NodeDrawState;};
+
+
+// State of saving
+export type SavingNodeState = {
+  text: string;
+  symbol: string | null;  
+  shiftX: number;
+  shiftY: number;
+  selected: boolean;
+  folded: boolean;
+  isLeft: boolean;
+  
+  accompaniedState: SavingNodeState | null;
+  children: SavingNodeState[];
+}

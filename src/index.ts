@@ -21,7 +21,7 @@ const CONFIRM_ANSWER_DELETE = 1;
 const CONFIRM_ANSWER_CANCEL = 2;
 
 const DEFAULT_TITLE = 'Unnamed';
-const DATA_VERSION = 1;
+const DATA_VERSION = 2;
 
 
 let editDirty = false;

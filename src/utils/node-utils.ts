@@ -1,4 +1,4 @@
-import { NodeState, HOVER_STATE_NONE, EDIT_STATE_NONE } from '../types'
+import { NodeState, SavingNodeState, HOVER_STATE_NONE, EDIT_STATE_NONE } from '../types'
 
 
 export function getNodeState(
@@ -432,4 +432,84 @@ export function getTextWithSymbol(text: string, symbol: string|null) : text {
   } else {
     return text;
   }
+}
+
+
+export function getSavingNodeState(state: NodeState) : SavingNodeState {
+  const savingState: SavingNodeState = {
+    text: state.text,
+    symbol: state.symbol,
+    shiftX: state.shiftX,
+    shiftY: state.shiftY,
+    selected: state.selected,
+    folded: state.folded,
+    isLeft: state.isLeft,
+    children: state.children.map(childState => {
+      return getSavingNodeState(childState);
+    }),
+    accompaniedState: state.accompaniedState != null ?
+                      getSavingNodeState(state.accompaniedState!) :
+                      null,
+  };
+  return savingState;
+}
+
+
+type NodeStateAndNextId = {
+  nextId, number,
+  state: NodeState,
+}
+
+
+const getNodeStateFromSavingSub = (savingState: SavingNodeState): NodeState => {
+  const state = getNodeState({
+    text: savingState.text,
+    symbol: savingState.symbol,
+    shiftX: savingState.shiftX,
+    shiftY: savingState.shiftY,
+    selected: savingState.selected,
+    folded: savingState.folded,
+    isLeft: savingState.isLeft,
+    accompaniedState: savingState.accompaniedState != null ?
+                      getNodeStateFromSavingSub(savingState.accompaniedState) :
+                      null,
+  });
+  
+  const children = savingState.children.map(childSavingState => {
+      return getNodeStateFromSavingSub(childSavingState);
+  });
+  
+  const clonedChildren = children.map(childState => {
+    const clonedChildState = cloneNodeState(childState);
+    clonedChildState.parent = state;
+    return clonedChildState;
+  });
+  
+  state.children = clonedChildren;
+  return state;
+}
+
+
+const assignNextId = (() => {
+  let nextId = 0;
+  
+  const assignId = (state: NodeState): NodeState => {
+    const newId = nextId++;
+    const newState = { ...state, id: newId, editId: newId };
+    
+    newState.children = state.children.map(childState => assignId(childState));
+    newState.accompaniedState = state.accompaniedState != null ?
+                                assignId(state.accompaniedState) :
+                                null;
+    return newState;
+  };
+  
+  return assignId;
+})();
+
+
+export function getNodeStateFromSaving(savingState: SavingNodeState): NodeState {
+  const stateWithoutId = getNodeStateFromSavingSub(savingState);
+  const state = assignNextId(stateWithoutId);
+  return state;
 }

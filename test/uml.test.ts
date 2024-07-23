@@ -60,6 +60,17 @@ describe('UML', () => {
 `;
 
     const state = convertPlanetUMLToState(uml);
-    console.log(state);
+    
+    expect(state.text).toBe('a');
+    expect(state.isLeft).toBe(false);
+    
+    expect(state.children[0].text).toBe('1');
+    expect(state.children[0].isLeft).toBe(false);
+
+    expect(state.accompaniedState.text).toBe(null);
+    expect(state.accompaniedState.isLeft).toBe(true);
+
+    expect(state.accompaniedState.children[0].text).toBe('L1');
+    expect(state.accompaniedState.children[0].isLeft).toBe(true); 
   });
 })

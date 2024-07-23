@@ -97,7 +97,6 @@ describe('SavingNodeState', () => {
     };
     
     const state = getNodeStateFromSaving(savingState);
-    console.log(state);
 
     expect(state.id).toBe(0);
     expect(state.text).toBe('0');

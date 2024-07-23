@@ -825,7 +825,7 @@ function MindMap() {
       state => modifyTargetState(state)
     )
 
-    setRootState(newRootState);
+    setRootStateWithHistory(newRootState);
   }
 
   function cut() {

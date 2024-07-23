@@ -107,8 +107,7 @@ function MindMap() {
   const [nextNodeId, setNextNodeId] = useState(2); // Node ID管理 (0,1はrootとdummpyRootで利用)
   const [nextEditId, setNextEditId] = useState(2); // Edit ID管理 (0,1はrootとdummpyRootで利用)
 
-  const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [
-    rootState]);
+  const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState]);
 
   const [dragState, setDragState] = useState<NodeDragState|null>(null);
 
@@ -158,6 +157,7 @@ function MindMap() {
     } else if(command === 'export') {
       export_(obj);
     } else if(command === 'new-file') {
+      newFile();
     } else if(command === 'complete') {
     } else if(command === 'completed') {
     }
@@ -244,12 +244,26 @@ function MindMap() {
     
     setRootState(newRootState);
     setStateHistory([newRootState]);
+    setHistoryCursor(0);
     setNextNodeId(maxNodeId+1);
     setNextEditId(maxNodeId+1);
     
     setDragState(null);
     setGhostState(null);
     setCursorDepth(0); // TODO: 要確認
+    setCopyingStates([]);
+  }
+
+  const newFile = () => {
+    setRootState(initialRootState);
+    setStateHistory([initialRootState]);
+    setHistoryCursor(0);
+    setNextNodeId(2);
+    setNextEditId(2);
+    
+    setDragState(null);
+    setGhostState(null);
+    setCursorDepth(0);
     setCopyingStates([]);
   }
 

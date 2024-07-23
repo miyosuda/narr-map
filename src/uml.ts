@@ -29,8 +29,8 @@ function getStateUMLStr(state : StateType,
 export function convertStateToPlanetUML(state : StateType) : string {
   let uml = '@startmindmap\n';
 
-  uml += getStateUMLStr(state['right'], 1, false, false);
-  uml += getStateUMLStr(state['left'], 1, true, true);
+  uml += getStateUMLStr(state, 1, false, false);
+  uml += getStateUMLStr(state.accompaniedState, 1, true, true);
   
   uml += '@endmindmap\n';
   return uml;
@@ -193,16 +193,12 @@ export function convertPlanetUMLToState(uml : string) : StateType {
     }
   }
                  
-  const rightState = rightStack.items[0].getState();
-  const leftState = leftStack.items[0].getState();
-
-  // There should be at least one selected nodes.
-  rightState.selected = true;
-
-  const mapState = {
-    'right' : rightState,
-    'left' : leftState,
-  };
+  const state = rightStack.items[0].getState();
+  const accompaniedState = leftStack.items[0].getState();
   
-  return mapState;
+  // There should be at least one selected nodes.
+  state.selected = true;
+  
+  state['accompaniedState'] = accompaniedState;
+  return state;
 }

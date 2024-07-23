@@ -14,7 +14,7 @@ import {
   hasChildren, getExtendedChildren, findNode, findNodes, updateNodes, 
   addChildNode, addChildNodeAbove, addChildNodeBelow,
   removeChildNode, getLatestNode, getLatestVisibleChild, getSibling, isCopiable,
-  splitSymbolFromText, getSavingNodeState
+  splitSymbolFromText, getSavingNodeState, getNodeStateFromSaving, getMaxNodeId
 } from '@/utils/node-utils';
 import { containsPosForHandle, calcDrawStateMap, containsPos, containsPosHalf } from '@/utils/node-draw-utils';
 const { nmAPI } = window;
@@ -106,6 +106,23 @@ function MindMap() {
   const [historyCursor, setHistoryCursor] = useState(0);
   const [nextNodeId, setNextNodeId] = useState(2); // Node ID管理 (0,1はrootとdummpyRootで利用)
   const [nextEditId, setNextEditId] = useState(2); // Edit ID管理 (0,1はrootとdummpyRootで利用)
+
+  const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [
+    rootState]);
+
+  const [dragState, setDragState] = useState<NodeDragState|null>(null);
+
+  const [ghostState, setGhostState] = useState<NodeGhostState|null>(null);
+
+  const [canvasTranslatePos, setCanvasTranslatePos] = useState( 
+    {
+      x:640, 
+      y:480
+    } );
+
+  const [cursorDepth, setCursorDepth] = useState(0);
+  const [copyingStates, setCopyingStates] = useState<NodeState[]>([]);
+  
   
   // SVG, Canvasエレメントへのリファレンス
   const svg = useRef<SVGSVGElement>(null);
@@ -139,6 +156,7 @@ function MindMap() {
     } else if(command === 'load') {
       load(obj);
     } else if(command === 'export') {
+      export_(obj);
     } else if(command === 'new-file') {
     } else if(command === 'complete') {
     } else if(command === 'completed') {
@@ -168,23 +186,6 @@ function MindMap() {
     recenter();
   }, []);
   
-  // ルートノードのstate
-  const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [
-    rootState]);
-
-  const [dragState, setDragState] = useState<NodeDragState|null>(null);
-
-  const [ghostState, setGhostState] = useState<NodeGhostState|null>(null);
-
-  const [canvasTranslatePos, setCanvasTranslatePos] = useState( 
-    {
-      x:640, 
-      y:480
-    } );
-
-  const [cursorDepth, setCursorDepth] = useState(0);
-  const [copyingStates, setCopyingStates] = useState<NodeState[]>([]);
-
   const setRootStateWithHistory = (newRootState: NodeState) : void => {
     setRootState(newRootState);
 
@@ -231,9 +232,25 @@ function MindMap() {
     nmAPI.sendMessage('response-save', savingRootState);
   }
 
+  const export_ = () => {
+    // TODO: useEffectの利用を検討
+    const savingRootState = getSavingNodeState(rootState);
+    nmAPI.sendMessage('response-export', savingRootState);
+  }
+
   const load = (savingState: SavingState) => {
-    // TODO: 対応中
-    console.log(savingState);
+    const newRootState = getNodeStateFromSaving(savingState);
+    const maxNodeId = getMaxNodeId(newRootState);
+    
+    setRootState(newRootState);
+    setStateHistory([newRootState]);
+    setNextNodeId(maxNodeId+1);
+    setNextEditId(maxNodeId+1);
+    
+    setDragState(null);
+    setGhostState(null);
+    setCursorDepth(0); // TODO: 要確認
+    setCopyingStates([]);
   }
 
   function prepareHandlers() {

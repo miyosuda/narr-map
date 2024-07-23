@@ -4,20 +4,18 @@ import { convertStateToPlanetUML, convertPlanetUMLToState } from '../src/uml'
 describe('UML', () => {
   it('should be able convert state to PlanetUML', () => {
     const state = {
-      'right' : {
-        'text' : 'a',
-        'children' : [
-          {
-            'text' : 'b',
-            'children' : []
-          },
-          {
-            'text' : 'c',
-            'children' : []
-          }
-        ]
-      },
-      'left' : {
+      'text' : 'a',
+      'children' : [
+        {
+          'text' : 'b',
+          'children' : []
+        },
+        {
+          'text' : 'c',
+          'children' : []
+        }
+      ],
+      'accompaniedState': {
         'text' : null,
         'children' : [
           {

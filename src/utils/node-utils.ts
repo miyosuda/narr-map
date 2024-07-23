@@ -513,3 +513,11 @@ export function getNodeStateFromSaving(savingState: SavingNodeState): NodeState 
   const state = assignNextId(stateWithoutId);
   return state;
 }
+
+
+export function getMaxNodeId(state: NodeState): number {
+  const extendedChildren = getExtendedChildren(state);
+  const maxNodeId = extendedChildren.map(getMaxNodeId).reduce(
+    (maxId, id) => Math.max(maxId, id), state.id);
+  return maxNodeId;
+};

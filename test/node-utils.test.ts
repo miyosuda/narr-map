@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { getNodeStateFromSaving, cloneNodeState } from '../src/utils/node-utils'
+import { getMaxNodeId } from '../src/utils/node-utils'
 
 describe('SavingNodeState', () => {
   it('can be converted to NodeState', () => {
@@ -97,7 +98,6 @@ describe('SavingNodeState', () => {
     
     const state = getNodeStateFromSaving(savingState);
     console.log(state);
-    console.log(state);
 
     expect(state.id).toBe(0);
     expect(state.text).toBe('0');
@@ -111,6 +111,8 @@ describe('SavingNodeState', () => {
     expect(state.accompaniedState.text).toBe('');
     expect(state.accompaniedState.children.length).toBe(1);
     expect(state.accompaniedState.children[0].text).toBe('6');
+
+    const maxNodeId = getMaxNodeId(state);
+    expect(maxNodeId).toBe(7);
   });
 })
-

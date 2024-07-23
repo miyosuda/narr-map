@@ -30,6 +30,7 @@ const MOVE_LEFT  = 4;
 
 const EDIT_HISTORY_MAX = 30;
 
+// TextInputを開いている時にdocumentに実行させるコマンド
 const execCommands = [
   'copy',
   'paste',
@@ -37,13 +38,6 @@ const execCommands = [
   'undo',
   'redo',
   'selectall',
-
-  'save',
-  'load',
-  'export',
-  'new-file',
-  'complete',
-  'completed',
 ];
 
 type Range = {
@@ -160,6 +154,7 @@ function MindMap() {
       newFile();
     } else if(command === 'complete') {
     } else if(command === 'completed') {
+    } else if(command === 'dark-mode') {
     }
   }
 

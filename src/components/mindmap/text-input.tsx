@@ -55,6 +55,7 @@ interface TextInputProps {
   isLeft: boolean;
   textSelected: boolean;
   handleDecidedText: (text: string) => void;
+  darkMode: boolean;
 }
 
 const MARGIN_Y = 1;
@@ -114,6 +115,12 @@ export const TextInput = (props: TextInputProps) => {
     className = className + ' text-right';
   } else {
     className = className + ' text-left';
+  }
+
+  if(props.darkMode) {
+    className = className + ' bg-black text-white';
+  } else {
+    className = className + ' bg-white text-black';
   }
 
   const {length, row} = getStringLengthAndRow(text);

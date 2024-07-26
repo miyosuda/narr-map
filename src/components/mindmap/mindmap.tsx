@@ -100,6 +100,7 @@ function MindMap() {
   const [historyCursor, setHistoryCursor] = useState(0);
   const [nextNodeId, setNextNodeId] = useState(2); // Node ID管理 (0,1はrootとdummpyRootで利用)
   const [nextEditId, setNextEditId] = useState(2); // Edit ID管理 (0,1はrootとdummpyRootで利用)
+  const [darkMode, setDarkMode] = useState(false);
 
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState]);
 
@@ -155,6 +156,7 @@ function MindMap() {
     } else if(command === 'complete') {
     } else if(command === 'completed') {
     } else if(command === 'dark-mode') {
+      setDarkMode(obj);
     }
   }
 
@@ -1090,12 +1092,17 @@ function MindMap() {
 
   // canvasのtranslate用意
   const canvasTransform = `translate(${canvasTranslatePos.x},${canvasTranslatePos.y})`;
+
+  const svgClassName = darkMode ?
+                       'flex-grow h-full bg-black' :
+                       'flex-grow h-full bg-white';
   
   return (
-    <svg ref={svg} className='flex-grow h-full'
-    onMouseDown={handleMouseDown}
-    onMouseMove={handleMouseMove}
-    onDoubleClick={handleDoubleClick}
+    <svg ref={svg}
+         className={svgClassName}
+         onMouseDown={handleMouseDown}
+         onMouseMove={handleMouseMove}
+         onDoubleClick={handleDoubleClick}
     >
       <g id='canvas' ref={canvas} transform={canvasTransform}>
         <g id='nodes'>
@@ -1105,6 +1112,7 @@ function MindMap() {
             drawStateMap={drawStateMap}
             edgeStartX={0}
             edgeStartY={0}
+            darkMode={darkMode}
           />
         </g>
         {
@@ -1129,6 +1137,7 @@ function MindMap() {
             isLeft={textInputState.isLeft}
             textSelected={textInputState.textSelected}
             handleDecidedText={handleDecidedText}
+            darkMode={darkMode}
           />
         }
       </g>

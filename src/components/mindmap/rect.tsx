@@ -2,7 +2,7 @@ interface RectProps {
   x : number;
   y : number;
   width : number;
-  height : number;  
+  height : number;
 }
 
 export const Rect = (props: RectProps) => {

@@ -88,22 +88,30 @@ const formatEmoji = (text : string) => {
 const getHoverSelectedStyle = (
   hoverState : number,
   selected: boolean,
-  isRoot: boolean) : string => {
+  isRoot: boolean,
+  darkMode: darkMode) : string => {
   
   let styleClass : string = '';
   
   if(hoverState === HOVER_STATE_TOP) {
-    styleClass = 'bg-gradient-to-t from-white to-gray-400';
+    styleClass = darkMode ?
+                 'bg-gradient-to-t from-black to-gray-400' :
+                 'bg-gradient-to-t from-white to-gray-400';
   } else if( hoverState === HOVER_STATE_RIGHT ) {
-    styleClass = 'bg-gradient-to-r from-white to-gray-400';
+    styleClass = darkMode ?
+                 'bg-gradient-to-r from-black to-gray-400' :
+                 'bg-gradient-to-r from-white to-gray-400';
   } else if( hoverState === HOVER_STATE_LEFT ) {
-    styleClass = 'bg-gradient-to-l from-white to-gray-400';
+    styleClass = darkMode ?
+                 'bg-gradient-to-l from-black to-gray-400' :
+                 'bg-gradient-to-l from-white to-gray-400';
   } else if(selected) {
-    styleClass = 'bg-gray-300';
+    // TODO: 色味調整
+    styleClass = darkMode ? 'bg-gray-600' : 'bg-gray-300';
   } else if(isRoot) {
-    styleClass = 'bg-white';
+    styleClass = darkMode ? 'bg-black' : 'bg-white';
   }
-
+    
   return styleClass
 }
 
@@ -115,19 +123,29 @@ interface TextProps {
   height : number;
   x: number;
   y: number;
-  hoverState: number;
-  selected: boolean;
+  hoverState : number;
+  selected : boolean;
+  darkMode : boolean;
 }
 
 const Text = (props: TextProps) => {
   const classList: string[] = [];
   if(props.isRoot) {
-    classList.push('border border-gray-500 rounded-md p-[2px_3px_3px_4px] text-black');
+    classList.push('border border-gray-500 rounded-md p-[2px_3px_3px_4px]');
   } else {
     classList.push('border-b border-gray-500 p-[0px_3px_0px_4px]');
   }
+
+  if( props.darkMode ) {
+    classList.push('text-white');
+  } else {
+    classList.push('text-black');
+  }
   
-  const hoverSelectedStyle = getHoverSelectedStyle(props.hoverState, props.selected, props.isRoot);
+  const hoverSelectedStyle = getHoverSelectedStyle(props.hoverState,
+                                                   props.selected,
+                                                   props.isRoot,
+                                                   props.darkMode);
 
   if(hoverSelectedStyle !== '') {
     classList.push(hoverSelectedStyle);
@@ -154,7 +172,7 @@ interface LineProps {
   x1 : number;
   y1 : number;
   x2 : number;
-  y2 : number;  
+  y2 : number;
 }
 
 const Line = (props: LineProps) => {
@@ -175,15 +193,18 @@ const FOLD_MARK_RADIUS = 3;
 interface FoldMarkProps {
   x : number;
   y : number;
+  darkMode: boolean;
 }
 
 const FoldMark = (props: FoldMarkProps) => {
+  const fillColor = props.darkMode ? '#000000' : '#ffffff';
+  
   return (
     <circle
-    stroke='rgb(107,114,128)'
-    fill='#ffffff'
-    strokeWidth='1'
-    cx={props.x}
+      stroke='rgb(107,114,128)'
+      fill={fillColor}
+      strokeWidth='1'
+      cx={props.x}
       cy={props.y}
       r={FOLD_MARK_RADIUS}
     >
@@ -195,13 +216,16 @@ const FoldMark = (props: FoldMarkProps) => {
 interface HandleProps {
   x : number;
   y : number;
+  darkMode : boolean;
 }
 
 const Handle = (props: HandleProps) => {
+  const fillColor = props.darkMode ? '#000000' : '#ffffff';
+  
   return (
     <ellipse
     stroke='#7f7f7f'
-    fill='#ffffff'
+    fill={fillColor}
     strokeWidth='1'
     cx={props.x + HANDLE_WIDTH/2}
     cy={props.y + HANDLE_HEIGHT/2}
@@ -216,12 +240,13 @@ const Handle = (props: HandleProps) => {
 interface NodeProps {
   state: NodeState;
   drawStateMap: NodeDrawStateMapType;
-  edgeStartX: number,
-  edgeStartY: number
+  edgeStartX: number;
+  edgeStartY: number;
+  darkMode : boolean;
 }
 
 export const Node = (props: NodeProps) => {
-  const { state, drawStateMap, edgeStartX, edgeStartY } = props;
+  const { state, drawStateMap, edgeStartX, edgeStartY, darkMode } = props;
 
   const displayText = getTextWithSymbol(state.text, state.symbol);
 
@@ -252,6 +277,7 @@ export const Node = (props: NodeProps) => {
              drawStateMap={drawStateMap}
              edgeStartX={edgeStartX}
              edgeStartY={edgeStartY}
+             darkMode={darkMode}
            />
          )
         )
@@ -266,6 +292,7 @@ export const Node = (props: NodeProps) => {
               drawStateMap={drawStateMap}
               edgeStartX={childEdgeStartX}
               edgeStartY={childEdgeStartY}
+              darkMode={darkMode}
             />
           )
         )
@@ -281,6 +308,7 @@ export const Node = (props: NodeProps) => {
           y={y}
           hoverState={state.hoverState}
           selected={state.selected}
+          darkMode={darkMode}
         ></Text>
       }
       {
@@ -297,6 +325,7 @@ export const Node = (props: NodeProps) => {
         <FoldMark
           x={foldMarkX}
           y={foldMarkY}
+          darkMode={darkMode}
         ></FoldMark>
       }
       {
@@ -304,6 +333,7 @@ export const Node = (props: NodeProps) => {
         <Handle
           x={handleX}
           y={handleY}
+          darkMode={darkMode}
         ></Handle>
       }
     </>

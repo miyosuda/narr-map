@@ -154,7 +154,9 @@ function MindMap() {
     } else if(command === 'new-file') {
       newFile();
     } else if(command === 'complete') {
+      complete();
     } else if(command === 'completed') {
+      completed(obj);
     } else if(command === 'dark-mode') {
       setDarkMode(obj);
     }
@@ -234,6 +236,16 @@ function MindMap() {
     const savingRootState = getSavingNodeState(rootState);
     nmAPI.sendMessage('response-export', savingRootState);
   }
+
+  const complete = () => {
+    const savingRootState = getSavingNodeState(rootState);
+    nmAPI.sendMessage('response-complete', savingRootState);
+  }
+
+  const completed = (savingState: SavingState) => {
+    // TODO: 対応ここから
+    const newRootState = getNodeStateFromSaving(savingState);
+  }  
 
   const load = (savingState: SavingState) => {
     const newRootState = getNodeStateFromSaving(savingState);

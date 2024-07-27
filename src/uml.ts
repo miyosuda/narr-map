@@ -1,4 +1,6 @@
-import { StateType } from './types';
+import { NodeState, SavingNodeState } from './types';
+
+type StateType = NodeState | SavingNodeState;
 
 
 function getStateUMLStr(state : StateType,
@@ -6,7 +8,7 @@ function getStateUMLStr(state : StateType,
                         skip : boolean,
                         isLeft : boolean) : string {
 
-  let uml = '';
+                          let uml = '';
   const char = isLeft ? '-' : '+';
 
   if(!skip) {
@@ -26,7 +28,7 @@ function getStateUMLStr(state : StateType,
 }
 
 
-export function convertStateToPlanetUML(state : StateType) : string {
+export function convertStateToPlantUML(state : StateType) : string {
   let uml = '@startmindmap\n';
 
   uml += getStateUMLStr(state, 1, false, false);
@@ -122,7 +124,7 @@ class Stack<T> {
 
 
 
-export function convertPlanetUMLToState(uml : string) : StateType {
+export function convertPlantUMLToState(uml : string) : StateType {
   const lines = uml.split('\n');
   
   const rightStack = new Stack<UMLNode>();

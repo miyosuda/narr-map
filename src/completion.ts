@@ -1,19 +1,21 @@
 import OpenAI from 'openai';
 
-import { StateType } from './types'
-import { convertStateToPlanetUML, convertPlanetUMLToState } from './uml';
+
+import { NodeState } from './types'
+import { convertStateToPlantUML, convertPlantUMLToState } from './uml';
+import { cloneNodeState } from './utils/node-utils';
 
 
 const COMPLETION_MODEL : string = 'gpt-4o';
 
 
 class CompletionNode {
-  state : StateType;
+  state : NodeState;
   children : Array<CompletionNode> = []
   targetIndex : number = -1;
   completed : boolean = false;
   
-  constructor(state : StateType) {
+  constructor(state : NodeState) {
     this.state = state;
   }
 
@@ -43,7 +45,7 @@ class CompletionNode {
 }
 
 
-function parseState(state : StateType,
+function parseState(state : NodeState,
                     parentNode : CompletionNode | null,
                     targetNodes : Array<CompletionNode>) {
   
@@ -53,7 +55,7 @@ function parseState(state : StateType,
     parentNode.addChildNode(node);
   }
   
-  state.children.forEach((childState : StateType) => {
+  state.children.forEach((childState : NodeState) => {
     parseState(childState, node, targetNodes);
   });
   
@@ -78,7 +80,7 @@ function parseCompletionLine(str: string): { index: number, text: string } | nul
 
 
 function parseCompletionResponse(response : string,
-                       targetNodeMap : { [index: number]: CompletionNode }) {
+                                 targetNodeMap : { [index: number]: CompletionNode }) {
   const lines = response.split(/\n/);
   lines.forEach((line : string) => {
     const ret = parseCompletionLine(line);
@@ -91,21 +93,21 @@ function parseCompletionResponse(response : string,
 
 
 export async function completeState(openaiApiKey: string,
-                                    state : StateType,
+                                    state : NodeState,
                                     abortController : AbortController) {
 
   const openai = new OpenAI({
     apiKey: openaiApiKey
   });
 
-  state = structuredClone(state);
+  state = cloneNodeState(state);
   
   const targetNodes : Array<CompletionNode> = [];
   const targetMap : Array<CompletionNode> = [];
   const targetNodeMap: { [index: number]: CompletionNode } = {};
   
-  const rightRootNode = parseState(state['right'], null, targetNodes);
-  const leftRootNode = parseState(state['left'], null, targetNodes);
+  parseState(state, null, targetNodes);
+  parseState(state['accompaniedState'], null, targetNodes);
 
   for(let i:number=0; i<targetNodes.length; i++) {
     targetNodes[i].setTargetIndex(i);
@@ -119,7 +121,7 @@ export async function completeState(openaiApiKey: string,
 
   const targetNodeSize = targetNodes.length;
   
-  const uml = convertStateToPlanetUML(state);
+  const uml = convertStateToPlantUML(state);
 
   const targetListStr =
     targetNodeSize < 1
@@ -169,6 +171,6 @@ ${uml}
   targetNodes.forEach((targetNode : CompletionNode) => {
     targetNode.cleanup();
   });
-  
+
   return state;
 }

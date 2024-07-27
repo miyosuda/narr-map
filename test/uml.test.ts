@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { convertStateToPlanetUML, convertPlanetUMLToState } from '../src/uml'
+import { convertStateToPlantUML, convertPlantUMLToState } from '../src/uml'
 
 describe('UML', () => {
-  it('should be able convert state to PlanetUML', () => {
+  it('should be able convert state to PlantUML', () => {
     const state = {
       'text' : 'a',
       'children' : [
@@ -26,7 +26,7 @@ describe('UML', () => {
       }
     };
     
-    const uml = convertStateToPlanetUML(state);
+    const uml = convertStateToPlantUML(state);
     
     const expectedUML = `@startmindmap
 + a
@@ -40,7 +40,7 @@ describe('UML', () => {
   });
 
 
-  it('should be able convert PlanetUML to state', () => {
+  it('should be able convert PlantUML to state', () => {
     const uml = `@startmindmap
 + a
 ++ 1
@@ -59,7 +59,7 @@ describe('UML', () => {
 @endmindmap
 `;
 
-    const state = convertPlanetUMLToState(uml);
+    const state = convertPlantUMLToState(uml);
     
     expect(state.text).toBe('a');
     expect(state.isLeft).toBe(false);

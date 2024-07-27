@@ -4,7 +4,7 @@ import { dialog } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import Store, { Schema } from 'electron-store';
-import { convertStateToPlanetUML, convertPlanetUMLToState } from './uml';
+import { convertStateToPlantUML, convertPlantUMLToState } from './uml';
 import { completeState } from './completion'
 import { migrateState1to2 } from '../src/migrate'
 
@@ -224,7 +224,7 @@ ipc.on('response', (event : IpcMainEvent,
 
     onSaveFinished()
   } else if( arg == 'response-export' ) {
-    const uml = convertStateToPlanetUML(obj);
+    const uml = convertStateToPlantUML(obj);
     
     fs.writeFile(exportFilePath, uml, (error : NodeJS.ErrnoException) => {
       if(error != null) {
@@ -281,7 +281,7 @@ const saveOptions = {
 };
 
 const exportOptions = {
-  title: 'Export (PlanetUML)',
+  title: 'Export (PlantUML)',
   filters: [
     {
       name: 'Data',
@@ -403,7 +403,7 @@ const importUML = (browserWindow : BrowserWindow,
     
     if(buffer != null) {
       const uml = buffer.toString('utf8');
-      const state = convertPlanetUMLToState(uml);
+      const state = convertPlantUMLToState(uml);
       browserWindow.webContents.send('request', 'load', state);
 
       editDirty = true;
@@ -551,7 +551,7 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
         label: 'Export',
         "submenu":[
           {
-            label: 'PlanetUML',
+            label: 'PlantUML',
             accelerator: 'CmdOrCtrl+Shift+E',
             click: (menuItem : MenuItem, browserWindow : BrowserWindow, event : KeyboardEvent) => {
               exportAs(browserWindow);
@@ -563,7 +563,7 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
         label: 'Import',
         "submenu":[
           {
-            label: 'PlanetUML',
+            label: 'PlantUML',
             accelerator: 'CmdOrCtrl+Shift+O',
             click: (menuItem : MenuItem,
                     browserWindow : BrowserWindow,
@@ -572,8 +572,8 @@ const templateMenu : Electron.MenuItemConstructorOptions[] = [
                         const options : Electron.OpenDialogSyncOptions = {
                           properties: ['openFile'],
                           filters: [
-                            { name: 'PlanetUML',
-                              extensions: ['pu', 'wsd', 'puml', 'planetuml', 'iuml'] },
+                            { name: 'PlantUML',
+                              extensions: ['pu', 'wsd', 'puml', 'plantuml', 'iuml'] },
                           ]
                         }
                         const pathes = dialog.showOpenDialogSync(options)

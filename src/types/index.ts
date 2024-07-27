@@ -3,7 +3,7 @@ export const HOVER_STATE_TOP   = 1;
 export const HOVER_STATE_RIGHT = 2;
 export const HOVER_STATE_LEFT  = 3;
 
-export const EDIT_STATE_NONE = 0;
+export const EDIT_STATE_NONE   = 0;
 export const EDIT_STATE_NORMAL = 1;
 export const EDIT_STATE_INSERT = 2;
 
@@ -11,6 +11,7 @@ export const EDIT_STATE_INSERT = 2;
 // State of the node
 export type NodeState = {
   id: number;
+  
   text: string;
   symbol: string | null;  
   shiftX: number;
@@ -18,16 +19,14 @@ export type NodeState = {
   selected: boolean;
   folded: boolean;
   isLeft: boolean;
-  
   accompaniedState: NodeState | null;
-
   children: NodeState[];
+  
   parent: NodeState | null;
 
-  hoverState : number;
-  handleShown : boolean;
+  hoverState: number;
+  handleShown: boolean;
   editId: number;
-
   editState: number;
 }
 

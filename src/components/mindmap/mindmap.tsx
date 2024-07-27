@@ -238,14 +238,12 @@ function MindMap() {
   }
 
   const complete = () => {
-    const savingRootState = getSavingNodeState(rootState);
-    nmAPI.sendMessage('response-complete', savingRootState);
+    nmAPI.sendMessage('response-complete', rootState);
   }
 
-  const completed = (savingState: SavingState) => {
-    // TODO: 対応ここから
-    const newRootState = getNodeStateFromSaving(savingState);
-  }  
+  const completed = (newRootState: NodeState) => {
+    setRootStateWithHistory(newRootState);
+  }
 
   const load = (savingState: SavingState) => {
     const newRootState = getNodeStateFromSaving(savingState);

@@ -107,7 +107,7 @@ const getHoverSelectedStyle = (
                  'bg-gradient-to-l from-white to-gray-400';
   } else if(selected) {
     // TODO: 色味調整
-    styleClass = darkMode ? 'bg-gray-600' : 'bg-gray-300';
+    styleClass = darkMode ? 'bg-zinc-600' : 'bg-gray-300';
   } else if(isRoot) {
     styleClass = darkMode ? 'bg-black' : 'bg-white';
   }

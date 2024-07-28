@@ -8,6 +8,7 @@ import {
 import { Node }  from './node';
 import { Rect } from './rect'
 import { TextInput } from './text-input';
+import { Spinner } from './spinner';
 import {
   getNodeState, cloneNodeState,
   isRoot, isDummy, hasNodeInAncestor, calcDepth, 
@@ -101,6 +102,7 @@ function MindMap() {
   const [nextNodeId, setNextNodeId] = useState(2); // Node ID管理 (0,1はrootとdummpyRootで利用)
   const [nextEditId, setNextEditId] = useState(2); // Edit ID管理 (0,1はrootとdummpyRootで利用)
   const [darkMode, setDarkMode] = useState(false);
+  const [connecting, setConnecting] = useState(false);
 
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState]);
 
@@ -239,10 +241,12 @@ function MindMap() {
 
   const complete = () => {
     nmAPI.sendMessage('response-complete', rootState);
+    setConnecting(true);
   }
 
   const completed = (newRootState: NodeState) => {
     setRootStateWithHistory(newRootState);
+    setConnecting(false);
   }
 
   const load = (savingState: SavingState) => {
@@ -1106,7 +1110,7 @@ function MindMap() {
   const svgClassName = darkMode ?
                        'flex-grow h-full bg-black' :
                        'flex-grow h-full bg-white';
-  
+
   return (
     <svg ref={svg}
          className={svgClassName}
@@ -1114,6 +1118,13 @@ function MindMap() {
          onMouseMove={handleMouseMove}
          onDoubleClick={handleDoubleClick}
     >
+      {
+        connecting &&
+        <Spinner
+          darkMode={darkMode}
+        />
+      }
+      
       <g id='canvas' ref={canvas} transform={canvasTransform}>
         <g id='nodes'>
           <Node

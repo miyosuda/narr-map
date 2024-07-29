@@ -805,14 +805,17 @@ function MindMap() {
     }
     
     const modifyStateForCopy = (state: NodeState) : NodeState => {
+      // TODO: getExtendedChildren()は、accompaniedStateを含んでしまっているのでここでは使えないが、
+      // getExtendedChildren()の方を変更することで共通化できる可能性がある.
+      const stretchedChildren = (isRoot(state) && !isDummy(state)) ? [...state.children, ...(state.accompaniedState!.children)] : state.children;
+      
       return {
         ...state,
         isLeft: targetNode.isLeft,
         id: getNextNodeId(),
         editId: getNextEditId(),
-        children: state.children.map(modifyStateForCopy),
-        accompaniedState: state.accompaniedState != null ?
-        modifyStateForCopy(state.accompaniedState) : null,
+        children: stretchedChildren.map(modifyStateForCopy),
+        accompaniedState: null,
         selected: false,
       };
     }

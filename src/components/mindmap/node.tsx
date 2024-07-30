@@ -13,6 +13,8 @@ const GREEN_CIRCLE_EMOJI  = String.fromCodePoint(0x1F7E2);
 const BLUE_CIRCLE_EMOJI   = String.fromCodePoint(0x1F535);
 const YELLOW_CIRCLE_EMOJI = String.fromCodePoint(0x1F7E1);
 
+const LINE_RGB_COLOR = 'rgb(107,114,128)'; // tailwindのbg-gray-500?と合わせた色味
+
 const calcEdgeOutPos = (state: NodeState,
                         x: number,
                         y: number,
@@ -178,11 +180,11 @@ interface LineProps {
 const Line = (props: LineProps) => {
   return (
     <line
-    x1={props.x1}
+      x1={props.x1}
       y1={props.y1}
       x2={props.x2}
       y2={props.y2}
-      stroke='rgb(107,114,128)' // tailwindのbg-400と合わせた色味
+      stroke={LINE_RGB_COLOR}
       strokeWidth='1'>
     </line>
   )
@@ -201,7 +203,7 @@ const FoldMark = (props: FoldMarkProps) => {
   
   return (
     <circle
-      stroke='rgb(107,114,128)'
+      stroke={LINE_RGB_COLOR}
       fill={fillColor}
       strokeWidth='1'
       cx={props.x}

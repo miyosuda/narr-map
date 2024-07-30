@@ -110,7 +110,7 @@ export const TextInput = (props: TextInputProps) => {
     setComposing(false);
   }
   
-  let className = 'p-0 px-1 block border border-gray-400 w-full resize-none focus:outline-none font-custom';
+  let className = 'p-0 px-1 block border border-zinc-400 w-full resize-none focus:outline-none font-custom';
   if(props.isLeft) {
     className = className + ' text-right';
   } else {

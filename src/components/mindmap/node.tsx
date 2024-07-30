@@ -13,7 +13,7 @@ const GREEN_CIRCLE_EMOJI  = String.fromCodePoint(0x1F7E2);
 const BLUE_CIRCLE_EMOJI   = String.fromCodePoint(0x1F535);
 const YELLOW_CIRCLE_EMOJI = String.fromCodePoint(0x1F7E1);
 
-const LINE_RGB_COLOR = 'rgb(107,114,128)'; // tailwindのbg-gray-500?と合わせた色味
+const LINE_RGB_COLOR = 'rgb(113,113,122)'; // tailwindのzinc-500と合わせた色味
 
 const calcEdgeOutPos = (state: NodeState,
                         x: number,
@@ -97,19 +97,19 @@ const getHoverSelectedStyle = (
   
   if(hoverState === HOVER_STATE_TOP) {
     styleClass = darkMode ?
-                 'bg-gradient-to-t from-black to-gray-400' :
-                 'bg-gradient-to-t from-white to-gray-400';
+                 'bg-gradient-to-t from-black to-zinc-400' :
+                 'bg-gradient-to-t from-white to-zinc-400';
   } else if( hoverState === HOVER_STATE_RIGHT ) {
     styleClass = darkMode ?
-                 'bg-gradient-to-r from-black to-gray-400' :
-                 'bg-gradient-to-r from-white to-gray-400';
+                 'bg-gradient-to-r from-black to-zinc-400' :
+                 'bg-gradient-to-r from-white to-zinc-400';
   } else if( hoverState === HOVER_STATE_LEFT ) {
     styleClass = darkMode ?
-                 'bg-gradient-to-l from-black to-gray-400' :
-                 'bg-gradient-to-l from-white to-gray-400';
+                 'bg-gradient-to-l from-black to-zinc-400' :
+                 'bg-gradient-to-l from-white to-zinc-400';
   } else if(selected) {
     // TODO: 色味調整
-    styleClass = darkMode ? 'bg-zinc-600' : 'bg-gray-300';
+    styleClass = darkMode ? 'bg-zinc-600' : 'bg-zinc-300';
   } else if(isRoot) {
     styleClass = darkMode ? 'bg-black' : 'bg-white';
   }
@@ -133,9 +133,9 @@ interface TextProps {
 const Text = (props: TextProps) => {
   const classList: string[] = [];
   if(props.isRoot) {
-    classList.push('border border-gray-500 rounded-md p-[2px_3px_3px_4px]');
+    classList.push('border border-zinc-500 rounded-md p-[2px_3px_3px_4px]');
   } else {
-    classList.push('border-b border-gray-500 p-[0px_3px_0px_4px]');
+    classList.push('border-b border-zinc-500 p-[0px_3px_0px_4px]');
   }
 
   if( props.darkMode ) {

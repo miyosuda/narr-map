@@ -31,16 +31,6 @@ const MOVE_LEFT  = 4;
 
 const EDIT_HISTORY_MAX = 30;
 
-// TextInputを開いている時にdocumentに実行させるコマンド
-const execCommands = [
-  'copy',
-  'paste',
-  'cut',
-  'undo',
-  'redo',
-  'selectall',
-];
-
 type Range = {
   left: number,
   right: number,
@@ -119,7 +109,6 @@ function MindMap() {
   const [cursorDepth, setCursorDepth] = useState(0);
   const [copyingStates, setCopyingStates] = useState<NodeState[]>([]);
   
-  
   // SVG, Canvasエレメントへのリファレンス
   const svg = useRef<SVGSVGElement>(null);
   const canvas = useRef<SVGSVGElement>(null);
@@ -166,16 +155,15 @@ function MindMap() {
 
   useEffect(() => {
     // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
-    const offFunc = nmAPI.onReceiveMessage((arg : string, obj : any) => {
+    const offFunc = nmAPI.onReceiveMessage((arg : string, obj : any) => {      
       // textInput表示中かどうか
-      // TODO: save等だった場合は、textInputを閉じて対応する.
       const editingNodeState = findNode(rootState, state => state.editState !== EDIT_STATE_NONE);
       if(editingNodeState != null) {
-        // textInput表示中であれば、documentにコマンドを実行させてtextInput内のundo,redoに対処
-        if( execCommands.some(element => element === arg) ) {
-          document.execCommand(arg);
-        }
+        // textInput表示中だった場合はTextInput側が処理する
       } else {
+        console.log('in MindMap process command: ' + arg); //..
+        
+        // textInput表示中でない場合
         handleCommand(arg, obj);
       }
     });

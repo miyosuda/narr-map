@@ -7,23 +7,23 @@ contextBridge.exposeInMainWorld('nmAPI', {
   invoke: (arg: string): Promise<any> => {
     return ipcRenderer.invoke('invoke', arg);
   },
+  
   sendMessage: (arg : string, obj : any) => {
     ipcRenderer.send('response', arg, obj);
   },
+  
   // main -> renderer
   onReceiveMessage: (listener : ListenerType) => {
 
-    const func = (event: IpcRendererEvent,
-                  arg : string,
-                  obj : any) => {
-                    listener(arg, obj);
-                  };
+    const func = (event: IpcRendererEvent,　arg : string,　obj : any) => {
+      listener(arg, obj);
+    };
     ipcRenderer.on('request', func);
 
-    const offFunc = () => {
+    const cleanupFunc = () => {
       ipcRenderer.off('request', func);
     };
     
-    return offFunc
+    return cleanupFunc;
   },
 });

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { getTextWithSymbol } from '@/utils/node-utils'
+import { getTextWithSymbol } from '@/utils/node-utils';
+const { nmAPI } = window;
 
 
 // 全角を2文字としてカウントする文字列カウント
@@ -60,6 +61,17 @@ interface TextInputProps {
 
 const MARGIN_Y = 1;
 
+// TextInputを開いている時にdocumentに実行させるコマンド
+const execCommands = [
+  'copy',
+  'paste',
+  'cut',
+  'undo',
+  'redo',
+  'selectall',
+];
+
+
 export const TextInput = (props: TextInputProps) => {
   const displayText = getTextWithSymbol(props.text, props.symbol)
   
@@ -68,6 +80,22 @@ export const TextInput = (props: TextInputProps) => {
   const [composing, setComposing] = useState(false);
 
   const textarea = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
+    const offFunc = nmAPI.onReceiveMessage((arg : string, obj : any) => {
+      console.log('in TextInput process command: ' + arg); //..
+      
+      if( execCommands.some(element => element === arg) ) {
+        // copy, paste, cut, undo, redo, selectAllのいずれかだった場合は、
+        // documentにコマンドを実行させてtextInput内のundo,redoに対処.
+        document.execCommand(arg);
+      } else {
+        handleDecidedText(text);
+      }
+    });
+    return offFunc;
+  });
 
   useEffect(() => {
     setText(displayText);

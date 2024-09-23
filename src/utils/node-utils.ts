@@ -402,7 +402,7 @@ export function calcDepth(state: NodeState) : number {
 }
 
 
-export function splitSymbolFromText(text: string) : { symbol: text|null, rawText: text } {
+export function splitSymbolFromText(text: string) : { symbol: string|null, rawText: string } {
   const regex = /\{(\w+)\}\s*=\s*(.+)/;
   const match = regex.exec(text);
 
@@ -415,7 +415,7 @@ export function splitSymbolFromText(text: string) : { symbol: text|null, rawText
       rawText
     }
   } else{
-    const symbol = null;
+    const symbol: string|null = null;
     const rawText = text;
     
     return {
@@ -426,7 +426,7 @@ export function splitSymbolFromText(text: string) : { symbol: text|null, rawText
 }
 
 
-export function getTextWithSymbol(text: string, symbol: string|null) : text {
+export function getTextWithSymbol(text: string, symbol: string|null) : string {
   if(symbol != null) {
     return `{${symbol}} = ${text}`;
   } else {
@@ -456,7 +456,7 @@ export function getSavingNodeState(state: NodeState) : SavingNodeState {
 
 
 type NodeStateAndNextId = {
-  nextId, number,
+  nextId: number,
   state: NodeState,
 }
 

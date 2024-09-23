@@ -1,6 +1,6 @@
 import { 
   NodeState, NodeDrawState,
-  NodeDrawInfoMapType, NodeDrawStateMapType, 
+  NodeDrawStateMapType, 
 } from '@/types'
 
 import { isVisible, isDummy, isRoot, getTextWithSymbol } from './node-utils';

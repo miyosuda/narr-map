@@ -130,11 +130,11 @@ export const TextInput = (props: TextInputProps) => {
     handleDecidedText(e.target.value);
   }
 
-  function handleCompositionStart(e: React.ChangeEvent<HTMLTextAreaElement>) {
+  function handleCompositionStart(e: React.CompositionEvent<HTMLTextAreaElement>) {
     setComposing(true);
   }
 
-  function handleCompositionEnd(e: React.ChangeEvent<HTMLTextAreaElement>) {
+  function handleCompositionEnd(e: React.CompositionEvent<HTMLTextAreaElement>) {
     setComposing(false);
   }
   

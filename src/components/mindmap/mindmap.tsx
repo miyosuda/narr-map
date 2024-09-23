@@ -141,7 +141,7 @@ function MindMap() {
     } else if(command === 'load') {
       load(obj);
     } else if(command === 'export') {
-      export_(obj);
+      export_();
     } else if(command === 'new-file') {
       newFile();
     } else if(command === 'complete') {
@@ -237,7 +237,7 @@ function MindMap() {
     setConnecting(false);
   }
 
-  const load = (savingState: SavingState) => {
+  const load = (savingState: SavingNodeState) => {
     const newRootState = getNodeStateFromSaving(savingState);
     const maxNodeId = getMaxNodeId(newRootState);
     

@@ -91,7 +91,7 @@ const getHoverSelectedStyle = (
   hoverState : number,
   selected: boolean,
   isRoot: boolean,
-  darkMode: darkMode) : string => {
+  darkMode: boolean) : string => {
   
   let styleClass : string = '';
   

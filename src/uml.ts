@@ -1,6 +1,6 @@
-import { NodeState, SavingNodeState } from './types';
+import { SavingNodeState } from './types';
 
-type StateType = NodeState | SavingNodeState;
+type StateType = SavingNodeState;
 
 
 function getStateUMLStr(state : StateType,
@@ -79,21 +79,22 @@ class UMLNode {
   }
 
   getState() : StateType {
+    const childStates = new Array<StateType>()
+    this.children.forEach(node => {
+      childStates.push(node.getState());
+    });
+
     const state : StateType = {
       'text'     : this.text,
+      'symbol'   : null,
       'shiftX'   : 0,
       'shiftY'   : 0,
       'selected' : false,
       'folded'   : false,
       'isLeft'   : this.isLeft,
+      'accompaniedState' : null,
+      'children' : childStates
     };
-    
-    const childStates = new Array<StateType>()
-    this.children.forEach(node => {
-      childStates.push(node.getState());
-    });
-    
-    state['children'] = childStates;
     return state;
   }
 }

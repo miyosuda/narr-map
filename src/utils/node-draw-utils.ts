@@ -115,6 +115,7 @@ export function containsPosHalf(state: NodeState, drawState: NodeDrawState, x: n
 }
 
 // Info used for NodeDrawState calculation
+// Nodeのデフォルト位置を起点として、その位置から子Nodeを含めた上下の相対的な範囲 (一時的に利用される)
 type NodeDrawInfo = {
   topY: number;
   bottomY: number;

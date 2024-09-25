@@ -67,9 +67,13 @@ const getRange = (
   const f = (r: Range, s: NodeState) : Range => {
     return getRange(s, drawStateMap, r);
   }
-
-  const children = getExtendedChildren(state);
-  return children.reduce(f, newRange);
+  
+  if(state.folded) {
+    return newRange;
+  } else {
+    const children = getExtendedChildren(state);
+    return children.reduce(f, newRange);
+  }
 }
 
 

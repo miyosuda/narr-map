@@ -1,45 +1,29 @@
 import { useState, useEffect, useRef } from 'react';
 import { getTextWithSymbol } from '@/utils/node-utils';
+import { getElementDimension } from '@/utils/node-draw-utils';
 const { nmAPI } = window;
 
 
-// 全角を2文字としてカウントする文字列カウント
-const getStringLength = (str : string) => {
-  if( str == null ) {
-    return 0;
-  }
-  
-  let result = 0;
-  for(let i=0; i<str.length; i++) {
-    const chr = str.charCodeAt(i)
-    if((chr >= 0x00 && chr < 0x81) ||
-       (chr === 0xf8f0) ||
-       (chr >= 0xff61 && chr < 0xffa0) ||
-       (chr >= 0xf8f1 && chr < 0xf8f4)) {
-      result += 1;
-    } else {
-      result += 2;
-    }
-  }
-  return result;
-}
-
-
-const getStringLengthAndRow = (str : string, minSize=5) => {
+const getStringWidthAndRow = (str : string) => {
   const texts = str.split('\n');
   const rowSize = texts.length;
 
-  let maxLength = minSize
+  let maxWidth = 80;
+  
   for(let i=0; i<texts.length; i++) {
     const text = texts[i];
-    const length = getStringLength(text);
-    if(length > maxLength) {
-      maxLength = length;
+
+    const innerHTML = '<span>' + text + '</span>';
+    const classForCalcDim = 'p-0 px-1 font-custom';
+    const { width, height } = getElementDimension(innerHTML, classForCalcDim);
+    
+    if(width > maxWidth) {
+      maxWidth = width;
     }
   }
 
   return {
-    length: maxLength,
+    width: maxWidth,
     row: rowSize
   }
 }
@@ -151,10 +135,12 @@ export const TextInput = (props: TextInputProps) => {
     className = className + ' bg-white text-black';
   }
 
-  const {length, row} = getStringLengthAndRow(text);
-  // textareaの取る幅
-  const textAreaWidth = 11 * length + 10;
-  const width = textAreaWidth;
+  const innerHTML = '<span>' + text + '</span>';
+  const classForCalcDim = 'p-0 px-1';
+
+  // textareaの取る幅  
+  let { width, row } = getStringWidthAndRow(innerHTML, classForCalcDim);
+  width = width + 15;
   const height = row * 24 + 6;
 
   const x = props.isLeft ? props.x + props.width - width : props.x;
@@ -176,7 +162,7 @@ export const TextInput = (props: TextInputProps) => {
         onCompositionEnd={handleCompositionEnd}
         onBlur={handleBlur}
         className={className}
-        style={{width:`${textAreaWidth}px`}}
+        style={{width:`${width}px`}}
         rows={row}>
       </textarea>
     </foreignObject>

@@ -12,7 +12,7 @@ const SPAN_Y_PER_NODE = 30.0; // 1ノードの取る縦幅
 const OFFSET_Y_FOR_SINGLE_CHILD = -3.0;
 const GAP_X = 20;
 
-const getElementDimension = (html : string, className : string|null=null) => {
+export function getElementDimension(html : string, className : string|null=null) {
   const element = document.createElement('foreignObject');
 
   // elementのsizeは子に依存

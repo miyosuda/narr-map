@@ -56,12 +56,20 @@ $ npm install
 $ npm start
 ```
 
-
 ### Build
 
+MacOSX arm64
+
 ```
-$ npm run make
+$ npm run make -- --arch=arm64
 ```
+
+
+MacOSX intel
+```
+$ npm run make -- --arch=x64
+```
+
 
 ### Test
 

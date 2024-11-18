@@ -135,11 +135,8 @@ export const TextInput = (props: TextInputProps) => {
     className = className + ' bg-white text-black';
   }
 
-  const innerHTML = '<span>' + text + '</span>';
-  const classForCalcDim = 'p-0 px-1';
-
   // textareaの取る幅  
-  let { width, row } = getStringWidthAndRow(innerHTML, classForCalcDim);
+  let { width, row } = getStringWidthAndRow(text);
   width = width + 15;
   const height = row * 24 + 6;
 

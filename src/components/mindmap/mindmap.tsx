@@ -165,8 +165,6 @@ function MindMap() {
       if(editingNodeState != null) {
         // textInput表示中だった場合はTextInput側が処理する
       } else {
-        console.log('in MindMap process command: ' + arg); //..
-        
         // textInput表示中でない場合
         handleCommand(arg, obj);
       }

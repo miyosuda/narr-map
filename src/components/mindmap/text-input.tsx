@@ -68,8 +68,6 @@ export const TextInput = (props: TextInputProps) => {
   useEffect(() => {
     // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
     const offFunc = nmAPI.onReceiveMessage((arg : string, obj : any) => {
-      console.log('in TextInput process command: ' + arg); //..
-      
       if( execCommands.some(element => element === arg) ) {
         // copy, paste, cut, undo, redo, selectAllのいずれかだった場合は、
         // documentにコマンドを実行させてtextInput内のundo,redoに対処.

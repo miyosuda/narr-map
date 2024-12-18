@@ -135,7 +135,7 @@ export const TextInput = (props: TextInputProps) => {
 
   // textareaの取る幅  
   let { width, row } = getStringWidthAndRow(text);
-  width = width + 15;
+  width = width + 18;
   const height = row * 24 + 6;
 
   const x = props.isLeft ? props.x + props.width - width : props.x;

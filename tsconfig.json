@@ -10,13 +10,12 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "baseUrl": ".",    
+    "baseUrl": ".",
     "paths": {
       "*": ["node_modules/*"],
-      "@/*": ["src/*"]      
+      "@/*": ["src/*"]
     },
-    "jsx": "react-jsx",
-
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*"]
 }

@@ -10,7 +10,7 @@
 body {
   @apply font-hiragino;
   @apply antialiased;
-  
+
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
 }

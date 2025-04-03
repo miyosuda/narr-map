@@ -2,27 +2,27 @@ name: Build
 
 on:
   push:
-    branches: [ build ]
+    branches: [build]
   pull_request:
-    branches: [ build ]
+    branches: [build]
 
 jobs:
   build_on_win:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@master
-      with:
-        node-version: 16
-    - name: install dependencies
-      run: npm install
-    - name: build
-      run: npm run make
-    - name: create release
-      uses: softprops/action-gh-release@v1
-      with:
-        draft: true
-        files: |
-          out/make/squirrel.windows/x64/*.exe
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@master
+        with:
+          node-version: 16
+      - name: install dependencies
+        run: npm install
+      - name: build
+        run: npm run make
+      - name: create release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: |
+            out/make/squirrel.windows/x64/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

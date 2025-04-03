@@ -1,135 +1,127 @@
-import OpenAI from 'openai';
-
+import OpenAI from 'openai'
 
 import { NodeState } from './types'
-import { convertStateToPlantUML, convertPlantUMLToState } from './conversion/uml';
-import { cloneNodeState } from './utils/node-utils';
+import { convertStateToPlantUML, convertPlantUMLToState } from './conversion/uml'
+import { cloneNodeState } from './utils/node-utils'
 
-
-const COMPLETION_MODEL : string = 'gpt-4o';
-
+const COMPLETION_MODEL: string = 'gpt-4o'
 
 class CompletionNode {
-  state : NodeState;
-  children : Array<CompletionNode> = []
-  targetIndex : number = -1;
-  completed : boolean = false;
-  
-  constructor(state : NodeState) {
-    this.state = state;
+  state: NodeState
+  children: Array<CompletionNode> = []
+  targetIndex: number = -1
+  completed: boolean = false
+
+  constructor(state: NodeState) {
+    this.state = state
   }
 
   isEmpty() {
-    return this.state.text == '';
-  }
-  
-  addChildNode(node : CompletionNode) {
-    this.children.push(node);
+    return this.state.text == ''
   }
 
-  setTargetIndex(targetIndex : number) {
-    this.targetIndex = targetIndex;
-    this.state.text = `{{${targetIndex}}}`;
+  addChildNode(node: CompletionNode) {
+    this.children.push(node)
   }
-  
-  setText(text : string) {
-    this.state.text = text;
-    this.completed = true;
+
+  setTargetIndex(targetIndex: number) {
+    this.targetIndex = targetIndex
+    this.state.text = `{{${targetIndex}}}`
   }
-  
+
+  setText(text: string) {
+    this.state.text = text
+    this.completed = true
+  }
+
   cleanup() {
-    if(this.targetIndex >= 0 && !this.completed) {
-      this.state.text = '';
+    if (this.targetIndex >= 0 && !this.completed) {
+      this.state.text = ''
     }
   }
 }
 
+function parseState(
+  state: NodeState,
+  parentNode: CompletionNode | null,
+  targetNodes: Array<CompletionNode>
+) {
+  let node: CompletionNode = new CompletionNode(state)
 
-function parseState(state : NodeState,
-                    parentNode : CompletionNode | null,
-                    targetNodes : Array<CompletionNode>) {
-  
-  let node : CompletionNode = new CompletionNode(state);
-  
-  if( parentNode != null) {
-    parentNode.addChildNode(node);
+  if (parentNode != null) {
+    parentNode.addChildNode(node)
   }
-  
-  state.children.forEach((childState : NodeState) => {
-    parseState(childState, node, targetNodes);
-  });
-  
-  if(node.isEmpty()) {
-    targetNodes.push(node);
+
+  state.children.forEach((childState: NodeState) => {
+    parseState(childState, node, targetNodes)
+  })
+
+  if (node.isEmpty()) {
+    targetNodes.push(node)
   }
-  
-  return node;
+
+  return node
 }
 
-
-function parseCompletionLine(str: string): { index: number, text: string } | null {
-  const match = str.match(/\{\{(\d+)\}\}\s*(.*)/);
+function parseCompletionLine(str: string): { index: number; text: string } | null {
+  const match = str.match(/\{\{(\d+)\}\}\s*(.*)/)
   if (match) {
     return {
       index: parseInt(match[1]),
       text: match[2]
-    };
+    }
   }
-  return null;
+  return null
 }
 
-
-function parseCompletionResponse(response : string,
-                                 targetNodeMap : { [index: number]: CompletionNode }) {
-  const lines = response.split(/\n/);
-  lines.forEach((line : string) => {
-    const ret = parseCompletionLine(line);
-    if(ret != null && ret.index in targetNodeMap) {
-      const targetNode : CompletionNode = targetNodeMap[ret.index];
-      targetNode.setText(ret.text);
+function parseCompletionResponse(
+  response: string,
+  targetNodeMap: { [index: number]: CompletionNode }
+) {
+  const lines = response.split(/\n/)
+  lines.forEach((line: string) => {
+    const ret = parseCompletionLine(line)
+    if (ret != null && ret.index in targetNodeMap) {
+      const targetNode: CompletionNode = targetNodeMap[ret.index]
+      targetNode.setText(ret.text)
     }
   })
 }
 
-
-export async function completeState(openaiApiKey: string,
-                                    state : NodeState,
-                                    abortController : AbortController) {
-
+export async function completeState(
+  openaiApiKey: string,
+  state: NodeState,
+  abortController: AbortController
+) {
   const openai = new OpenAI({
     apiKey: openaiApiKey
-  });
+  })
 
-  state = cloneNodeState(state);
-  
-  const targetNodes : Array<CompletionNode> = [];
-  const targetMap : Array<CompletionNode> = [];
-  const targetNodeMap: { [index: number]: CompletionNode } = {};
-  
-  parseState(state, null, targetNodes);
-  parseState(state['accompaniedState'], null, targetNodes);
+  state = cloneNodeState(state)
 
-  for(let i:number=0; i<targetNodes.length; i++) {
-    targetNodes[i].setTargetIndex(i);
-    targetNodeMap[i] = targetNodes[i];
+  const targetNodes: Array<CompletionNode> = []
+  const targetMap: Array<CompletionNode> = []
+  const targetNodeMap: { [index: number]: CompletionNode } = {}
+
+  parseState(state, null, targetNodes)
+  parseState(state['accompaniedState'], null, targetNodes)
+
+  for (let i: number = 0; i < targetNodes.length; i++) {
+    targetNodes[i].setTargetIndex(i)
+    targetNodeMap[i] = targetNodes[i]
   }
 
-  if(targetNodes.length == 0) {
+  if (targetNodes.length == 0) {
     // 入力をそのまま返す
-    return null;
+    return null
   }
 
-  const targetNodeSize = targetNodes.length;
-  
-  const uml = convertStateToPlantUML(state);
+  const targetNodeSize = targetNodes.length
 
-  const targetListStr =
-    targetNodeSize < 1
-    ?
-    `{{0}}`
-    :
-    `{{0}} ~ {{${targetNodeSize-1}}}`;
-  
+  const uml = convertStateToPlantUML(state)
+
+  const targetListStr = targetNodeSize < 1 ? `{{0}}` : `{{0}} ~ {{${targetNodeSize - 1}}}`
+
   const prompt = `
 \`\`\`
 ${uml}
@@ -143,34 +135,37 @@ ${uml}
 \`\`\`
 {{0}} あいうえお
 \`\`\`
-  `;
+  `
 
-  const signal = abortController.signal;
+  const signal = abortController.signal
 
-  const chatCompletion = await openai.chat.completions.create({
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      }
-    ],
-    model: COMPLETION_MODEL,
-  }, {signal});
+  const chatCompletion = await openai.chat.completions.create(
+    {
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      model: COMPLETION_MODEL
+    },
+    { signal }
+  )
 
-  if(chatCompletion.choices.length == 0) {
-    return null;
+  if (chatCompletion.choices.length == 0) {
+    return null
   }
-  
-  const response : string | null = chatCompletion.choices[0].message.content;
-  if( response == null ) {
-    return null;
-  }
-  
-  parseCompletionResponse(response!, targetNodeMap);
-  
-  targetNodes.forEach((targetNode : CompletionNode) => {
-    targetNode.cleanup();
-  });
 
-  return state;
+  const response: string | null = chatCompletion.choices[0].message.content
+  if (response == null) {
+    return null
+  }
+
+  parseCompletionResponse(response!, targetNodeMap)
+
+  targetNodes.forEach((targetNode: CompletionNode) => {
+    targetNode.cleanup()
+  })
+
+  return state
 }

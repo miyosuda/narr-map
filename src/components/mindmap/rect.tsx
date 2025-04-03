@@ -1,8 +1,8 @@
 interface RectProps {
-  x : number;
-  y : number;
-  width : number;
-  height : number;
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export const Rect = (props: RectProps) => {
@@ -12,9 +12,9 @@ export const Rect = (props: RectProps) => {
       y={props.y}
       width={props.width}
       height={props.height}
-      fill='none'
-      stroke='#7f7f7f'
-      strokeWidth='2'>
-    </rect>
+      fill="none"
+      stroke="#7f7f7f"
+      strokeWidth="2"
+    ></rect>
   )
-};
+}

@@ -1,24 +1,23 @@
-import { useState, useEffect, useRef } from 'react';
-import { getTextWithSymbol } from '@/utils/node-utils';
-import { getElementDimension } from '@/utils/node-draw-utils';
-const { nmAPI } = window;
+import { useState, useEffect, useRef } from 'react'
+import { getTextWithSymbol } from '@/utils/node-utils'
+import { getElementDimension } from '@/utils/node-draw-utils'
+const { nmAPI } = window
 
+const getStringWidthAndRow = (str: string) => {
+  const texts = str.split('\n')
+  const rowSize = texts.length
 
-const getStringWidthAndRow = (str : string) => {
-  const texts = str.split('\n');
-  const rowSize = texts.length;
+  let maxWidth = 80
 
-  let maxWidth = 80;
-  
-  for(let i=0; i<texts.length; i++) {
-    const text = texts[i];
+  for (let i = 0; i < texts.length; i++) {
+    const text = texts[i]
 
-    const innerHTML = '<span>' + text + '</span>';
-    const classForCalcDim = 'p-0 px-1 font-custom';
-    const { width, height } = getElementDimension(innerHTML, classForCalcDim);
-    
-    if(width > maxWidth) {
-      maxWidth = width;
+    const innerHTML = '<span>' + text + '</span>'
+    const classForCalcDim = 'p-0 px-1 font-custom'
+    const { width, height } = getElementDimension(innerHTML, classForCalcDim)
+
+    if (width > maxWidth) {
+      maxWidth = width
     }
   }
 
@@ -28,126 +27,113 @@ const getStringWidthAndRow = (str : string) => {
   }
 }
 
-
 interface TextInputProps {
-  text: string;
-  symbol: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  isRoot: boolean;
-  isLeft: boolean;
-  textSelected: boolean;
-  handleDecidedText: (text: string) => void;
-  darkMode: boolean;
+  text: string
+  symbol: string | null
+  x: number
+  y: number
+  width: number
+  height: number
+  isRoot: boolean
+  isLeft: boolean
+  textSelected: boolean
+  handleDecidedText: (text: string) => void
+  darkMode: boolean
 }
 
-const MARGIN_Y = 1;
+const MARGIN_Y = 1
 
 // TextInputを開いている時にdocumentに実行させるコマンド
-const execCommands = [
-  'copy',
-  'paste',
-  'cut',
-  'undo',
-  'redo',
-  'selectall',
-];
-
+const execCommands = ['copy', 'paste', 'cut', 'undo', 'redo', 'selectall']
 
 export const TextInput = (props: TextInputProps) => {
   const displayText = getTextWithSymbol(props.text, props.symbol)
-  
-  const { handleDecidedText } = props;
-  const [text, setText] = useState(displayText);
-  const [composing, setComposing] = useState(false);
 
-  const textarea = useRef<HTMLTextAreaElement>(null);
+  const { handleDecidedText } = props
+  const [text, setText] = useState(displayText)
+  const [composing, setComposing] = useState(false)
+
+  const textarea = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
-    const offFunc = nmAPI.onReceiveMessage((arg : string, obj : any) => {
-      if( execCommands.some(element => element === arg) ) {
+    const offFunc = nmAPI.onReceiveMessage((arg: string, obj: any) => {
+      if (execCommands.some((element) => element === arg)) {
         // copy, paste, cut, undo, redo, selectAllのいずれかだった場合は、
         // documentにコマンドを実行させてtextInput内のundo,redoに対処.
-        document.execCommand(arg);
+        document.execCommand(arg)
       } else {
-        handleDecidedText(text);
+        handleDecidedText(text)
       }
-    });
-    return offFunc;
-  });
+    })
+    return offFunc
+  })
 
   useEffect(() => {
-    setText(displayText);
+    setText(displayText)
 
-    focus();
-    
-    if(props.textSelected) {
+    focus()
+
+    if (props.textSelected) {
       // テキストをを選択状態に
-      textarea.current!.setSelectionRange(0, displayText.length);
+      textarea.current!.setSelectionRange(0, displayText.length)
     } else {
-      textarea.current!.setSelectionRange(0, 0);
+      textarea.current!.setSelectionRange(0, 0)
     }
-  }, [displayText, props.textSelected]);
+  }, [displayText, props.textSelected])
 
   function focus() {
-    textarea.current!.focus();
+    textarea.current!.focus()
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    const key = e.code;
-    if((key === 'Enter' || key ==='Tab') && !e.shiftKey && !composing) {
-      handleDecidedText(text);
-      e.preventDefault();
+    const key = e.code
+    if ((key === 'Enter' || key === 'Tab') && !e.shiftKey && !composing) {
+      handleDecidedText(text)
+      e.preventDefault()
     }
   }
 
   function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    setText(e.target.value);
+    setText(e.target.value)
   }
 
   function handleBlur(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    handleDecidedText(e.target.value);
+    handleDecidedText(e.target.value)
   }
 
   function handleCompositionStart(e: React.CompositionEvent<HTMLTextAreaElement>) {
-    setComposing(true);
+    setComposing(true)
   }
 
   function handleCompositionEnd(e: React.CompositionEvent<HTMLTextAreaElement>) {
-    setComposing(false);
+    setComposing(false)
   }
-  
-  let className = 'p-0 px-1 block border border-zinc-400 w-full resize-none focus:outline-none font-custom';
-  if(props.isLeft) {
-    className = className + ' text-right';
+
+  let className =
+    'p-0 px-1 block border border-zinc-400 w-full resize-none focus:outline-none font-custom'
+  if (props.isLeft) {
+    className = className + ' text-right'
   } else {
-    className = className + ' text-left';
+    className = className + ' text-left'
   }
 
-  if(props.darkMode) {
-    className = className + ' bg-black text-white';
+  if (props.darkMode) {
+    className = className + ' bg-black text-white'
   } else {
-    className = className + ' bg-white text-black';
+    className = className + ' bg-white text-black'
   }
 
-  // textareaの取る幅  
-  let { width, row } = getStringWidthAndRow(text);
-  width = width + 18;
-  const height = row * 24 + 6;
+  // textareaの取る幅
+  let { width, row } = getStringWidthAndRow(text)
+  width = width + 18
+  const height = row * 24 + 6
 
-  const x = props.isLeft ? props.x + props.width - width : props.x;
-  const y = props.isRoot ? props.y - MARGIN_Y + 2 : props.y - MARGIN_Y;
+  const x = props.isLeft ? props.x + props.width - width : props.x
+  const y = props.isRoot ? props.y - MARGIN_Y + 2 : props.y - MARGIN_Y
 
   return (
-    <foreignObject
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      style={{display:'block'}}>
+    <foreignObject x={x} y={y} width={width} height={height} style={{ display: 'block' }}>
       <textarea
         ref={textarea}
         defaultValue={text}
@@ -157,9 +143,9 @@ export const TextInput = (props: TextInputProps) => {
         onCompositionEnd={handleCompositionEnd}
         onBlur={handleBlur}
         className={className}
-        style={{width:`${width}px`}}
-        rows={row}>
-      </textarea>
+        style={{ width: `${width}px` }}
+        rows={row}
+      ></textarea>
     </foreignObject>
   )
 }

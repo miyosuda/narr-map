@@ -14,8 +14,7 @@ contextBridge.exposeInMainWorld('nmAPI', {
   
   // main -> renderer
   onReceiveMessage: (listener : ListenerType) => {
-
-    const func = (event: IpcRendererEvent,　arg : string,　obj : any) => {
+    const func = (event: IpcRendererEvent, arg : string, obj : any) => {
       listener(arg, obj);
     };
     ipcRenderer.on('request', func);

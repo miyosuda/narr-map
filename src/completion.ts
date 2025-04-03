@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 
 
 import { NodeState } from './types'
-import { convertStateToPlantUML, convertPlantUMLToState } from './uml';
+import { convertStateToPlantUML, convertPlantUMLToState } from './conversion/uml';
 import { cloneNodeState } from './utils/node-utils';
 
 

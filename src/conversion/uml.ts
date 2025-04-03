@@ -1,4 +1,4 @@
-import { SavingNodeState } from './types';
+import { SavingNodeState } from '../types';
 
 type StateType = SavingNodeState;
 

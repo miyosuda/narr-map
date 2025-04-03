@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { migrateState1to2 } from '../src/migrate'
+import { migrateState1to2 } from '../src/conversion/migrate'
 
 describe('Migrate', () => {
   it('from 1 to 2', () => {

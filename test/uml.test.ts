@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { convertStateToPlantUML, convertPlantUMLToState } from '../src/uml'
+import { convertStateToPlantUML, convertPlantUMLToState } from '../src/conversion/uml'
+import { SavingNodeState } from '../src/types'
 
 describe('UML', () => {
   it('should be able convert state to PlantUML', () => {
@@ -26,7 +27,7 @@ describe('UML', () => {
       }
     };
     
-    const uml = convertStateToPlantUML(state);
+    const uml = convertStateToPlantUML(state as unknown as SavingNodeState);
     
     const expectedUML = `@startmindmap
 + a
@@ -67,10 +68,10 @@ describe('UML', () => {
     expect(state.children[0].text).toBe('1');
     expect(state.children[0].isLeft).toBe(false);
 
-    expect(state.accompaniedState.text).toBe(null);
-    expect(state.accompaniedState.isLeft).toBe(true);
+    expect(state.accompaniedState?.text).toBe(null);
+    expect(state.accompaniedState?.isLeft).toBe(true);
 
-    expect(state.accompaniedState.children[0].text).toBe('L1');
-    expect(state.accompaniedState.children[0].isLeft).toBe(true); 
+    expect(state.accompaniedState?.children[0].text).toBe('L1');
+    expect(state.accompaniedState?.children[0].isLeft).toBe(true); 
   });
 })

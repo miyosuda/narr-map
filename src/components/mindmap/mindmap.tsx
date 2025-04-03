@@ -145,7 +145,7 @@ function MindMap() {
     } else if(command === 'load') {
       load(obj);
     } else if(command === 'export') {
-      export_();
+      export_(obj);
     } else if(command === 'new-file') {
       newFile();
     } else if(command === 'complete') {
@@ -223,10 +223,10 @@ function MindMap() {
     nmAPI.sendMessage('response-save', savingRootState);
   }
 
-  const export_ = () => {
+  const export_ = (format: string) => {
     // TODO: useEffectの利用を検討
     const savingRootState = getSavingNodeState(rootState);
-    nmAPI.sendMessage('response-export', savingRootState);
+    nmAPI.sendMessage('response-export', [savingRootState, format]);
   }
 
   const complete = () => {

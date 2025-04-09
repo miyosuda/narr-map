@@ -1,3 +1,5 @@
+.PHONY: run build
+
 run:
 	npm start
 

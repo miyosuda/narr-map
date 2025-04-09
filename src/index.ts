@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, MenuItem, IpcMainEvent, Event, Input } from 'electron'
 import { ipcMain as ipc } from 'electron'
 import { dialog } from 'electron'
+import { clipboard } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import Store, { Schema } from 'electron-store'
@@ -250,6 +251,10 @@ ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
         console.error(error)
         completionAbortController = null
       })
+  } else if (arg == 'response-clipboard-export') {
+    const state = obj
+    const content = convertStateToYAML(state)
+    clipboard.writeText(content)
   }
 })
 
@@ -592,6 +597,18 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
               } else {
                 requestImport()
               }
+            }
+          }
+        ]
+      },
+      {
+        label: 'Copy to Clipboard',
+        submenu: [
+          {
+            label: 'YAML',
+            accelerator: 'CmdOrCtrl+Y',
+            click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+              browserWindow.webContents.send('request', 'clipboard-export')
             }
           }
         ]

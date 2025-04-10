@@ -31,9 +31,8 @@ An intuitive and user-friendly mind map editor with a FreeMind-compatible interf
 
 ## Downloads
 
-- [MacOSX (Apple Silicon)](https://github.com/miyosuda/narr-map/releases/download/v0.0.6/narr-map-darwin-arm64-0.0.6.zip)
-- [MaxOSX (Intel)](https://github.com/miyosuda/narr-map/releases/download/v0.0.6/narr-map-darwin-x64-0.0.6.zip)
-- [Windows (Experimental)](https://github.com/miyosuda/narr-map/releases/download/v0.0.6/narr-map-0.0.6.Setup.exe)
+- [MacOSX (Apple Silicon)](https://github.com/miyosuda/narr-map/releases/download/v0.0.7/narr-map-darwin-arm64-0.0.7.zip)
+- [Windows (Experimental)](https://github.com/miyosuda/narr-map/releases/download/v0.0.7/narr-map-0.0.7.Setup.exe)
 
 ## Icons
 

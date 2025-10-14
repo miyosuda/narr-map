@@ -8,12 +8,16 @@ const execCommands = ['copy', 'paste', 'cut', 'undo', 'redo', 'selectall']
 const Setting = () => {
   const [darkMode, setDarkMode] = useState(false)
   const [openaiApiKey, setOpenAIApiKey] = useState('')
+  const [completionModel, setCompletionModel] = useState('')
+  const [completionContext, setCompletionContext] = useState('')
 
   useEffect(() => {
     const fetchSettings = async () => {
       const settingData = await nmAPI.invoke('get-settings')
       setDarkMode(settingData.darkMode)
       setOpenAIApiKey(settingData.openaiApiKey)
+      setCompletionModel(settingData.completionModel)
+      setCompletionContext(settingData.completionContext)
     }
 
     nmAPI.onReceiveMessage((arg: string, obj: any) => {
@@ -35,6 +39,18 @@ const Setting = () => {
     const newOpenaiApiKey = event.target.value
     setOpenAIApiKey(newOpenaiApiKey)
     nmAPI.sendMessage('settings-set-openai-api-key', newOpenaiApiKey)
+  }
+
+  const handleCompletionModelChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newCompletionModel = event.target.value
+    setCompletionModel(newCompletionModel)
+    nmAPI.sendMessage('settings-set-completion-model', newCompletionModel)
+  }
+
+  const handleCompletionContextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newCompletionContext = event.target.value
+    setCompletionContext(newCompletionContext)
+    nmAPI.sendMessage('settings-set-completion-context', newCompletionContext)
   }
 
   return (
@@ -63,6 +79,24 @@ const Setting = () => {
             onChange={handleOpenAIApiKeyChange}
             className="flex-grow p-1 text-base border border-gray-300 rounded"
           />
+        </div>
+        <div className="flex items-center mb-4">
+          <label htmlFor="completion-model" className="text-base w-32">
+            Completion model
+          </label>
+          <input
+            type="text"
+            id="completion-model"
+            value={completionModel}
+            onChange={handleCompletionModelChange}
+            className="flex-grow p-1 text-base border border-gray-300 rounded"
+          />
+        </div>
+        <div className="flex items-center mb-4">
+          <label htmlFor="completion-context" className="text-base w-32">
+            Completion context
+          </label>
+          <textarea id="completion-context" value={completionContext} onChange={handleCompletionContextChange} className="flex-grow p-1 text-base border border-gray-300 rounded h-40" />
         </div>
       </div>
     </div>

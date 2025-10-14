@@ -4,8 +4,6 @@ import { NodeState } from './types'
 import { convertStateToPlantUML, convertPlantUMLToState } from './conversion/uml'
 import { cloneNodeState } from './utils/node-utils'
 
-const COMPLETION_MODEL: string = 'gpt-4o'
-
 class CompletionNode {
   state: NodeState
   children: Array<CompletionNode> = []
@@ -90,7 +88,9 @@ function parseCompletionResponse(
 
 export async function completeState(
   openaiApiKey: string,
+  completionModel: string,
   state: NodeState,
+  completionContext: string,
   abortController: AbortController
 ) {
   const openai = new OpenAI({
@@ -100,7 +100,6 @@ export async function completeState(
   state = cloneNodeState(state)
 
   const targetNodes: Array<CompletionNode> = []
-  const targetMap: Array<CompletionNode> = []
   const targetNodeMap: { [index: number]: CompletionNode } = {}
 
   parseState(state, null, targetNodes)
@@ -122,7 +121,7 @@ export async function completeState(
 
   const targetListStr = targetNodeSize < 1 ? `{{0}}` : `{{0}} ~ {{${targetNodeSize - 1}}}`
 
-  const prompt = `
+  let prompt = `
 \`\`\`
 ${uml}
 \`\`\`
@@ -137,6 +136,14 @@ ${uml}
 \`\`\`
   `
 
+  if (completionContext != '') {
+    prompt += `
+また、上記の出力を行う上で、下記の内容を背景知識および追加指示として考慮してください。
+\n
+${completionContext}
+  `
+  }
+
   const signal = abortController.signal
 
   const chatCompletion = await openai.chat.completions.create(
@@ -147,7 +154,7 @@ ${uml}
           content: prompt
         }
       ],
-      model: COMPLETION_MODEL
+      model: completionModel
     },
     { signal }
   )

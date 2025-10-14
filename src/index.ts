@@ -46,6 +46,8 @@ const cancelCompletion = () => {
 interface StoreSchema {
   darkMode: boolean
   openaiApiKey: string
+  completionModel: string
+  completionContext: string
 }
 
 const schema: Schema<StoreSchema> = {
@@ -54,6 +56,14 @@ const schema: Schema<StoreSchema> = {
     default: false
   },
   openaiApiKey: {
+    type: 'string',
+    default: ''
+  },
+  completionModel: {
+    type: 'string',
+    default: 'gpt-4.1'
+  },
+  completionContext: {
     type: 'string',
     default: ''
   }
@@ -133,7 +143,7 @@ const createWindow = (): void => {
 const openSettings = () => {
   const settingsWindow = new BrowserWindow({
     width: 640,
-    height: 160,
+    height: 390,
     title: 'Settings',
     webPreferences: {
       nodeIntegration: false,
@@ -150,7 +160,9 @@ ipc.handle('invoke', async (event: IpcMainEvent, arg: string): Promise<any> => {
   if (arg === 'get-settings') {
     const settings = {
       darkMode: store.get('darkMode'),
-      openaiApiKey: store.get('openaiApiKey')
+      openaiApiKey: store.get('openaiApiKey'),
+      completionModel: store.get('completionModel'),
+      completionContext: store.get('completionContext')
     }
     return settings
   } else {
@@ -196,6 +208,12 @@ ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
   } else if (arg == 'settings-set-openai-api-key') {
     const openaiApiKey = obj as string
     store.set('openaiApiKey', openaiApiKey)
+  } else if (arg == 'settings-set-completion-model') {
+    const completionModel = obj as string
+    store.set('completionModel', completionModel)
+  } else if (arg == 'settings-set-completion-context') {
+    const completionContext = obj as string
+    store.set('completionContext', completionContext)
   } else if (arg == 'set-dirty') {
     editDirty = true
   } else if (arg == 'set-root-text') {
@@ -236,8 +254,10 @@ ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
     completionAbortController = new AbortController()
 
     const openaiApiKey = store.get('openaiApiKey')
+    const completionModel = store.get('completionModel')
+    const completionContext = store.get('completionContext')
 
-    completeState(openaiApiKey, state, completionAbortController)
+    completeState(openaiApiKey, completionModel, state, completionContext, completionAbortController)
       .then((completedState) => {
         if (completedState != null) {
           sender.send('request', 'completed', completedState)

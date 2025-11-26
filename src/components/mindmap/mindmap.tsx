@@ -127,6 +127,8 @@ function MindMap() {
   const [nextEditId, setNextEditId] = useState(2) // Edit ID管理 (0,1はrootとdummpyRootで利用)
   const [darkMode, setDarkMode] = useState(false)
   const [connecting, setConnecting] = useState(false)
+  const [copiedToastVisible, setCopiedToastVisible] = useState(false)
+  const toastTimerRef = useRef<number | null>(null)
 
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState])
 
@@ -155,6 +157,26 @@ function MindMap() {
       cleanupHandlers()
     }
   })
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current != null) {
+        window.clearTimeout(toastTimerRef.current)
+        toastTimerRef.current = null
+      }
+    }
+  }, [])
+
+  const showCopiedToast = () => {
+    setCopiedToastVisible(true)
+    if (toastTimerRef.current != null) {
+      window.clearTimeout(toastTimerRef.current)
+    }
+    toastTimerRef.current = window.setTimeout(() => {
+      setCopiedToastVisible(false)
+      toastTimerRef.current = null
+    }, 1000)
+  }
 
   function handleCommand(command: string, obj: any) {
     if (command === 'copy') {
@@ -264,6 +286,7 @@ function MindMap() {
     // TODO: useEffectの利用を検討
     const savingRootState = getSavingNodeState(rootState)
     nmAPI.sendMessage('response-clipboard-export', savingRootState)
+    showCopiedToast()
   }
 
   const complete = () => {
@@ -1195,51 +1218,63 @@ function MindMap() {
   const svgClassName = darkMode ? 'flex-grow h-full bg-black' : 'flex-grow h-full bg-white'
 
   return (
-    <svg
-      ref={svg}
-      className={svgClassName}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onDoubleClick={handleDoubleClick}
-    >
-      {connecting && <Spinner darkMode={darkMode} />}
+    <>
+      <svg
+        ref={svg}
+        className={svgClassName}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onDoubleClick={handleDoubleClick}
+      >
+        {connecting && <Spinner darkMode={darkMode} />}
 
-      <g id="canvas" ref={canvas} transform={canvasTransform}>
-        <g id="nodes">
-          <Node
-            key={rootState.id}
-            state={rootState}
-            drawStateMap={drawStateMap}
-            edgeStartX={0}
-            edgeStartY={0}
-            darkMode={darkMode}
-          />
+        <g id="canvas" ref={canvas} transform={canvasTransform}>
+          <g id="nodes">
+            <Node
+              key={rootState.id}
+              state={rootState}
+              drawStateMap={drawStateMap}
+              edgeStartX={0}
+              edgeStartY={0}
+              darkMode={darkMode}
+            />
+          </g>
+          {ghostState && (
+            <Rect
+              x={ghostState.x}
+              y={ghostState.y}
+              width={ghostState.width}
+              height={ghostState.height}
+            ></Rect>
+          )}
+          {textInputState && (
+            <TextInput
+              text={textInputState.text}
+              symbol={textInputState.symbol}
+              x={textInputState.x}
+              y={textInputState.y}
+              width={textInputState.width}
+              height={textInputState.height}
+              isRoot={textInputState.isRoot}
+              isLeft={textInputState.isLeft}
+              textSelected={textInputState.textSelected}
+              handleDecidedText={handleDecidedText}
+              darkMode={darkMode}
+            />
+          )}
         </g>
-        {ghostState && (
-          <Rect
-            x={ghostState.x}
-            y={ghostState.y}
-            width={ghostState.width}
-            height={ghostState.height}
-          ></Rect>
-        )}
-        {textInputState && (
-          <TextInput
-            text={textInputState.text}
-            symbol={textInputState.symbol}
-            x={textInputState.x}
-            y={textInputState.y}
-            width={textInputState.width}
-            height={textInputState.height}
-            isRoot={textInputState.isRoot}
-            isLeft={textInputState.isLeft}
-            textSelected={textInputState.textSelected}
-            handleDecidedText={handleDecidedText}
-            darkMode={darkMode}
-          />
-        )}
-      </g>
-    </svg>
+      </svg>
+      {copiedToastVisible && (
+        <div
+          className={
+            'fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 rounded-md text-sm border border-zinc-500 ' +
+            (darkMode ? 'bg-black text-white' : 'bg-white text-black')
+          }
+        >
+          Copied to clipboard
+        </div>
+      )}
+    </>
   )
 }
 

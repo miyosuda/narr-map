@@ -39,7 +39,7 @@ const calcDimensionSub = (text: string, isRoot: boolean) => {
     const width = 13
 
     // 空文字の時文字(16pt)の高さが反映されず3+3+1+2となってしまうので対処を入れる.
-    const height = 4 + 1 + 1 + 16 + 2
+    const height = 4 + 1 + 1 + 16 + 3
 
     return {
       width,

@@ -9,14 +9,18 @@ function getStateYAMLStr(state: StateType, level: number, skip: boolean, isLeft:
     return output
   }
 
+  // levelが1の場合はインデントを空に、2以上の場合は2スペース分のインデントを追加する
   const indent = level <= 1 ? '' : '  '.repeat(level - 2)
 
+  // state が子を持っているかどうか
   const hasChildren = state.children && state.children.length > 0
+
   // 子が1つで、その子が更に子を持たない場合はtrue
   const hasSingleLeafChild =
     state.children &&
     state.children.length === 1 &&
     (!state.children[0].children || state.children[0].children.length === 0)
+
   // 直下の全ての子が「子を一つだけ持ち、その孫は持たない」場合はtrue
   const childrenAllSingleLeaf =
     state.children &&
@@ -28,17 +32,19 @@ function getStateYAMLStr(state: StateType, level: number, skip: boolean, isLeft:
         (!ch.children[0].children || ch.children[0].children.length === 0)
     )
 
+  // 子がある場合は ':' を追加
   const tail = hasChildren ? ':' : ''
 
   let inlinedSingleChild = false
 
-  if (!skip) {
+  if (!skip) { // accomaniedState の場合はここはスキップ
     // ノードレベルに応じた出力形式の設定
     if (level === 1) {
+      // rootの場合
       output += `# ${state.text}\n`
     } else {
       if (hasSingleLeafChild) {
-        // 子が1つで、その子が更に子を持たない場合は 1 行に畳み込む
+        // 子が1つで、その子が孫を持たない場合は 1 行で a : b の形式で出力
         const onlyChild = state.children![0]
         output += `${indent}- ${state.text}: ${onlyChild.text}\n`
         inlinedSingleChild = true
@@ -51,13 +57,16 @@ function getStateYAMLStr(state: StateType, level: number, skip: boolean, isLeft:
   // 子ノードの処理
   if (state.children && state.children.length > 0) {
     if (!inlinedSingleChild) {
+      // 子がまだinlineで処理されてない場合
       if (childrenAllSingleLeaf) {
+        // hash形式で子を出力できる場合
         const mappingIndent = level <= 1 ? '' : indent + '  '
         state.children.forEach((child) => {
           const onlyGrandChild = child.children![0]
           output += `${mappingIndent}${child.text}: ${onlyGrandChild.text}\n`
         })
       } else {
+        // hash形式で子を出力できない場合は、子を再帰的に出力
         state.children.forEach((child) => {
           output += getStateYAMLStr(child, level + 1, false, isLeft)
         })

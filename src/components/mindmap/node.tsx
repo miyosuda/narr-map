@@ -160,6 +160,7 @@ interface LineProps {
   y1: number
   x2: number
   y2: number
+  dashed?: boolean
 }
 
 const Line = (props: LineProps) => {
@@ -171,6 +172,7 @@ const Line = (props: LineProps) => {
       y2={props.y2}
       stroke={LINE_RGB_COLOR}
       strokeWidth="1"
+      strokeDasharray={props.dashed ? '1 2' : undefined}
     ></line>
   )
 }
@@ -226,10 +228,18 @@ interface NodeProps {
   edgeStartX: number
   edgeStartY: number
   darkMode: boolean
+  isSingleChild?: boolean
 }
 
 export const Node = (props: NodeProps) => {
-  const { state, drawStateMap, edgeStartX, edgeStartY, darkMode } = props
+  const {
+    state,
+    drawStateMap,
+    edgeStartX,
+    edgeStartY,
+    darkMode,
+    isSingleChild = false
+  } = props
 
   const displayText = getTextWithSymbol(state.text, state.symbol)
 
@@ -271,6 +281,7 @@ export const Node = (props: NodeProps) => {
             edgeStartX={childEdgeStartX}
             edgeStartY={childEdgeStartY}
             darkMode={darkMode}
+            isSingleChild={state.children.length === 1 && !isRoot(state)}
           />
         ))}
       {!isDummy(state) && state.editState === EDIT_STATE_NONE && (
@@ -287,7 +298,13 @@ export const Node = (props: NodeProps) => {
         ></Text>
       )}
       {!isRoot(state) && (
-        <Line x1={edgeStartX} y1={edgeStartY} x2={edgeEndX!} y2={edgeEndY!}></Line>
+        <Line
+          x1={edgeStartX}
+          y1={edgeStartY}
+          x2={edgeEndX!}
+          y2={edgeEndY!}
+          dashed={isSingleChild}
+        ></Line>
       )}
       {state.folded && state.children && (
         <FoldMark x={foldMarkX} y={foldMarkY} darkMode={darkMode}></FoldMark>

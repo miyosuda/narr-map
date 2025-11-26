@@ -17,6 +17,16 @@ function getStateYAMLStr(state: StateType, level: number, skip: boolean, isLeft:
     state.children &&
     state.children.length === 1 &&
     (!state.children[0].children || state.children[0].children.length === 0)
+  // 直下の全ての子が「子を一つだけ持ち、その孫は持たない」場合はtrue
+  const childrenAllSingleLeaf =
+    state.children &&
+    state.children.length > 0 &&
+    state.children.every(
+      (ch) =>
+        ch.children &&
+        ch.children.length === 1 &&
+        (!ch.children[0].children || ch.children[0].children.length === 0)
+    )
 
   const tail = hasChildren ? ':' : ''
 
@@ -41,9 +51,17 @@ function getStateYAMLStr(state: StateType, level: number, skip: boolean, isLeft:
   // 子ノードの処理
   if (state.children && state.children.length > 0) {
     if (!inlinedSingleChild) {
-      state.children.forEach((child) => {
-        output += getStateYAMLStr(child, level + 1, false, isLeft)
-      })
+      if (childrenAllSingleLeaf) {
+        const mappingIndent = level <= 1 ? '' : indent + '  '
+        state.children.forEach((child) => {
+          const onlyGrandChild = child.children![0]
+          output += `${mappingIndent}${child.text}: ${onlyGrandChild.text}\n`
+        })
+      } else {
+        state.children.forEach((child) => {
+          output += getStateYAMLStr(child, level + 1, false, isLeft)
+        })
+      }
     }
   }
 

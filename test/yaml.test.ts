@@ -171,5 +171,56 @@ key2: value2
 - left
 `)
   })
+
+  it('should convert empty string nodes to sequence of mappings', () => {
+    // 空文字列のノードを使って、Mappingを要素として持つSequenceを表現
+    const state = {
+      text: 'root',
+      children: [
+        {
+          text: 'members',
+          children: [
+            {
+              text: '',  // 空文字列
+              children: [
+                {
+                  text: 'name',
+                  children: [{ text: 'Bob', children: [] }],
+                },
+                {
+                  text: 'job',
+                  children: [{ text: 'Programmer', children: [] }],
+                },
+              ],
+            },
+            {
+              text: '',  // 空文字列
+              children: [
+                {
+                  text: 'name',
+                  children: [{ text: 'Alice', children: [] }],
+                },
+                {
+                  text: 'job',
+                  children: [{ text: 'Designer', children: [] }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      accompaniedState: null,
+    }
+
+    const yaml = convertStateToYAML(state as unknown as SavingNodeState)
+
+    expect(yaml).toBe(`# root
+- members:
+  - name: Bob
+    job: Programmer
+  - name: Alice
+    job: Designer
+`)
+  })
 })
 

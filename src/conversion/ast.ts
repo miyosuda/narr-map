@@ -10,14 +10,14 @@ export type Scalar = {
   value: string
 }
 
-// マッピングの要素（キー・値のペア）
+// マッピングの要素（Key・Valueのペア）
 export type Entry = {
   kind: 'entry'
   key: string
   value: Node
 }
 
-// マッピング（キー・値のペア群、順序を保持）
+// マッピング（Key・Valueのペア群、順序を保持）
 export type Mapping = {
   kind: 'mapping'
   entries: Entry[]
@@ -35,7 +35,7 @@ export type Node = Scalar | Mapping | Sequence | Entry
 // ドキュメント（ルート）
 export type Document = {
   kind: 'document'
-  title?: string // オプショナルなタイトル（YAMLではコメント、JSONでは無視など）
+  title?: string // オプショナルなタイトル（YAMLではコメント、JSONでは無視）
   body: Node
 }
 
@@ -76,8 +76,8 @@ function childrenAllSingleLeaf(children: StateType[]): boolean {
 /**
  * StateType のノードを中間表現の Node に変換
  */
-function convertNode(state: StateType): Node {
-  // 子がない場合はスカラー
+function convertStateToNode(state: StateType): Node {
+  // 子がない場合はスカラー (テキストもスカラーとして扱う)
   if (isLeaf(state)) {
     return {
       kind: 'scalar',
@@ -86,6 +86,7 @@ function convertNode(state: StateType): Node {
   }
 
   // 子が1つで、その子が孫を持たない場合は Entry
+  // (stateがkey, childがvalue)
   if (hasSingleLeafChild(state)) {
     return {
       kind: 'entry',
@@ -97,22 +98,31 @@ function convertNode(state: StateType): Node {
     }
   }
 
-  // 全ての子が単一リーフ子を持つ場合は Mapping として Entry を返す
+  // 全ての子が単一リーフ子を持つ場合は Mapping として返す
   if (childrenAllSingleLeaf(state.children!)) {
+    const mapping: Mapping = {
+      kind: 'mapping',
+      entries: state.children!.map((child) => ({
+        kind: 'entry' as const,
+        key: child.text,
+        value: {
+          kind: 'scalar' as const,
+          value: child.children![0].text,
+        },
+      })),
+    }
+
+    // 空文字列の場合は直接 Mapping を返す（Entry でラップしない）
+    // これにより、Sequence の要素として Mapping を直接持てる
+    if (state.text === '') {
+      return mapping
+    }
+
+    // 空文字列でない場合は Entry として返す
     return {
       kind: 'entry',
       key: state.text,
-      value: {
-        kind: 'mapping',
-        entries: state.children!.map((child) => ({
-          kind: 'entry' as const,
-          key: child.text,
-          value: {
-            kind: 'scalar' as const,
-            value: child.children![0].text,
-          },
-        })),
-      },
+      value: mapping,
     }
   }
 
@@ -122,7 +132,7 @@ function convertNode(state: StateType): Node {
     key: state.text,
     value: {
       kind: 'sequence',
-      items: state.children!.map((child) => convertNode(child)),
+      items: state.children!.map((child) => convertStateToNode(child)),
     },
   }
 }
@@ -130,8 +140,8 @@ function convertNode(state: StateType): Node {
 /**
  * 子ノード群を中間表現に変換
  */
-function convertChildren(children: StateType[]): Node {
-  // 全ての子が単一リーフ子を持つ場合は Mapping
+function convertStatesToNode(children: StateType[]): Node {
+  // 全ての子が単一リーフ子を持つ場合は Mappingとして扱う
   if (childrenAllSingleLeaf(children)) {
     return {
       kind: 'mapping',
@@ -146,10 +156,10 @@ function convertChildren(children: StateType[]): Node {
     }
   }
 
-  // それ以外は Sequence
+  // それ以外は Sequence として扱う
   return {
     kind: 'sequence',
-    items: children.map((child) => convertNode(child)),
+    items: children.map((child) => convertStateToNode(child)),
   }
 }
 
@@ -184,7 +194,7 @@ export function stateToDocument(state: StateType): Document {
   return {
     kind: 'document',
     title: state.text,
-    body: convertChildren(allChildren),
+    body: convertStatesToNode(allChildren),
   }
 }
 

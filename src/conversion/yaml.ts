@@ -68,8 +68,16 @@ function nodeToYaml(node: Node, level: number, isSequenceItem: boolean): string 
 
     case 'mapping': {
       let output = ''
-      node.entries.forEach((entry) => {
-        output += nodeToYaml(entry, level, false)
+      node.entries.forEach((entry, index) => {
+        if (isSequenceItem && index === 0) {
+          // 最初のエントリは `- key: value` の形式で出力
+          output += nodeToYaml(entry, level, true)
+        } else if (isSequenceItem) {
+          // 2番目以降のエントリは追加インデント（`- ` の分を補正）
+          output += nodeToYaml(entry, level + 1, false)
+        } else {
+          output += nodeToYaml(entry, level, false)
+        }
       })
       return output
     }

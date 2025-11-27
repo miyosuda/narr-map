@@ -1,87 +1,114 @@
 import { SavingNodeState } from '../types'
+import { Document, Node, stateToDocument } from './ast'
 
-type StateType = SavingNodeState
+// ========================================
+// Document → YAML 文字列変換
+// ========================================
 
-function getStateYAMLStr(state: StateType, level: number, skip: boolean, isLeft: boolean): string {
-  let output = ''
+/**
+ * Node を YAML 文字列に変換（再帰）
+ * @param node 変換対象のノード
+ * @param level インデントレベル（0から開始）
+ * @param isSequenceItem シーケンスの要素として出力するか
+ */
+function nodeToYaml(node: Node, level: number, isSequenceItem: boolean): string {
+  const indent = '  '.repeat(level)
 
-  if (!state) {
-    return output
-  }
-
-  // levelが1の場合はインデントを空に、2以上の場合は2スペース分のインデントを追加する
-  const indent = level <= 1 ? '' : '  '.repeat(level - 2)
-
-  // state が子を持っているかどうか
-  const hasChildren = state.children && state.children.length > 0
-
-  // 子が1つで、その子が更に子を持たない場合はtrue
-  const hasSingleLeafChild =
-    state.children &&
-    state.children.length === 1 &&
-    (!state.children[0].children || state.children[0].children.length === 0)
-
-  // 直下の全ての子が「子を一つだけ持ち、その孫は持たない」場合はtrue
-  const childrenAllSingleLeaf =
-    state.children &&
-    state.children.length > 0 &&
-    state.children.every(
-      (ch) =>
-        ch.children &&
-        ch.children.length === 1 &&
-        (!ch.children[0].children || ch.children[0].children.length === 0)
-    )
-
-  // 子がある場合は ':' を追加
-  const tail = hasChildren ? ':' : ''
-
-  let inlinedSingleChild = false
-
-  if (!skip) { // accomaniedState の場合はここはスキップ
-    // ノードレベルに応じた出力形式の設定
-    if (level === 1) {
-      // rootの場合
-      output += `# ${state.text}\n`
-    } else {
-      if (hasSingleLeafChild) {
-        // 子が1つで、その子が孫を持たない場合は 1 行で a : b の形式で出力
-        const onlyChild = state.children![0]
-        output += `${indent}- ${state.text}: ${onlyChild.text}\n`
-        inlinedSingleChild = true
-      } else {
-        output += `${indent}- ${state.text}${tail}\n`
+  switch (node.kind) {
+    case 'scalar':
+      if (isSequenceItem) {
+        return `${indent}- ${node.value}\n`
       }
-    }
-  }
+      return node.value
 
-  // 子ノードの処理
-  if (state.children && state.children.length > 0) {
-    if (!inlinedSingleChild) {
-      // 子がまだinlineで処理されてない場合
-      if (childrenAllSingleLeaf) {
-        // hash形式で子を出力できる場合
-        const mappingIndent = level <= 1 ? '' : indent + '  '
-        state.children.forEach((child) => {
-          const onlyGrandChild = child.children![0]
-          output += `${mappingIndent}${child.text}: ${onlyGrandChild.text}\n`
-        })
-      } else {
-        // hash形式で子を出力できない場合は、子を再帰的に出力
-        state.children.forEach((child) => {
-          output += getStateYAMLStr(child, level + 1, false, isLeft)
-        })
+    case 'entry': {
+      const valueNode = node.value
+
+      if (valueNode.kind === 'scalar') {
+        // Entry で値がスカラーの場合: `- key: value` または `key: value`
+        if (isSequenceItem) {
+          return `${indent}- ${node.key}: ${valueNode.value}\n`
+        }
+        return `${indent}${node.key}: ${valueNode.value}\n`
       }
-    }
-  }
 
-  return output
+      if (valueNode.kind === 'mapping') {
+        // Entry で値が Mapping の場合
+        let output = ''
+        if (isSequenceItem) {
+          output += `${indent}- ${node.key}:\n`
+        } else {
+          output += `${indent}${node.key}:\n`
+        }
+        // Mapping の entries を出力
+        valueNode.entries.forEach((entry) => {
+          output += nodeToYaml(entry, level + 1, false)
+        })
+        return output
+      }
+
+      if (valueNode.kind === 'sequence') {
+        // Entry で値が Sequence の場合
+        let output = ''
+        if (isSequenceItem) {
+          output += `${indent}- ${node.key}:\n`
+        } else {
+          output += `${indent}${node.key}:\n`
+        }
+        // Sequence の items を出力
+        valueNode.items.forEach((item) => {
+          output += nodeToYaml(item, level + 1, true)
+        })
+        return output
+      }
+
+      // Entry が入れ子になっている場合（通常は発生しない）
+      return nodeToYaml(valueNode, level, isSequenceItem)
+    }
+
+    case 'mapping': {
+      let output = ''
+      node.entries.forEach((entry) => {
+        output += nodeToYaml(entry, level, false)
+      })
+      return output
+    }
+
+    case 'sequence': {
+      let output = ''
+      node.items.forEach((item) => {
+        output += nodeToYaml(item, level, true)
+      })
+      return output
+    }
+
+    default:
+      return ''
+  }
 }
 
-export function convertStateToYAML(state: StateType): string {
+/**
+ * Document を YAML 文字列に変換
+ */
+export function documentToYaml(doc: Document): string {
   let yaml = ''
 
-  yaml += getStateYAMLStr(state, 1, false, false)
-  yaml += getStateYAMLStr(state.accompaniedState, 1, true, true)
+  // タイトルがあればコメントとして出力
+  if (doc.title) {
+    yaml += `# ${doc.title}\n`
+  }
+
+  // body を変換
+  yaml += nodeToYaml(doc.body, 0, false)
 
   return yaml
+}
+
+/**
+ * SavingNodeState を YAML 文字列に変換
+ * （後方互換性のため既存のインターフェースを維持）
+ */
+export function convertStateToYAML(state: SavingNodeState): string {
+  const doc = stateToDocument(state)
+  return documentToYaml(doc)
 }

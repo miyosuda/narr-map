@@ -98,42 +98,19 @@ function convertStateToNode(state: StateType): Node {
     }
   }
 
-  // 全ての子が単一リーフ子を持つ場合は Mapping として返す
-  if (childrenAllSingleLeaf(state.children!)) {
-    const mapping: Mapping = {
-      kind: 'mapping',
-      entries: state.children!.map((child) => ({
-        kind: 'entry' as const,
-        key: child.text,
-        value: {
-          kind: 'scalar' as const,
-          value: child.children![0].text,
-        },
-      })),
-    }
+  // valueは Mapping, Sequence のいずれか
+  const value = convertStatesToNode(state.children!)
 
-    // 空文字列の場合は直接 Mapping を返す（Entry でラップしない）
-    // これにより、Sequence の要素として Mapping を直接持てる
-    if (state.text === '') {
-      return mapping
-    }
-
-    // 空文字列でない場合は Entry として返す
-    return {
-      kind: 'entry',
-      key: state.text,
-      value: mapping,
-    }
+  // 空文字列の場合は直接値を返す
+  // これにより、Sequence の要素として Mapping, Sequence を直接持てる
+  if(state.text === '') {
+    return value
   }
 
-  // それ以外は Entry でキーがテキスト、値が Sequence
   return {
     kind: 'entry',
     key: state.text,
-    value: {
-      kind: 'sequence',
-      items: state.children!.map((child) => convertStateToNode(child)),
-    },
+    value,
   }
 }
 

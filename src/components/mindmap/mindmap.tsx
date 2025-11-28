@@ -18,6 +18,7 @@ import { Node } from './node'
 import { Rect } from './rect'
 import { TextInput } from './text-input'
 import { Spinner } from './spinner'
+import { TextImportModal } from './text-import-modal'
 import {
   getNodeState,
   cloneNodeState,
@@ -128,6 +129,8 @@ function MindMap() {
   const [darkMode, setDarkMode] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [copiedToastVisible, setCopiedToastVisible] = useState(false)
+  const [textImportModalOpen, setTextImportModalOpen] = useState(false)
+  const [isTextGenerating, setIsTextGenerating] = useState(false)
   const toastTimerRef = useRef<number | null>(null)
 
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState])
@@ -207,6 +210,10 @@ function MindMap() {
       setDarkMode(obj)
     } else if (command === 'clipboard-export') {
       clipboardExport(obj)
+    } else if (command === 'open-text-import-modal') {
+      setTextImportModalOpen(true)
+    } else if (command === 'text-import-complete') {
+      handleTextImportComplete(obj)
     }
   }
 
@@ -287,6 +294,28 @@ function MindMap() {
     const savingRootState = getSavingNodeState(rootState)
     nmAPI.sendMessage('response-clipboard-export', [savingRootState, format])
     showCopiedToast()
+  }
+
+  const handleTextGenerate = (text: string) => {
+    setIsTextGenerating(true)
+    nmAPI.sendMessage('response-text-generate', text)
+  }
+
+  const handleTextImportComplete = (result: { success: boolean; state?: SavingNodeState; error?: string }) => {
+    setIsTextGenerating(false)
+    setTextImportModalOpen(false)
+    if (result.success && result.state) {
+      load(result.state)
+    } else {
+      // エラーの場合はコンソールにログ出力（必要に応じてUIで表示）
+      console.error('Text import failed:', result.error)
+    }
+  }
+
+  const handleTextImportModalClose = () => {
+    if (!isTextGenerating) {
+      setTextImportModalOpen(false)
+    }
   }
 
   const complete = () => {
@@ -1274,6 +1303,13 @@ function MindMap() {
           Copied to clipboard
         </div>
       )}
+      <TextImportModal
+        isOpen={textImportModalOpen}
+        onClose={handleTextImportModalClose}
+        onGenerate={handleTextGenerate}
+        isGenerating={isTextGenerating}
+        darkMode={darkMode}
+      />
     </>
   )
 }

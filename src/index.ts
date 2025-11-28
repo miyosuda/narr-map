@@ -8,6 +8,7 @@ import Store, { Schema } from 'electron-store'
 import { convertStateToPlantUML, convertPlantUMLToState } from './conversion/uml'
 import { convertStateToYAML } from './conversion/yaml'
 import { convertStateToJSON } from './conversion/json'
+import { convertTextToMindMap } from './conversion/text-to-mindmap'
 import { completeState } from './completion'
 import { migrateState1to2 } from './conversion/migrate'
 import { SavingNodeState } from './types'
@@ -281,6 +282,42 @@ ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
     const [state, format] = obj
     const content = format === 'json' ? convertStateToJSON(state) : convertStateToYAML(state)
     clipboard.writeText(content)
+  } else if (arg == 'response-text-generate') {
+    const inputText = obj as string
+    const sender = event.sender
+
+    completionAbortController = new AbortController()
+
+    const openaiApiKey = store.get('openaiApiKey')
+    const completionModel = store.get('completionModel')
+
+    convertTextToMindMap(openaiApiKey, completionModel, inputText, completionAbortController)
+      .then((state) => {
+        if (state != null) {
+          sender.send('request', 'text-import-complete', { success: true, state })
+          editDirty = true
+          filePath = null
+          rootText = null
+          // TODO: BrowserWindow.fromId()を利用する
+          const windows = BrowserWindow.getAllWindows()
+          if (windows.length > 0) {
+            windows[0].setTitle(DEFAULT_TITLE)
+          }
+        } else {
+          sender.send('request', 'text-import-complete', {
+            success: false,
+            error: 'Failed to generate MindMap'
+          })
+        }
+        completionAbortController = null
+      })
+      .catch((error) => {
+        sender.send('request', 'text-import-complete', {
+          success: false,
+          error: error.message || 'An error occurred'
+        })
+        completionAbortController = null
+      })
   }
 })
 
@@ -641,6 +678,27 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
                 }
               } else {
                 requestImport()
+              }
+            }
+          },
+          {
+            label: 'From Text Input',
+            accelerator: 'CmdOrCtrl+Shift+T',
+            click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: Event) => {
+              const requestTextImport = () => {
+                browserWindow.webContents.send('request', 'open-text-import-modal')
+              }
+
+              if (editDirty) {
+                const ret = showSaveConfirmDialog()
+                if (ret == CONFIRM_ANSWER_SAVE) {
+                  save(browserWindow, requestTextImport)
+                } else if (ret == CONFIRM_ANSWER_DELETE) {
+                  editDirty = false
+                  requestTextImport()
+                }
+              } else {
+                requestTextImport()
               }
             }
           }

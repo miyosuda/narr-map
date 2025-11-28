@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
+const { nmAPI } = window
+
+// TextImportModalを開いている時にdocumentに実行させるコマンド
+const execCommands = ['copy', 'paste', 'cut', 'undo', 'redo', 'selectall']
 
 interface TextImportModalProps {
   isOpen: boolean
@@ -8,13 +12,8 @@ interface TextImportModalProps {
   darkMode: boolean
 }
 
-export const TextImportModal: React.FC<TextImportModalProps> = ({
-  isOpen,
-  onClose,
-  onGenerate,
-  isGenerating,
-  darkMode
-}) => {
+export const TextImportModal = (props: TextImportModalProps) => {
+  const { isOpen, onClose, onGenerate, isGenerating, darkMode } = props
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -23,6 +22,20 @@ export const TextImportModal: React.FC<TextImportModalProps> = ({
       textareaRef.current.focus()
     }
   }, [isOpen])
+
+  // メニューからのcopy/paste/cut/undo/redo/selectallコマンドを処理
+  useEffect(() => {
+    if (!isOpen) return
+
+    const offFunc = nmAPI.onReceiveMessage((arg: string, obj: any) => {
+      if (execCommands.some((element) => element === arg)) {
+        // copy, paste, cut, undo, redo, selectAllのいずれかだった場合は、
+        // documentにコマンドを実行させてtextarea内のundo,redoに対処.
+        document.execCommand(arg)
+      }
+    })
+    return offFunc
+  })
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -71,7 +84,7 @@ export const TextImportModal: React.FC<TextImportModalProps> = ({
         <div className={`px-6 py-4 border-b ${borderColor}`}>
           <h2 className="text-lg font-semibold">Generate MindMap from Text</h2>
           <p className={`text-sm mt-1 ${darkMode ? 'text-zinc-400' : 'text-gray-500'}`}>
-            テキストを入力してMindMapを自動生成します
+            Enter text to automatically generate a MindMap
           </p>
         </div>
 
@@ -82,12 +95,12 @@ export const TextImportModal: React.FC<TextImportModalProps> = ({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="MindMapに変換したいテキストを入力してください..."
+            placeholder="Enter text to convert into a MindMap..."
             className={`w-full h-64 p-3 border ${borderColor} ${textareaBg} ${textColor} ${placeholderColor} rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500`}
             disabled={isGenerating}
           />
           <p className={`text-xs mt-2 ${darkMode ? 'text-zinc-500' : 'text-gray-400'}`}>
-            Ctrl+Enter または Cmd+Enter で生成
+            Press Ctrl+Enter or Cmd+Enter to generate
           </p>
         </div>
 

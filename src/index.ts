@@ -63,7 +63,7 @@ const schema: Schema<StoreSchema> = {
   },
   completionModel: {
     type: 'string',
-    default: 'gpt-4.1'
+    default: 'gpt-5-mini'
   },
   completionContext: {
     type: 'string',

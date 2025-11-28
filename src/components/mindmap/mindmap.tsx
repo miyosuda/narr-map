@@ -224,6 +224,12 @@ function MindMap() {
       const editingNodeState = findNode(rootState, (state) => state.editState !== EDIT_STATE_NONE)
       if (editingNodeState != null) {
         // textInput表示中だった場合はTextInput側が処理する
+      } else if (textImportModalOpen) {
+        // TextImportModal表示中だった場合はTextImportModal側が処理する
+        // ただし、モーダル関連のコマンドは処理する
+        if (arg === 'text-import-complete') {
+          handleCommand(arg, obj)
+        }
       } else {
         // textInput表示中でない場合
         handleCommand(arg, obj)

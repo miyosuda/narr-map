@@ -67,28 +67,30 @@ export const TextImportModal = (props: TextImportModalProps) => {
 
   if (!isOpen) return null
 
-  const bgColor = darkMode ? 'bg-zinc-900' : 'bg-white'
-  const textColor = darkMode ? 'text-white' : 'text-gray-900'
-  const borderColor = darkMode ? 'border-zinc-700' : 'border-gray-300'
-  const textareaBg = darkMode ? 'bg-zinc-800' : 'bg-white'
-  const placeholderColor = darkMode ? 'placeholder-zinc-500' : 'placeholder-gray-400'
+  // New York style colors
+  const bgColor = darkMode ? 'bg-zinc-950' : 'bg-white'
+  const textColor = darkMode ? 'text-zinc-50' : 'text-zinc-950'
+  const borderColor = darkMode ? 'border-zinc-800' : 'border-zinc-200'
+  const mutedTextColor = darkMode ? 'text-zinc-400' : 'text-zinc-500'
+  const textareaBg = darkMode ? 'bg-zinc-900' : 'bg-white'
+  const placeholderColor = darkMode ? 'placeholder-zinc-500' : 'placeholder-zinc-400'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
+      {/* Backdrop - New York style with subtle blur */}
       <div
-        className="absolute inset-0 bg-black bg-opacity-50"
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={isGenerating ? onCancel : onClose}
       />
 
-      {/* Modal */}
+      {/* Modal - New York style with smaller radius and refined shadow */}
       <div
-        className={`relative ${bgColor} ${textColor} rounded-lg shadow-xl w-[640px] max-h-[80vh] flex flex-col`}
+        className={`relative ${bgColor} ${textColor} rounded-lg shadow-lg border ${borderColor} w-[640px] max-h-[80vh] flex flex-col animate-in fade-in-0 zoom-in-95 duration-200`}
       >
-        {/* Header */}
+        {/* Header - New York style with tighter spacing */}
         <div className={`px-6 py-4 border-b ${borderColor}`}>
-          <h2 className="text-lg font-semibold">Generate MindMap from Text</h2>
-          <p className={`text-sm mt-1 ${darkMode ? 'text-zinc-400' : 'text-gray-500'}`}>
+          <h2 className="text-lg font-semibold tracking-tight">Generate MindMap from Text</h2>
+          <p className={`text-sm mt-1 ${mutedTextColor}`}>
             Enter text to automatically generate a MindMap
           </p>
         </div>
@@ -101,22 +103,22 @@ export const TextImportModal = (props: TextImportModalProps) => {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Enter text to convert into a MindMap..."
-            className={`w-full h-64 p-3 border ${borderColor} ${textareaBg} ${textColor} ${placeholderColor} rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className={`w-full h-64 px-3 py-2 text-sm border ${borderColor} ${textareaBg} ${textColor} ${placeholderColor} rounded-md resize-none transition-colors focus:outline-none focus:ring-1 ${darkMode ? 'focus:ring-zinc-300' : 'focus:ring-zinc-950'} focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50`}
             disabled={isGenerating}
           />
-          <p className={`text-xs mt-2 ${darkMode ? 'text-zinc-500' : 'text-gray-400'}`}>
+          <p className={`text-xs mt-2 ${mutedTextColor}`}>
             Press Ctrl+Enter or Cmd+Enter to generate
           </p>
         </div>
 
-        {/* Footer */}
-        <div className={`px-6 py-4 border-t ${borderColor} flex justify-end gap-3`}>
+        {/* Footer - New York style buttons */}
+        <div className={`px-6 py-4 border-t ${borderColor} flex justify-end gap-2`}>
           <button
             onClick={isGenerating ? onCancel : onClose}
-            className={`px-4 py-2 rounded-md transition-colors ${
+            className={`inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md border transition-colors focus:outline-none focus:ring-1 focus:ring-offset-0 ${
               darkMode
-                ? 'bg-zinc-700 hover:bg-zinc-600 text-white'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                ? 'bg-zinc-900 border-zinc-800 text-zinc-50 hover:bg-zinc-800 hover:text-zinc-50 focus:ring-zinc-300'
+                : 'bg-white border-zinc-200 text-zinc-950 hover:bg-zinc-100 hover:text-zinc-900 focus:ring-zinc-950'
             }`}
           >
             Cancel
@@ -124,10 +126,14 @@ export const TextImportModal = (props: TextImportModalProps) => {
           <button
             onClick={handleGenerate}
             disabled={isGenerating || text.trim() === ''}
-            className={`px-4 py-2 rounded-md transition-colors flex items-center gap-2 ${
+            className={`inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-offset-0 gap-2 ${
               isGenerating || text.trim() === ''
-                ? 'bg-blue-400 text-white cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                ? darkMode
+                  ? 'bg-zinc-50/50 text-zinc-900/50 cursor-not-allowed'
+                  : 'bg-zinc-900/50 text-zinc-50/50 cursor-not-allowed'
+                : darkMode
+                  ? 'bg-zinc-50 text-zinc-900 hover:bg-zinc-50/90 focus:ring-zinc-300'
+                  : 'bg-zinc-900 text-zinc-50 hover:bg-zinc-900/90 focus:ring-zinc-950'
             }`}
           >
             {isGenerating && (

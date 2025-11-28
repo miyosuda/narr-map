@@ -207,6 +207,8 @@ function MindMap() {
       setDarkMode(obj)
     } else if (command === 'clipboard-export') {
       clipboardExport()
+    } else if (command === 'clipboard-export-json') {
+      clipboardExportJson()
     }
   }
 
@@ -286,6 +288,13 @@ function MindMap() {
     // TODO: useEffectの利用を検討
     const savingRootState = getSavingNodeState(rootState)
     nmAPI.sendMessage('response-clipboard-export', savingRootState)
+    showCopiedToast()
+  }
+
+  const clipboardExportJson = () => {
+    // TODO: useEffectの利用を検討
+    const savingRootState = getSavingNodeState(rootState)
+    nmAPI.sendMessage('response-clipboard-export-json', savingRootState)
     showCopiedToast()
   }
 

@@ -273,12 +273,8 @@ ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
         completionAbortController = null
       })
   } else if (arg == 'response-clipboard-export') {
-    const state = obj
-    const content = convertStateToYAML(state)
-    clipboard.writeText(content)
-  } else if (arg == 'response-clipboard-export-json') {
-    const state = obj
-    const content = convertStateToJSON(state)
+    const [state, format] = obj
+    const content = format === 'json' ? convertStateToJSON(state) : convertStateToYAML(state)
     clipboard.writeText(content)
   }
 })
@@ -633,14 +629,14 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
             label: 'YAML',
             accelerator: 'CmdOrCtrl+Y',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-              browserWindow.webContents.send('request', 'clipboard-export')
+              browserWindow.webContents.send('request', 'clipboard-export', 'yaml')
             }
           },
           {
             label: 'JSON',
             accelerator: 'CmdOrCtrl+J',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-              browserWindow.webContents.send('request', 'clipboard-export-json')
+              browserWindow.webContents.send('request', 'clipboard-export', 'json')
             }
           }
         ]

@@ -324,6 +324,12 @@ function MindMap() {
     }
   }
 
+  const handleTextGenerateCancel = () => {
+    nmAPI.sendMessage('cancel-text-generate', null)
+    setIsTextGenerating(false)
+    setTextImportModalOpen(false)
+  }
+
   const complete = () => {
     nmAPI.sendMessage('response-complete', rootState)
     setConnecting(true)
@@ -1313,6 +1319,7 @@ function MindMap() {
         isOpen={textImportModalOpen}
         onClose={handleTextImportModalClose}
         onGenerate={handleTextGenerate}
+        onCancel={handleTextGenerateCancel}
         isGenerating={isTextGenerating}
         darkMode={darkMode}
       />

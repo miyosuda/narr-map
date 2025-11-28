@@ -318,6 +318,11 @@ ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
         })
         completionAbortController = null
       })
+  } else if (arg == 'cancel-text-generate') {
+    if (completionAbortController != null) {
+      completionAbortController.abort()
+      completionAbortController = null
+    }
   }
 })
 

@@ -55,6 +55,7 @@ function isLeaf(state: StateType): boolean {
 /**
  * 子が1つで、その子が孫を持たない場合は true
  */
+/*
 function hasSingleLeafChild(state: StateType): boolean {
   return (
     state.children &&
@@ -62,16 +63,7 @@ function hasSingleLeafChild(state: StateType): boolean {
     isLeaf(state.children[0])
   )
 }
-
-/**
- * 全ての子が「子を一つだけ持ち、その孫は子を持たない」場合は true
- */
-function childrenAllSingleLeaf(children: StateType[]): boolean {
-  return (
-    children.length > 0 &&
-    children.every((ch) => hasSingleLeafChild(ch))
-  )
-}
+*/
 
 /**
  * StateType のノードを中間表現の Node に変換
@@ -85,8 +77,10 @@ function convertStateToNode(state: StateType): Node {
     }
   }
 
+  //..
   // 子が1つで、その子が孫を持たない場合は Entry
   // (stateがkey, childがvalue)
+  /*
   if (hasSingleLeafChild(state)) {
     return {
       kind: 'entry',
@@ -97,12 +91,14 @@ function convertStateToNode(state: StateType): Node {
       },
     }
   }
+  */
+  //..
 
-  // valueは Mapping, Sequence のいずれか
+  // valueは Mapping, Sequence, Scalar のいずれか (=名前を持たないもの)
   const value = convertStatesToNode(state.children!)
 
   // 空文字列の場合は直接値を返す
-  // これにより、Sequence の要素として Mapping, Sequence を直接持てる
+  // これにより、Sequence の要素として Mapping, Sequence, Scalar を直接持てる
   if(state.text === '') {
     return value
   }
@@ -118,25 +114,28 @@ function convertStateToNode(state: StateType): Node {
  * 子ノード群を中間表現に変換
  */
 function convertStatesToNode(children: StateType[]): Node {
-  // 全ての子が単一リーフ子を持つ場合は Mappingとして扱う
-  if (childrenAllSingleLeaf(children)) {
+  if(children.length === 1 && isLeaf(children[0])) {
+    return {
+      kind: 'scalar',
+      value: children[0].text,
+    }
+  }
+
+  const values = children.map((child) => convertStateToNode(child))
+
+  // 全ての子が Entry の場合
+  if(values.every((value) => value.kind === 'entry')) {
+    // Mappingとして返す
     return {
       kind: 'mapping',
-      entries: children.map((child) => ({
-        kind: 'entry' as const,
-        key: child.text,
-        value: {
-          kind: 'scalar' as const,
-          value: child.children![0].text,
-        },
-      })),
+      entries: values.map((value) => value),
     }
   }
 
   // それ以外は Sequence として扱う
   return {
     kind: 'sequence',
-    items: children.map((child) => convertStateToNode(child)),
+    items: values,
   }
 }
 

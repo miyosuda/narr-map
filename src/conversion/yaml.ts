@@ -28,8 +28,9 @@ function nodeToYaml(node: Node, level: number, isSequenceItem: boolean): string 
         // Entry で値がスカラーの場合: `- key: value` または `key: value`
         if (isSequenceItem) {
           return `${indent}- ${node.key}: ${valueNode.value}\n`
+        } else {
+          return `${indent}${node.key}: ${valueNode.value}\n`
         }
-        return `${indent}${node.key}: ${valueNode.value}\n`
       }
 
       if (valueNode.kind === 'mapping') {
@@ -62,7 +63,7 @@ function nodeToYaml(node: Node, level: number, isSequenceItem: boolean): string 
         return output
       }
 
-      // Entry が入れ子になっている場合（通常は発生しない）
+      // Entry が入れ子になっている場合
       return nodeToYaml(valueNode, level, isSequenceItem)
     }
 

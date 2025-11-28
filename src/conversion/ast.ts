@@ -53,19 +53,6 @@ function isLeaf(state: StateType): boolean {
 }
 
 /**
- * 子が1つで、その子が孫を持たない場合は true
- */
-/*
-function hasSingleLeafChild(state: StateType): boolean {
-  return (
-    state.children &&
-    state.children.length === 1 &&
-    isLeaf(state.children[0])
-  )
-}
-*/
-
-/**
  * StateType のノードを中間表現の Node に変換
  */
 function convertStateToNode(state: StateType): Node {
@@ -76,23 +63,6 @@ function convertStateToNode(state: StateType): Node {
       value: state.text,
     }
   }
-
-  //..
-  // 子が1つで、その子が孫を持たない場合は Entry
-  // (stateがkey, childがvalue)
-  /*
-  if (hasSingleLeafChild(state)) {
-    return {
-      kind: 'entry',
-      key: state.text,
-      value: {
-        kind: 'scalar',
-        value: state.children![0].text,
-      },
-    }
-  }
-  */
-  //..
 
   // valueは Mapping, Sequence, Scalar のいずれか (=名前を持たないもの)
   const value = convertStatesToNode(state.children!)

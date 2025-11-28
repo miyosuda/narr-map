@@ -98,7 +98,7 @@ function convertStatesToNode(children: StateType[]): Node {
     // Mappingとして返す
     return {
       kind: 'mapping',
-      entries: values.map((value) => value),
+      entries: values as Entry[],
     }
   }
 

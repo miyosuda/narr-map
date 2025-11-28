@@ -238,7 +238,12 @@ ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
     onSaveFinished()
   } else if (arg == 'response-export') {
     const [state, format] = obj as [SavingNodeState, string]
-    const content = format == 'uml' ? convertStateToPlantUML(state) : convertStateToYAML(state)
+    const content =
+      format == 'uml'
+        ? convertStateToPlantUML(state)
+        : format == 'json'
+          ? convertStateToJSON(state)
+          : convertStateToYAML(state)
 
     fs.writeFile(exportFilePath, content, (error: NodeJS.ErrnoException) => {
       if (error != null) {
@@ -319,6 +324,16 @@ const exportOptionsYAML = {
   ]
 }
 
+const exportOptionsJSON = {
+  title: 'Export (JSON)',
+  filters: [
+    {
+      name: 'Data',
+      extensions: ['json']
+    }
+  ]
+}
+
 const save = (browserWindow: BrowserWindow, onSavedHook: (() => void) | null = null) => {
   if (filePath == null) {
     // rootTextを使ってデフォルトファイル名表示
@@ -359,8 +374,10 @@ const saveAs = (browserWindow: BrowserWindow) => {
   }
 }
 
-const exportAs = (browserWindow: BrowserWindow, format: 'uml' | 'yaml') => {
-  const exportOptions_ = Object.create(format == 'uml' ? exportOptionsUML : exportOptionsYAML)
+const exportAs = (browserWindow: BrowserWindow, format: 'uml' | 'yaml' | 'json') => {
+  const exportOptions_ = Object.create(
+    format == 'uml' ? exportOptionsUML : format == 'json' ? exportOptionsJSON : exportOptionsYAML
+  )
 
   if (filePath != null) {
     const baseName = path.basename(filePath, '.nm')
@@ -575,6 +592,13 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
             accelerator: 'CmdOrCtrl+Shift+Y',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
               exportAs(browserWindow, 'yaml')
+            }
+          },
+          {
+            label: 'JSON',
+            accelerator: 'CmdOrCtrl+Shift+J',
+            click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+              exportAs(browserWindow, 'json')
             }
           },
           {

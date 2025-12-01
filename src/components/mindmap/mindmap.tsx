@@ -240,7 +240,23 @@ function MindMap() {
 
   useEffect(() => {
     // 初回render後にrecenterする
-    recenter()
+    // (SVGのサイズはCSSの flex-grow, h-full で決まり、
+    // useEffectの実行時点でレイアウト計算が完了していない場合がありえるため)
+    if (!svg.current) {
+      return
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+        recenter()
+        observer.disconnect() // 初回のみ実行
+      }
+    })
+
+    observer.observe(svg.current)
+
+    return () => observer.disconnect()
   }, [])
 
   const setRootStateWithHistory = (newRootState: NodeState): void => {

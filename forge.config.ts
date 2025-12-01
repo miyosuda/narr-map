@@ -31,7 +31,29 @@ if (process.env['APPLEIDENTITY'] != null) {
 
 const config: ForgeConfig = {
   packagerConfig: {
-    icon: 'build/icon.icns'
+    icon: 'build/icon.icns',
+    extendInfo: {
+      CFBundleDocumentTypes: [
+        {
+          CFBundleTypeName: 'narr-map Document',
+          CFBundleTypeRole: 'Editor',
+          LSHandlerRank: 'Owner',
+          LSItemContentTypes: ['jp.narr.map'],
+          CFBundleTypeExtensions: ['nm'],
+          CFBundleTypeIconFile: 'icon.icns'
+        }
+      ],
+      UTExportedTypeDeclarations: [
+        {
+          UTTypeIdentifier: 'jp.narr.map',
+          UTTypeDescription: 'narr-map Document',
+          UTTypeConformsTo: ['public.json', 'public.data'],
+          UTTypeTagSpecification: {
+            'public.filename-extension': ['nm']
+          }
+        }
+      ]
+    }
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],

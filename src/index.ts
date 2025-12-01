@@ -39,6 +39,9 @@ let completionAbortController: AbortController | null = null
 // quit(), requestNewFile(), requestOpen(), requestImport()
 let onSavedFunction: () => void
 
+// アプリ起動前にopen-fileイベントで渡されたファイルパスを保持
+let pendingFilePath: string | null = null
+
 const cancelCompletion = () => {
   if (completionAbortController != null) {
     completionAbortController.abort()
@@ -126,6 +129,12 @@ const createWindow = (): void => {
 
   mainWindow.webContents.on('did-finish-load', () => {
     setDarkMode(store.get('darkMode'))
+    
+    // アプリ起動前に渡されたファイルがあれば読み込む
+    if (pendingFilePath != null) {
+      load(mainWindow, pendingFilePath)
+      pendingFilePath = null
+    }
   })
 
   mainWindow.webContents.on('before-input-event', (event: Event, input: Input) => {
@@ -195,11 +204,22 @@ app.on('activate', () => {
 })
 
 app.on('open-file', (event: Event, path_: string) => {
+  event.preventDefault()
+  
+  // アプリがまだreadyでない場合は、ファイルパスを保持しておく
+  if (!app.isReady()) {
+    pendingFilePath = path_
+    return
+  }
+  
   // TODO: BrowserWindow.fromId()を利用する
   const windows = BrowserWindow.getAllWindows()
   if (windows.length > 0) {
     // TODO: 複数のwindowが出てきた時は要対応
     load(windows[0], path_)
+  } else {
+    // ウィンドウがまだない場合はパスを保持
+    pendingFilePath = path_
   }
 })
 

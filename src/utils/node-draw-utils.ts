@@ -6,6 +6,8 @@ export const HANDLE_WIDTH = 10
 export const HANDLE_HEIGHT = 21
 
 const SPAN_Y_PER_NODE = 30.0 // 1ノードの取る縦幅
+const USE_OFFSET_Y_FOR_SINGLE_CHILD = true // 子が1ノードしかない場合は少し上に上げるかどうか
+const OFFSET_Y_FOR_SINGLE_CHILD = -3.0
 const GAP_X = 20
 
 export function getElementDimension(html: string, className: string | null = null) {
@@ -292,6 +294,11 @@ export function calcDrawStateMap(rootState: NodeState): NodeDrawStateMapType {
 // 各子のtopYを使って、最初の子のY方向の開始位置を算出
 const calcChildStartOffsetY = (state: NodeState, drawInfoMap: NodeDrawInfoMapType) => {
   let childYOffset = 0.0
+
+  if (USE_OFFSET_Y_FOR_SINGLE_CHILD && state.children.length === 1) {
+    // 子が1ノードしかない場合は少し上に上げておく
+    childYOffset = OFFSET_Y_FOR_SINGLE_CHILD
+  }
 
   for (let i = 0; i < state.children.length; i++) {
     // 子のY方向Boundsを算出

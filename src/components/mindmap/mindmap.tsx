@@ -54,12 +54,8 @@ import {
 import { useHistory } from './hooks/useHistory'
 import { useDragAndDrop, DragMode } from './hooks/useDragAndDrop'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { MoveDirection } from './constants'
 const { nmAPI } = window
-
-const MOVE_UP = 1
-const MOVE_DOWN = 2
-const MOVE_RIGHT = 3
-const MOVE_LEFT = 4
 
 const initialRange: Range = {
   left: Number.POSITIVE_INFINITY,
@@ -369,22 +365,22 @@ function MindMap() {
     // 上移動: ArrowUp または Ctrl+p
     {
       condition: (e) => e.key === 'ArrowUp' || (e.key === 'p' && (e.ctrlKey || e.metaKey)),
-      handler: (e) => move(MOVE_UP, e.shiftKey)
+      handler: (e) => move(MoveDirection.UP, e.shiftKey)
     },
     // 下移動: ArrowDown または Ctrl+n
     {
       condition: (e) => e.key === 'ArrowDown' || (e.key === 'n' && (e.ctrlKey || e.metaKey)),
-      handler: (e) => move(MOVE_DOWN, e.shiftKey)
+      handler: (e) => move(MoveDirection.DOWN, e.shiftKey)
     },
     // 右移動: ArrowRight または Ctrl+f
     {
       condition: (e) => e.key === 'ArrowRight' || (e.key === 'f' && (e.ctrlKey || e.metaKey)),
-      handler: (e) => move(MOVE_RIGHT, e.shiftKey)
+      handler: (e) => move(MoveDirection.RIGHT, e.shiftKey)
     },
     // 左移動: ArrowLeft または Ctrl+b
     {
       condition: (e) => e.key === 'ArrowLeft' || (e.key === 'b' && (e.ctrlKey || e.metaKey)),
-      handler: (e) => move(MOVE_LEFT, e.shiftKey)
+      handler: (e) => move(MoveDirection.LEFT, e.shiftKey)
     },
     // F2: テキスト編集
     {
@@ -993,7 +989,7 @@ function MindMap() {
     let node: NodeState | null = null
     const lastNode = getLastNode()
 
-    if (direction === MOVE_RIGHT) {
+    if (direction === MoveDirection.RIGHT) {
       // 右に移動
       if (lastNode.isLeft) {
         // 親に移動
@@ -1011,7 +1007,7 @@ function MindMap() {
       } else if (lastNode.folded) {
         toggleFold()
       }
-    } else if (direction === MOVE_LEFT) {
+    } else if (direction === MoveDirection.LEFT) {
       // 左に移動
       if (lastNode.isLeft) {
         node = getLatestVisibleChild(lastNode)
@@ -1028,9 +1024,9 @@ function MindMap() {
       } else if (lastNode.folded) {
         toggleFold()
       }
-    } else if (direction === MOVE_UP) {
+    } else if (direction === MoveDirection.UP) {
       node = getSibling(lastNode, true, cursorDepth)
-    } else if (direction === MOVE_DOWN) {
+    } else if (direction === MoveDirection.DOWN) {
       node = getSibling(lastNode, false, cursorDepth)
     }
 

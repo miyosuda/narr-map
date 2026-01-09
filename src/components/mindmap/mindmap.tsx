@@ -51,11 +51,8 @@ import {
   containsPosHalf
 } from '@/utils/node-draw-utils'
 import { useHistory } from './hooks/useHistory'
+import { useDragAndDrop, DragMode } from './hooks/useDragAndDrop'
 const { nmAPI } = window
-
-const DRAG_NODE = 1
-const DRAG_GHOST = 2
-const DRAG_BACK = 3
 
 const MOVE_UP = 1
 const MOVE_DOWN = 2
@@ -144,14 +141,14 @@ function MindMap() {
 
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState])
 
-  const [dragState, setDragState] = useState<NodeDragState | null>(null)
-
-  const [ghostState, setGhostState] = useState<NodeGhostState | null>(null)
-
-  const [canvasTranslatePos, setCanvasTranslatePos] = useState({
-    x: 640,
-    y: 480
-  })
+  const {
+    dragState,
+    ghostState,
+    canvasTranslatePos,
+    setDragState,
+    setGhostState,
+    setCanvasTranslatePos
+  } = useDragAndDrop()
 
   const [cursorDepth, setCursorDepth] = useState(0)
   const [copyingStates, setCopyingStates] = useState<NodeState[]>([])
@@ -457,7 +454,7 @@ function MindMap() {
         startY: py,
         startElementX: pickedNodeForHandle.shiftX,
         startElementY: pickedNodeForHandle.shiftY,
-        mode: DRAG_NODE
+        mode: DragMode.NODE
       })
 
       const newRootState = updateNodes(
@@ -517,7 +514,7 @@ function MindMap() {
           startY: py,
           startElementX: pickedNodeDrawState.x,
           startElementY: pickedNodeDrawState.y,
-          mode: DRAG_GHOST
+          mode: DragMode.GHOST
         })
 
         setGhostState({
@@ -556,7 +553,7 @@ function MindMap() {
         startY: e.clientY,
         startElementX: canvasTranslatePos.x,
         startElementY: canvasTranslatePos.y,
-        mode: DRAG_BACK
+        mode: DragMode.BACK
       })
     }
 
@@ -574,7 +571,7 @@ function MindMap() {
     const { x: px, y: py } = getLocalPos(e)
 
     if (dragState != null) {
-      if (dragState.mode === DRAG_NODE) {
+      if (dragState.mode === DragMode.NODE) {
         const dx = px - dragState.startX
         const dy = py - dragState.startY
 
@@ -591,7 +588,7 @@ function MindMap() {
           )
           setRootState(newRootState)
         }
-      } else if (dragState.mode === DRAG_GHOST) {
+      } else if (dragState.mode === DragMode.GHOST) {
         const dx = px - dragState.startX
         const dy = py - dragState.startY
 
@@ -653,7 +650,7 @@ function MindMap() {
           })
         )
         setRootState(newRootState)
-      } else if (dragState.mode === DRAG_BACK) {
+      } else if (dragState.mode === DragMode.BACK) {
         const dx = e.clientX - dragState.startX
         const dy = e.clientY - dragState.startY
 
@@ -697,7 +694,7 @@ function MindMap() {
     }
 
     if (dragState != null) {
-      if (dragState.mode === DRAG_NODE) {
+      if (dragState.mode === DragMode.NODE) {
         // ハンドルをdragして移動中だった場合
         const draggingNode = findNode(rootState, (state) => state.handleShown)
         if (draggingNode != null) {
@@ -712,7 +709,7 @@ function MindMap() {
           )
           setRootStateWithHistory(newRootState)
         }
-      } else if (dragState.mode === DRAG_GHOST) {
+      } else if (dragState.mode === DragMode.GHOST) {
         // ghostをhoverして乗せていた先のnode
         const ghostTargetState = findNode(
           rootState,

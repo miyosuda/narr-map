@@ -57,6 +57,14 @@ export type NodeGhostState = {
 
 export type NodeDrawStateMapType = { [key: number]: NodeDrawState }
 
+// Range for calculating bounds
+export type Range = {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
 // State of saving
 export type SavingNodeState = {
   text: string

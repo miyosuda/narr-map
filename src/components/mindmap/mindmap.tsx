@@ -6,6 +6,7 @@ import {
   NodeGhostState,
   NodeDrawStateMapType,
   SavingNodeState,
+  Range,
   HOVER_STATE_NONE,
   HOVER_STATE_LEFT,
   HOVER_STATE_RIGHT,
@@ -59,13 +60,6 @@ const MOVE_UP = 1
 const MOVE_DOWN = 2
 const MOVE_RIGHT = 3
 const MOVE_LEFT = 4
-
-type Range = {
-  left: number
-  right: number
-  top: number
-  bottom: number
-}
 
 const initialRange: Range = {
   left: Number.POSITIVE_INFINITY,

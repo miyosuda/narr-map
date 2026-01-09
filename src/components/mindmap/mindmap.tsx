@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import {
   NodeState,
@@ -50,6 +50,7 @@ import {
   containsPos,
   containsPosHalf
 } from '@/utils/node-draw-utils'
+import { useHistory } from './hooks/useHistory'
 const { nmAPI } = window
 
 const DRAG_NODE = 1
@@ -60,8 +61,6 @@ const MOVE_UP = 1
 const MOVE_DOWN = 2
 const MOVE_RIGHT = 3
 const MOVE_LEFT = 4
-
-const EDIT_HISTORY_MAX = 30
 
 type Range = {
   left: number
@@ -121,9 +120,19 @@ function MindMap() {
     })
   })
 
-  const [rootState, setRootState] = useState(initialRootState)
-  const [stateHistory, setStateHistory] = useState<NodeState[]>([initialRootState])
-  const [historyCursor, setHistoryCursor] = useState(0)
+  const setDirty = useCallback(() => {
+    nmAPI.sendMessage('set-dirty', null)
+  }, [])
+
+  const {
+    state: rootState,
+    setState: setRootState,
+    setStateWithHistory: setRootStateWithHistory,
+    undo,
+    redo,
+    reset: resetRootState
+  } = useHistory(initialRootState, { onDirty: setDirty })
+
   const [nextNodeId, setNextNodeId] = useState(2) // Node ID管理 (0,1はrootとdummpyRootで利用)
   const [nextEditId, setNextEditId] = useState(2) // Edit ID管理 (0,1はrootとdummpyRootで利用)
   const [darkMode, setDarkMode] = useState(false)
@@ -257,46 +266,6 @@ function MindMap() {
     return () => observer.disconnect()
   }, [])
 
-  const setRootStateWithHistory = (newRootState: NodeState): void => {
-    setRootState(newRootState)
-
-    let newStateHistory
-    if (historyCursor !== stateHistory.length - 1) {
-      newStateHistory = [...stateHistory.slice(0, historyCursor + 1), newRootState]
-    } else {
-      newStateHistory = [...stateHistory, newRootState]
-    }
-
-    if (newStateHistory.length > EDIT_HISTORY_MAX) {
-      newStateHistory = newStateHistory.slice(1)
-      setStateHistory(newStateHistory)
-    } else {
-      setStateHistory(newStateHistory)
-      setHistoryCursor(historyCursor + 1)
-    }
-
-    setDirty()
-  }
-
-  const setDirty = () => {
-    // TODO: useEffectの利用を検討
-    nmAPI.sendMessage('set-dirty', null)
-  }
-
-  const undo = () => {
-    if (historyCursor > 0) {
-      setRootState(stateHistory[historyCursor - 1])
-      setHistoryCursor(historyCursor - 1)
-    }
-  }
-
-  const redo = () => {
-    if (historyCursor < stateHistory.length - 1) {
-      setRootState(stateHistory[historyCursor + 1])
-      setHistoryCursor(historyCursor + 1)
-    }
-  }
-
   const save = () => {
     // TODO: useEffectの利用を検討
     const savingRootState = getSavingNodeState(rootState)
@@ -358,9 +327,7 @@ function MindMap() {
     const newRootState = getNodeStateFromSaving(savingState)
     const maxNodeId = getMaxNodeId(newRootState)
 
-    setRootState(newRootState)
-    setStateHistory([newRootState])
-    setHistoryCursor(0)
+    resetRootState(newRootState)
     setNextNodeId(maxNodeId + 1)
     setNextEditId(maxNodeId + 1)
 
@@ -371,9 +338,7 @@ function MindMap() {
   }
 
   const newFile = () => {
-    setRootState(initialRootState)
-    setStateHistory([initialRootState])
-    setHistoryCursor(0)
+    resetRootState(initialRootState)
     setNextNodeId(2)
     setNextEditId(2)
 

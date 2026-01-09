@@ -191,40 +191,27 @@ function MindMap() {
     }, 1000)
   }
 
+  const commandHandlers: Record<string, (obj?: any) => void> = {
+    copy: () => copy(),
+    paste: () => paste(),
+    cut: () => cut(),
+    selectall: () => selectAll(),
+    redo: () => redo(),
+    undo: () => undo(),
+    save: () => save(),
+    load: (obj) => load(obj),
+    export: (obj) => export_(obj),
+    'new-file': () => newFile(),
+    complete: () => complete(),
+    completed: (obj) => completed(obj),
+    'dark-mode': (obj) => setDarkMode(obj),
+    'clipboard-export': (obj) => clipboardExport(obj),
+    'open-text-import-modal': () => setTextImportModalOpen(true),
+    'text-import-complete': (obj) => handleTextImportComplete(obj),
+  }
+
   function handleCommand(command: string, obj: any) {
-    if (command === 'copy') {
-      copy()
-    } else if (command === 'paste') {
-      paste()
-    } else if (command === 'cut') {
-      cut()
-    } else if (command === 'selectall') {
-      selectAll()
-    } else if (command === 'redo') {
-      redo()
-    } else if (command === 'undo') {
-      undo()
-    } else if (command === 'save') {
-      save()
-    } else if (command === 'load') {
-      load(obj)
-    } else if (command === 'export') {
-      export_(obj)
-    } else if (command === 'new-file') {
-      newFile()
-    } else if (command === 'complete') {
-      complete()
-    } else if (command === 'completed') {
-      completed(obj)
-    } else if (command === 'dark-mode') {
-      setDarkMode(obj)
-    } else if (command === 'clipboard-export') {
-      clipboardExport(obj)
-    } else if (command === 'open-text-import-modal') {
-      setTextImportModalOpen(true)
-    } else if (command === 'text-import-complete') {
-      handleTextImportComplete(obj)
-    }
+    commandHandlers[command]?.(obj)
   }
 
   // メッセージハンドラー用のref

@@ -58,8 +58,22 @@ export const TextInput = (props: TextInputProps) => {
   useEffect(() => {
     // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
     const offFunc = nmAPI.onReceiveMessage((arg: string, obj: any) => {
-      if (execCommands.some((element) => element === arg)) {
-        // copy, paste, cut, undo, redo, selectAllのいずれかだった場合は、
+      if (arg === 'paste' && obj?.text !== undefined) {
+        // pasteコマンドの場合は、クリップボードの内容をtextareaに挿入
+        const ta = textarea.current
+        if (ta) {
+          const start = ta.selectionStart
+          const end = ta.selectionEnd
+          const currentText = ta.value
+          const newText = currentText.substring(0, start) + obj.text + currentText.substring(end)
+          setText(newText)
+          // カーソル位置を更新
+          setTimeout(() => {
+            ta.setSelectionRange(start + obj.text.length, start + obj.text.length)
+          }, 0)
+        }
+      } else if (execCommands.some((element) => element === arg)) {
+        // copy, cut, undo, redo, selectAllの場合は、
         // documentにコマンドを実行させてtextInput内のundo,redoに対処.
         document.execCommand(arg)
       } else {

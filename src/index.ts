@@ -788,7 +788,8 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Paste',
         accelerator: 'CmdOrCtrl+V',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          browserWindow.webContents.send('request', 'paste')
+          const clipboardText = clipboard.readText()
+          browserWindow.webContents.send('request', 'paste', { text: clipboardText })
         }
       },
       {

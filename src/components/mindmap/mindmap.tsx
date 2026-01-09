@@ -151,15 +151,23 @@ function MindMap() {
   const svg = useRef<SVGSVGElement>(null)
   const canvas = useRef<SVGSVGElement>(null)
 
-  // マウス,キーハンドラの設定
+  // ハンドラー関数をrefに保存（イベントリスナーから最新のstateを参照するため）
+  const handleKeyDownRef = useRef<(e: KeyboardEvent) => void>(() => {})
+  const handleMouseUpRef = useRef<(e: MouseEvent) => void>(() => {})
+
+  // マウス,キーハンドラの設定（一度だけ実行）
   useEffect(() => {
-    // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
-    prepareHandlers()
+    const keyDownHandler = (e: KeyboardEvent) => handleKeyDownRef.current(e)
+    const mouseUpHandler = (e: MouseEvent) => handleMouseUpRef.current(e)
+
+    document.body.addEventListener('keydown', keyDownHandler)
+    document.addEventListener('mouseup', mouseUpHandler)
 
     return () => {
-      cleanupHandlers()
+      document.body.removeEventListener('keydown', keyDownHandler)
+      document.removeEventListener('mouseup', mouseUpHandler)
     }
-  })
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -217,26 +225,16 @@ function MindMap() {
     }
   }
 
+  // メッセージハンドラー用のref
+  const handleMessageRef = useRef<(arg: string, obj: any) => void>(() => {})
+
+  // メッセージハンドラーの設定（一度だけ実行）
   useEffect(() => {
-    // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
     const offFunc = nmAPI.onReceiveMessage((arg: string, obj: any) => {
-      // textInput表示中かどうか
-      const editingNodeState = findNode(rootState, (state) => state.editState !== EDIT_STATE_NONE)
-      if (editingNodeState != null) {
-        // textInput表示中だった場合はTextInput側が処理する
-      } else if (textImportModalOpen) {
-        // TextImportModal表示中だった場合はTextImportModal側が処理する
-        // ただし、モーダル関連のコマンドは処理する
-        if (arg === 'text-import-complete') {
-          handleCommand(arg, obj)
-        }
-      } else {
-        // textInput表示中でない場合
-        handleCommand(arg, obj)
-      }
+      handleMessageRef.current(arg, obj)
     })
     return offFunc
-  })
+  }, [])
 
   useEffect(() => {
     // 初回render後にrecenterする
@@ -385,14 +383,26 @@ function MindMap() {
     setCopyingStates([])
   }
 
-  function prepareHandlers() {
-    document.addEventListener('mouseup', handleMouseUp)
-    document.body.addEventListener('keydown', handleKeyDown)
-  }
+  // refを最新のハンドラーで更新
+  handleKeyDownRef.current = handleKeyDown
+  handleMouseUpRef.current = handleMouseUp
+  handleMessageRef.current = handleMessage
 
-  function cleanupHandlers() {
-    document.removeEventListener('mouseup', handleMouseUp)
-    document.body.removeEventListener('keydown', handleKeyDown)
+  function handleMessage(arg: string, obj: any) {
+    // textInput表示中かどうか
+    const editingNodeState = findNode(rootState, (state) => state.editState !== EDIT_STATE_NONE)
+    if (editingNodeState != null) {
+      // textInput表示中だった場合はTextInput側が処理する
+    } else if (textImportModalOpen) {
+      // TextImportModal表示中だった場合はTextImportModal側が処理する
+      // ただし、モーダル関連のコマンドは処理する
+      if (arg === 'text-import-complete') {
+        handleCommand(arg, obj)
+      }
+    } else {
+      // textInput表示中でない場合
+      handleCommand(arg, obj)
+    }
   }
 
   function handleKeyDown(e: KeyboardEvent) {

@@ -52,6 +52,7 @@ import {
 } from '@/utils/node-draw-utils'
 import { useHistory } from './hooks/useHistory'
 import { useDragAndDrop, DragMode } from './hooks/useDragAndDrop'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 const { nmAPI } = window
 
 const MOVE_UP = 1
@@ -158,19 +159,14 @@ function MindMap() {
   const canvas = useRef<SVGSVGElement>(null)
 
   // ハンドラー関数をrefに保存（イベントリスナーから最新のstateを参照するため）
-  const handleKeyDownRef = useRef<(e: KeyboardEvent) => void>(() => {})
   const handleMouseUpRef = useRef<(e: MouseEvent) => void>(() => {})
 
-  // マウス,キーハンドラの設定（一度だけ実行）
+  // マウスハンドラの設定（一度だけ実行）
   useEffect(() => {
-    const keyDownHandler = (e: KeyboardEvent) => handleKeyDownRef.current(e)
     const mouseUpHandler = (e: MouseEvent) => handleMouseUpRef.current(e)
-
-    document.body.addEventListener('keydown', keyDownHandler)
     document.addEventListener('mouseup', mouseUpHandler)
 
     return () => {
-      document.body.removeEventListener('keydown', keyDownHandler)
       document.removeEventListener('mouseup', mouseUpHandler)
     }
   }, [])
@@ -346,7 +342,6 @@ function MindMap() {
   }
 
   // refを最新のハンドラーで更新
-  handleKeyDownRef.current = handleKeyDown
   handleMouseUpRef.current = handleMouseUp
   handleMessageRef.current = handleMessage
 
@@ -367,57 +362,71 @@ function MindMap() {
     }
   }
 
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.target !== document.body) {
-      // input入力時のkey押下は無視する
-      return
+  // キーボードショートカットの定義
+  useKeyboardShortcuts([
+    // Tab: 子ノード追加
+    {
+      condition: { key: 'Tab' },
+      handler: () => addChildToLatest()
+    },
+    // Enter: 兄弟ノード追加
+    {
+      condition: (e) => e.key === 'Enter' && !e.ctrlKey && !e.metaKey,
+      handler: () => addSiblingToLatest()
+    },
+    // Ctrl+Enter: テキスト編集
+    {
+      condition: (e) => e.key === 'Enter' && (e.ctrlKey || e.metaKey),
+      handler: () => editText(getLastNode())
+    },
+    // Backspace: 選択ノード削除
+    {
+      condition: { key: 'Backspace' },
+      handler: () => deleteSelectedNodes(),
+      preventDefault: false
+    },
+    // 上移動: ArrowUp または Ctrl+p
+    {
+      condition: (e) => e.key === 'ArrowUp' || (e.key === 'p' && (e.ctrlKey || e.metaKey)),
+      handler: (e) => move(MOVE_UP, e.shiftKey)
+    },
+    // 下移動: ArrowDown または Ctrl+n
+    {
+      condition: (e) => e.key === 'ArrowDown' || (e.key === 'n' && (e.ctrlKey || e.metaKey)),
+      handler: (e) => move(MOVE_DOWN, e.shiftKey)
+    },
+    // 右移動: ArrowRight または Ctrl+f
+    {
+      condition: (e) => e.key === 'ArrowRight' || (e.key === 'f' && (e.ctrlKey || e.metaKey)),
+      handler: (e) => move(MOVE_RIGHT, e.shiftKey)
+    },
+    // 左移動: ArrowLeft または Ctrl+b
+    {
+      condition: (e) => e.key === 'ArrowLeft' || (e.key === 'b' && (e.ctrlKey || e.metaKey)),
+      handler: (e) => move(MOVE_LEFT, e.shiftKey)
+    },
+    // F2: テキスト編集
+    {
+      condition: { key: 'F2' },
+      handler: () => editText(getLastNode())
+    },
+    // Ctrl+i: 挿入モードでテキスト編集
+    {
+      condition: (e) => e.key === 'i' && (e.ctrlKey || e.metaKey),
+      handler: () => editText(getLastNode(), true)
+    },
+    // Space: 折りたたみ切り替え
+    {
+      condition: { key: ' ' },
+      handler: () => toggleFold()
+    },
+    // 英数字キー: 挿入モードでテキスト編集
+    {
+      condition: (e) => e.keyCode >= 49 && e.keyCode <= 90 && !(e.ctrlKey || e.metaKey),
+      handler: () => editText(getLastNode(), true),
+      preventDefault: false
     }
-
-    const shiftDown = e.shiftKey
-    const ctrlDown = e.ctrlKey || e.metaKey
-
-    if (e.key === 'Tab') {
-      addChildToLatest()
-      e.preventDefault()
-    } else if (e.key === 'Enter') {
-      if (!e.ctrlKey) {
-        addSiblingToLatest()
-      } else {
-        const targetNode = getLastNode()
-        editText(targetNode)
-      }
-      e.preventDefault()
-    } else if (e.key === 'Backspace') {
-      deleteSelectedNodes()
-    } else if (e.key === 'ArrowUp' || (e.key === 'p' && ctrlDown)) {
-      move(MOVE_UP, shiftDown)
-    } else if (e.key === 'ArrowDown' || (e.key === 'n' && ctrlDown)) {
-      move(MOVE_DOWN, shiftDown)
-    } else if (e.key === 'ArrowRight' || (e.key === 'f' && ctrlDown)) {
-      move(MOVE_RIGHT, shiftDown)
-    } else if (e.key === 'ArrowLeft' || (e.key === 'b' && ctrlDown)) {
-      move(MOVE_LEFT, shiftDown)
-    } else if (e.key === 'F2') {
-      const targetNode = getLastNode()
-      editText(targetNode)
-    } else if (e.key === 'i' && ctrlDown) {
-      const targetNode = getLastNode()
-      editText(targetNode, true)
-    } else if (e.key === ' ') {
-      toggleFold()
-      e.preventDefault()
-    } else if (
-      e.keyCode >= 49 && // '1'
-      e.keyCode <= 90 && // 'Z'
-      !ctrlDown
-    ) {
-      const targetNode = getLastNode()
-      editText(targetNode, true)
-    } else if (e.key === 'F2') {
-      const targetNode = getLastNode()
-      editText(targetNode)
-    }
-  }
+  ])
 
   function handleMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) {

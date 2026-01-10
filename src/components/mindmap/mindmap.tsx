@@ -2,8 +2,6 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import {
   NodeState,
-  NodeDragState,
-  NodeGhostState,
   NodeDrawStateMapType,
   SavingNodeState,
   Range,
@@ -145,8 +143,8 @@ function MindMap() {
   const [copyingStates, setCopyingStates] = useState<NodeState[]>([])
 
   // SVG, Canvasエレメントへのリファレンス
-  const svg = useRef<SVGSVGElement>(null)
-  const canvas = useRef<SVGSVGElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+  const canvasRef = useRef<SVGSVGElement>(null)
 
   // ハンドラー関数をrefに保存（イベントリスナーから最新のstateを参照するため）
   const handleMouseUpRef = useRef<(e: MouseEvent) => void>(() => {})
@@ -219,7 +217,7 @@ function MindMap() {
     // 初回render後にrecenterする
     // (SVGのサイズはCSSの flex-grow, h-full で決まり、
     // useEffectの実行時点でレイアウト計算が完了していない場合がありえるため)
-    if (!svg.current) {
+    if (!svgRef.current) {
       return
     }
 
@@ -231,7 +229,7 @@ function MindMap() {
       }
     })
 
-    observer.observe(svg.current)
+    observer.observe(svgRef.current)
 
     return () => observer.disconnect()
   }, [])
@@ -1106,8 +1104,8 @@ function MindMap() {
     const centerX = (range.left + range.right) * 0.5
     const centerY = (range.top + range.bottom) * 0.5
 
-    const width = svg.current!.width.baseVal.value
-    const height = svg.current!.height.baseVal.value
+    const width = svgRef.current!.width.baseVal.value
+    const height = svgRef.current!.height.baseVal.value
 
     setCanvasTranslatePos({ x: width / 2 - centerX, y: height / 2 - centerY })
   }
@@ -1202,10 +1200,10 @@ function MindMap() {
   }
 
   function getLocalPos(e: React.MouseEvent) {
-    const pos = svg.current!.createSVGPoint()
+    const pos = svgRef.current!.createSVGPoint()
     pos.x = e.clientX
     pos.y = e.clientY
-    const canvasLocalPos = pos.matrixTransform(canvas.current!.getScreenCTM()!.inverse())
+    const canvasLocalPos = pos.matrixTransform(canvasRef.current!.getScreenCTM()!.inverse())
     return canvasLocalPos
   }
 
@@ -1235,7 +1233,7 @@ function MindMap() {
   return (
     <>
       <svg
-        ref={svg}
+        ref={svgRef}
         className={svgClassName}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -1243,7 +1241,7 @@ function MindMap() {
       >
         {connecting && <Spinner darkMode={darkMode} />}
 
-        <g id="canvas" ref={canvas} transform={canvasTransform}>
+        <g id="canvas" ref={canvasRef} transform={canvasTransform}>
           <g id="nodes">
             <Node
               key={rootState.id}

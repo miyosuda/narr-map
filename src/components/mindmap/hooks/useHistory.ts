@@ -14,8 +14,6 @@ type UseHistoryReturn<T> = {
   undo: () => void
   redo: () => void
   reset: (newState: T) => void
-  canUndo: boolean
-  canRedo: boolean
 }
 
 export function useHistory<T>(
@@ -96,7 +94,5 @@ export function useHistory<T>(
     undo,
     redo,
     reset,
-    canUndo: cursorRef.current > 0,
-    canRedo: cursorRef.current < historyRef.current.length - 1
   }
 }

@@ -50,10 +50,22 @@ import {
   containsPosHalf
 } from '@/utils/node-draw-utils'
 import { useHistory } from './hooks/useHistory'
-import { useDragAndDrop, DragMode } from './hooks/useDragAndDrop'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { MoveDirection } from './constants'
+import { NodeDragState, NodeGhostState } from '@/types'
+
 const { nmAPI } = window
+
+export const DragMode = {
+  NODE: 1,
+  GHOST: 2,
+  BACK: 3
+} as const
+
+type CanvasPosition = {
+  x: number
+  y: number
+}
 
 const initialRange: Range = {
   left: Number.POSITIVE_INFINITY,
@@ -105,6 +117,7 @@ function MindMap() {
       isLeft: true
     })
   })
+  const initialCanvasPosition = { x: 640, y: 480 }  
 
   const setDirty = useCallback(() => {
     nmAPI.sendMessage('set-dirty', null)
@@ -126,23 +139,15 @@ function MindMap() {
   const [copiedToastVisible, setCopiedToastVisible] = useState(false)
   const [textImportModalOpen, setTextImportModalOpen] = useState(false)
   const [isTextGenerating, setIsTextGenerating] = useState(false)
-  const toastTimerRef = useRef<number | null>(null)
+  const [dragState, setDragState] = useState<NodeDragState | null>(null)
+  const [ghostState, setGhostState] = useState<NodeGhostState | null>(null)
+  const [canvasTranslatePos, setCanvasTranslatePos] = useState<CanvasPosition>(initialCanvasPosition)  
+  const [cursorDepth, setCursorDepth] = useState(0)
+  const [copyingStates, setCopyingStates] = useState<NodeState[]>([])  
 
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState])
 
-  const {
-    dragState,
-    ghostState,
-    canvasTranslatePos,
-    setDragState,
-    setGhostState,
-    setCanvasTranslatePos
-  } = useDragAndDrop()
-
-  const [cursorDepth, setCursorDepth] = useState(0)
-  const [copyingStates, setCopyingStates] = useState<NodeState[]>([])
-
-  // SVG, Canvasエレメントへのリファレンス
+  const toastTimerRef = useRef<number | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const canvasRef = useRef<SVGSVGElement>(null)
 

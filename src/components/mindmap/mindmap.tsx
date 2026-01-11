@@ -2,9 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import {
   NodeState,
-  NodeDrawStateMapType,
   SavingNodeState,
-  Range,
   HOVER_STATE_NONE,
   HOVER_STATE_LEFT,
   HOVER_STATE_RIGHT,
@@ -26,7 +24,6 @@ import {
   hasNodeInAncestor,
   calcDepth,
   hasChildren,
-  getExtendedChildren,
   findNode,
   findNodes,
   updateNodes,
@@ -51,6 +48,7 @@ import {
 } from '@/utils/node-draw-utils'
 import { useHistory } from './hooks/useHistory'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useCanvasTransform } from './hooks/useCanvasTransform'
 import { MoveDirection } from './constants'
 import { NodeDragState, NodeGhostState } from '@/types'
 
@@ -62,48 +60,6 @@ export const DragMode = {
   BACK: 3
 } as const
 
-type CanvasPosition = {
-  x: number
-  y: number
-}
-
-const initialRange: Range = {
-  left: Number.POSITIVE_INFINITY,
-  right: Number.NEGATIVE_INFINITY,
-  top: Number.POSITIVE_INFINITY,
-  bottom: Number.NEGATIVE_INFINITY
-}
-
-const getRange = (
-  state: NodeState,
-  drawStateMap: NodeDrawStateMapType,
-  range: Range = initialRange
-): Range => {
-  const drawState = drawStateMap[state.id]
-
-  const left = Math.min(range.left, drawState.x)
-  const right = Math.max(range.right, drawState.x + drawState.width)
-  const top = Math.min(range.top, drawState.y)
-  const bottom = Math.max(range.bottom, drawState.y + drawState.height)
-
-  const newRange = {
-    left,
-    right,
-    top,
-    bottom
-  }
-
-  const f = (r: Range, s: NodeState): Range => {
-    return getRange(s, drawStateMap, r)
-  }
-
-  if (state.folded) {
-    return newRange
-  } else {
-    const children = getExtendedChildren(state)
-    return children.reduce(f, newRange)
-  }
-}
 
 function MindMap() {
   const initialRootState = getNodeState({
@@ -116,8 +72,7 @@ function MindMap() {
       editId: 1,
       isLeft: true
     })
-  })
-  const initialCanvasPosition = { x: 640, y: 480 }  
+  })  
 
   const setDirty = useCallback(() => {
     nmAPI.sendMessage('set-dirty', null)
@@ -141,15 +96,18 @@ function MindMap() {
   const [isTextGenerating, setIsTextGenerating] = useState(false)
   const [dragState, setDragState] = useState<NodeDragState | null>(null)
   const [ghostState, setGhostState] = useState<NodeGhostState | null>(null)
-  const [canvasTranslatePos, setCanvasTranslatePos] = useState<CanvasPosition>(initialCanvasPosition)  
   const [cursorDepth, setCursorDepth] = useState(0)
   const [copyingStates, setCopyingStates] = useState<NodeState[]>([])  
-
-  const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState])
 
   const toastTimerRef = useRef<number | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const canvasRef = useRef<SVGSVGElement>(null)
+
+  const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState])
+
+  const { canvasTranslatePos, setCanvasTranslatePos, canvasTransform, recenter } = useCanvasTransform(
+    { rootState, drawStateMap, svgRef }
+  )
 
   // ハンドラー関数をrefに保存（イベントリスナーから最新のstateを参照するため）
   const handleMouseUpRef = useRef<(e: MouseEvent) => void>(() => {})
@@ -1103,18 +1061,6 @@ function MindMap() {
     }
   }
 
-  function recenter() {
-    const range = getRange(rootState, drawStateMap)
-
-    const centerX = (range.left + range.right) * 0.5
-    const centerY = (range.top + range.bottom) * 0.5
-
-    const width = svgRef.current!.width.baseVal.value
-    const height = svgRef.current!.height.baseVal.value
-
-    setCanvasTranslatePos({ x: width / 2 - centerX, y: height / 2 - centerY })
-  }
-
   function getLastNode(): NodeState {
     const selectedNodes = findNodes(rootState, (state) => state.selected)
     if (selectedNodes.length === 0) {
@@ -1229,9 +1175,6 @@ function MindMap() {
       textSelected: editingState.editState === EDIT_STATE_INSERT ? false : true
     }
   }
-
-  // canvasのtranslate用意
-  const canvasTransform = `translate(${canvasTranslatePos.x},${canvasTranslatePos.y})`
 
   const svgClassName = darkMode ? 'flex-grow h-full bg-black' : 'flex-grow h-full bg-white'
 

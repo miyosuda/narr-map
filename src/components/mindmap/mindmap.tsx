@@ -682,6 +682,98 @@ function MindMap() {
     }
   }
 
+  function handleMouseUpForNode() {
+    // ハンドルをdragして移動中だった場合
+    const draggingNode = findNode(rootState, (state) => state.handleShown)
+    if (draggingNode != null) {
+      // 表示していたhandleを非表示に
+      const newRootState = updateNodes(
+        rootState,
+        (state) => state.id === draggingNode!.id,
+        (state) => ({
+          ...state,
+          handleShown: false
+        })
+      )
+      setRootStateWithHistory(newRootState)
+    }
+  }
+
+  function handleMouseUpForGhost() {
+    // ghostをhoverして乗せていた先のnode
+    const ghostTargetState = findNode(
+      rootState,
+      (state) => state.hoverState !== HOVER_STATE_NONE
+    )
+
+    // ghostを出した元のnode
+    const ghostOrgNodeId = ghostState!.nodeId
+    const ghostOrgState = findNode(rootState, (state) => state.id === ghostOrgNodeId)
+
+    // hover stateをクリア
+    const newRootState = updateNodes(
+      rootState,
+      (state) => state.hoverState !== HOVER_STATE_NONE,
+      (state) => ({
+        ...state,
+        hoverState: HOVER_STATE_NONE
+      })
+    )
+    setRootState(newRootState)
+
+    // Ghostを消す
+    setGhostState(null)
+
+    if (ghostTargetState !== null) {
+      // ghostのhover先があった場合
+      let newChildState = ghostOrgState!
+      const targetHoverState = ghostTargetState.hoverState
+
+      // nodeの右側にhoverして離した場合のみ、追加先がdummy nodeとなる.
+      const toAccompanied = targetHoverState === HOVER_STATE_LEFT && isRoot(ghostTargetState)
+      const targetState = toAccompanied ? ghostTargetState.accompaniedState! : ghostTargetState
+
+      if (!hasNodeInAncestor(targetState, newChildState)) {
+        // isLeftを移動先に合わせる
+        if (targetState.isLeft !== newChildState.isLeft) {
+          newChildState = updateNodes(
+            newChildState,
+            (state) => true,
+            (state) => ({ ...state, isLeft: targetState.isLeft })
+          )
+        } else {
+          newChildState = cloneNodeState(newChildState)
+        }
+
+        // 移動元の親から外す
+        const newRootState0 = updateNodes(
+          newRootState,
+          (state) => state.id === newChildState.parent!.id,
+          (state) => removeChildNode(state, newChildState.id)
+        )
+
+        if (targetHoverState === HOVER_STATE_RIGHT || targetHoverState === HOVER_STATE_LEFT) {
+          // 移動先の子として追加
+          const newRootState1 = updateNodes(
+            newRootState0,
+            (state) => state.id === targetState.id,
+            (state) => addChildNode(state, newChildState)
+          )
+          setRootStateWithHistory(newRootState1)
+        } else if (targetHoverState === HOVER_STATE_TOP) {
+          // nodeの上側にhoverして離した
+          // 移動先の上にsiblingとして追加する
+          const newRootState1 = updateNodes(
+            newRootState0,
+            (state) => state.id === targetState.parent!.id,
+            (state) => addChildNodeAbove(state, newChildState, ghostTargetState)
+          )
+          setRootStateWithHistory(newRootState1)
+        }
+      }
+    }
+  }
+
   function handleMouseUp(e: MouseEvent) {
     if (e.button !== 0) {
       // 左クリック以外の場合
@@ -691,92 +783,10 @@ function MindMap() {
     if (dragState != null) {
       if (dragState.mode === DragMode.NODE) {
         // ハンドルをdragして移動中だった場合
-        const draggingNode = findNode(rootState, (state) => state.handleShown)
-        if (draggingNode != null) {
-          // 表示していたhandleを非表示に
-          const newRootState = updateNodes(
-            rootState,
-            (state) => state.id === draggingNode!.id,
-            (state) => ({
-              ...state,
-              handleShown: false
-            })
-          )
-          setRootStateWithHistory(newRootState)
-        }
+        handleMouseUpForNode()
       } else if (dragState.mode === DragMode.GHOST) {
-        // ghostをhoverして乗せていた先のnode
-        const ghostTargetState = findNode(
-          rootState,
-          (state) => state.hoverState !== HOVER_STATE_NONE
-        )
-
-        // ghostを出した元のnode
-        const ghostOrgNodeId = ghostState!.nodeId
-        const ghostOrgState = findNode(rootState, (state) => state.id === ghostOrgNodeId)
-
-        // hover stateをクリア
-        const newRootState = updateNodes(
-          rootState,
-          (state) => state.hoverState !== HOVER_STATE_NONE,
-          (state) => ({
-            ...state,
-            hoverState: HOVER_STATE_NONE
-          })
-        )
-        setRootState(newRootState)
-
-        // Ghostを消す
-        setGhostState(null)
-
-        if (ghostTargetState !== null) {
-          // ghostのhover先があった場合
-          let newChildState = ghostOrgState!
-          const targetHoverState = ghostTargetState.hoverState
-
-          // nodeの右側にhoverして離した場合のみ、追加先がdummy nodeとなる.
-          const toAccompanied = targetHoverState === HOVER_STATE_LEFT && isRoot(ghostTargetState)
-          const targetState = toAccompanied ? ghostTargetState.accompaniedState! : ghostTargetState
-
-          if (!hasNodeInAncestor(targetState, newChildState)) {
-            // isLeftを移動先に合わせる
-            if (targetState.isLeft !== newChildState.isLeft) {
-              newChildState = updateNodes(
-                newChildState,
-                (state) => true,
-                (state) => ({ ...state, isLeft: targetState.isLeft })
-              )
-            } else {
-              newChildState = cloneNodeState(newChildState)
-            }
-
-            // 移動元の親から外す
-            const newRootState0 = updateNodes(
-              newRootState,
-              (state) => state.id === newChildState.parent!.id,
-              (state) => removeChildNode(state, newChildState.id)
-            )
-
-            if (targetHoverState === HOVER_STATE_RIGHT || targetHoverState === HOVER_STATE_LEFT) {
-              // 移動先の子として追加
-              const newRootState1 = updateNodes(
-                newRootState0,
-                (state) => state.id === targetState.id,
-                (state) => addChildNode(state, newChildState)
-              )
-              setRootStateWithHistory(newRootState1)
-            } else if (targetHoverState === HOVER_STATE_TOP) {
-              // nodeの上側にhoverして離した
-              // 移動先の上にsiblingとして追加する
-              const newRootState1 = updateNodes(
-                newRootState0,
-                (state) => state.id === targetState.parent!.id,
-                (state) => addChildNodeAbove(state, newChildState, ghostTargetState)
-              )
-              setRootStateWithHistory(newRootState1)
-            }
-          }
-        }
+        // GhostとしてNodeをdragして移動中だった場合
+        handleMouseUpForGhost()
       }
 
       // drag stateをクリア

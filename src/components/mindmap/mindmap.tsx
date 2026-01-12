@@ -366,6 +366,121 @@ function MindMap() {
     }
   ])
 
+  // ハンドルの上でクリックした
+  function handleMouseDownForHandle(px: number, py: number, node: NodeState) {
+    setDragState({
+      startX: px,
+      startY: py,
+      startElementX: node.shiftX,
+      startElementY: node.shiftY,
+      mode: DragMode.NODE
+    })
+
+    const newRootState = updateNodes(
+      rootState,
+      (state) => state.id === node!.id,
+      (state) => ({
+        ...state,
+        handleShown: true
+      })
+    )
+    setRootState(newRootState)
+  }
+
+  // Nodeの上でクリックした
+  function handleMouseDownForNode(px: number, py: number, shiftDown: boolean, pickedNode: NodeState) {
+    let newRootState
+
+    if (shiftDown) {
+      // shift押下時
+      // pickしたnodeをselectedに
+      newRootState = updateNodes(
+        rootState,
+        (state) => state.id === pickedNode!.id,
+        (state) => ({
+          ...state,
+          selected: true,
+          editId: nextEditId
+        })
+      )
+    } else {
+      // pickしたnode以外のselectedをクリア
+      newRootState = updateNodes(
+        rootState,
+        (state) => state.selected,
+        (state) => ({
+          ...state,
+          selected: false
+        })
+      )
+      newRootState = updateNodes(
+        newRootState,
+        (state) => state.id === pickedNode!.id,
+        (state) => ({
+          ...state,
+          selected: true,
+          editId: nextEditId
+        })
+      )
+    }
+
+    setNextEditId(nextEditId + 1)
+    setRootState(newRootState)
+
+    if (!isRoot(pickedNode)) {
+      // GHOST表示
+      const pickedNodeDrawState = drawStateMap[pickedNode!.id]
+      setDragState({
+        startX: px,
+        startY: py,
+        startElementX: pickedNodeDrawState.x,
+        startElementY: pickedNodeDrawState.y,
+        mode: DragMode.GHOST
+      })
+
+      setGhostState({
+        x: pickedNodeDrawState.x,
+        y: pickedNodeDrawState.y,
+        width: pickedNodeDrawState.width,
+        height: pickedNodeDrawState.height,
+        nodeId: pickedNode!.id
+      })
+    }
+  }
+
+  // 背景の上でクリックした
+  function handleMouseDownForBack(clientX: number, clientY: number) {
+    // 1つを除いてNode選択クリア
+    const lastNode = getLastNode()
+    let newRootState = updateNodes(
+      rootState,
+      (state) => state.selected,
+      (state) => ({
+        ...state,
+        selected: false
+      })
+    )
+    newRootState = updateNodes(
+      newRootState,
+      (state) => state.id === lastNode.id,
+      (state) => ({
+        ...state,
+        selected: true,
+        editId: nextEditId
+      })
+    )
+    setNextEditId(nextEditId + 1)
+    setRootState(newRootState)
+
+    setDragState({
+      startX: clientX,
+      startY: clientY,
+      startElementX: canvasTranslatePos.x,
+      startElementY: canvasTranslatePos.y,
+      mode: DragMode.BACK
+    })    
+  }
+
   function handleMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) {
       // 左クリック以外の場合
@@ -396,116 +511,139 @@ function MindMap() {
 
     if (pickedNodeForHandle != null) {
       // ハンドルの上でクリックした
-      setDragState({
-        startX: px,
-        startY: py,
-        startElementX: pickedNodeForHandle.shiftX,
-        startElementY: pickedNodeForHandle.shiftY,
-        mode: DragMode.NODE
-      })
-
-      const newRootState = updateNodes(
-        rootState,
-        (state) => state.id === pickedNodeForHandle!.id,
-        (state) => ({
-          ...state,
-          handleShown: true
-        })
-      )
-      setRootState(newRootState)
+      handleMouseDownForHandle(px, py, pickedNodeForHandle)
     } else if (pickedNode != null) {
       // Nodeの上でクリックした
-      let newRootState
-
-      if (shiftDown) {
-        // shift押下時
-        // pickしたnodeをselectedに
-        newRootState = updateNodes(
-          rootState,
-          (state) => state.id === pickedNode!.id,
-          (state) => ({
-            ...state,
-            selected: true,
-            editId: nextEditId
-          })
-        )
-      } else {
-        // pickしたnode以外のselectedをクリア
-        newRootState = updateNodes(
-          rootState,
-          (state) => state.selected,
-          (state) => ({
-            ...state,
-            selected: false
-          })
-        )
-        newRootState = updateNodes(
-          newRootState,
-          (state) => state.id === pickedNode!.id,
-          (state) => ({
-            ...state,
-            selected: true,
-            editId: nextEditId
-          })
-        )
-      }
-
-      setNextEditId(nextEditId + 1)
-      setRootState(newRootState)
-
-      if (!isRoot(pickedNode)) {
-        // GHOST表示
-        const pickedNodeDrawState = drawStateMap[pickedNode!.id]
-        setDragState({
-          startX: px,
-          startY: py,
-          startElementX: pickedNodeDrawState.x,
-          startElementY: pickedNodeDrawState.y,
-          mode: DragMode.GHOST
-        })
-
-        setGhostState({
-          x: pickedNodeDrawState.x,
-          y: pickedNodeDrawState.y,
-          width: pickedNodeDrawState.width,
-          height: pickedNodeDrawState.height,
-          nodeId: pickedNode!.id
-        })
-      }
+      handleMouseDownForNode(px, py, shiftDown, pickedNode)
     } else {
-      // 1つを除いてNode選択クリア
-      const lastNode = getLastNode()
-      let newRootState = updateNodes(
-        rootState,
-        (state) => state.selected,
-        (state) => ({
-          ...state,
-          selected: false
-        })
-      )
-      newRootState = updateNodes(
-        newRootState,
-        (state) => state.id === lastNode.id,
-        (state) => ({
-          ...state,
-          selected: true,
-          editId: nextEditId
-        })
-      )
-      setNextEditId(nextEditId + 1)
-      setRootState(newRootState)
-
-      setDragState({
-        startX: e.clientX,
-        startY: e.clientY,
-        startElementX: canvasTranslatePos.x,
-        startElementY: canvasTranslatePos.y,
-        mode: DragMode.BACK
-      })
+      // 背景の上でクリックした
+      handleMouseDownForBack(e.clientX, e.clientY)
     }
 
     if (document.activeElement === document.body) {
       e.preventDefault()
+    }
+  }
+
+  // ハンドルをdragして移動中
+  function handleMouseMoveForHandle(px: number, py: number) {
+    const dx = px - dragState.startX
+    const dy = py - dragState.startY
+
+    const draggingNode = findNode(rootState, (state) => state.handleShown)
+    if (draggingNode != null) {
+      const newRootState = updateNodes(
+        rootState,
+        (state) => state.id === draggingNode!.id,
+        (state) => ({
+          ...state,
+          shiftX: dragState.startElementX + dx,
+          shiftY: dragState.startElementY + dy
+        })
+      )
+      setRootState(newRootState)
+    }    
+  }
+
+  function handleMouseMoveForGhost(px: number, py: number) {
+    const dx = px - dragState.startX
+    const dy = py - dragState.startY
+
+    setGhostState({
+      ...ghostState!,
+      x: dragState.startElementX + dx,
+      y: dragState.startElementY + dy
+    })
+
+    const calcHoverState = (state: NodeState, x: number, y: number) => {
+      const drawState = drawStateMap[state.id]
+      if (state.id === ghostState?.nodeId) {
+        return HOVER_STATE_NONE
+      }
+
+      if (isDummy(state)) {
+        return HOVER_STATE_NONE
+      }
+
+      if (containsPosHalf(state, drawState, x, y, true)) {
+        // 左半分
+        if (isRoot(state)) {
+          // rootの場合
+          return HOVER_STATE_LEFT
+        } else {
+          if (state.isLeft) {
+            // 左nodeの場合
+            return HOVER_STATE_LEFT
+          } else {
+            // 右nodeの場合
+            return HOVER_STATE_TOP
+          }
+        }
+      } else if (containsPosHalf(state, drawState, x, y, false)) {
+        // 右半分
+        if (isRoot(state)) {
+          // rootの場合
+          return HOVER_STATE_RIGHT
+        } else {
+          if (state.isLeft) {
+            // 左nodeの場合
+            return HOVER_STATE_TOP
+          } else {
+            // 右nodeの場合
+            return HOVER_STATE_RIGHT
+          }
+        }
+      } else {
+        return HOVER_STATE_NONE
+      }
+    }
+
+    const newRootState = updateNodes(
+      rootState,
+      (state) => true,
+      (state) => ({
+        ...state,
+        hoverState: calcHoverState(state, px, py)
+      })
+    )
+    setRootState(newRootState)
+  }
+
+  // 背景をdragして移動中
+  function handleMouseMoveForBack(clientX: number, clientY: number) {
+    const dx = clientX - dragState.startX
+    const dy = clientY - dragState.startY
+
+    setCanvasTranslatePos({ x: dragState.startElementX + dx, y: dragState.startElementY + dy })    
+  }
+
+  // ハンドルの上でhoverした
+  function handleMouseMoveForHandleHover(node: NodeState) {
+    const newRootState = updateNodes(
+      rootState,
+      (state) => true,
+      (state) => ({
+        ...state,
+        handleShown: state.id === node!.id
+      })
+    )
+    setRootState(newRootState)
+  }
+
+  // ハンドルの上でhoverしていなかった場合
+  function handleMouseMoveForNone() {
+    // 表示していたhandleを非表示に
+    const handleShownNode = findNode(rootState, (state) => state.handleShown)
+    if (handleShownNode !== null) {
+      const newRootState = updateNodes(
+        rootState,
+        (state) => true,
+        (state) => ({
+          ...state,
+          handleShown: false
+        })
+      )
+      setRootState(newRootState)
     }
   }
 
@@ -518,118 +656,28 @@ function MindMap() {
     const { x: px, y: py } = getLocalPos(e)
 
     if (dragState != null) {
+      // drag中だった場合
       if (dragState.mode === DragMode.NODE) {
-        const dx = px - dragState.startX
-        const dy = py - dragState.startY
-
-        const draggingNode = findNode(rootState, (state) => state.handleShown)
-        if (draggingNode != null) {
-          const newRootState = updateNodes(
-            rootState,
-            (state) => state.id === draggingNode!.id,
-            (state) => ({
-              ...state,
-              shiftX: dragState.startElementX + dx,
-              shiftY: dragState.startElementY + dy
-            })
-          )
-          setRootState(newRootState)
-        }
+        // Nodeをdragして移動中
+        handleMouseMoveForHandle(px, py)
       } else if (dragState.mode === DragMode.GHOST) {
-        const dx = px - dragState.startX
-        const dy = py - dragState.startY
-
-        setGhostState({
-          ...ghostState!,
-          x: dragState.startElementX + dx,
-          y: dragState.startElementY + dy
-        })
-
-        const calcHoverState = (state: NodeState, x: number, y: number) => {
-          const drawState = drawStateMap[state.id]
-          if (state.id === ghostState?.nodeId) {
-            return HOVER_STATE_NONE
-          }
-
-          if (isDummy(state)) {
-            return HOVER_STATE_NONE
-          }
-
-          if (containsPosHalf(state, drawState, x, y, true)) {
-            // 左半分
-            if (isRoot(state)) {
-              // rootの場合
-              return HOVER_STATE_LEFT
-            } else {
-              if (state.isLeft) {
-                // 左nodeの場合
-                return HOVER_STATE_LEFT
-              } else {
-                // 右nodeの場合
-                return HOVER_STATE_TOP
-              }
-            }
-          } else if (containsPosHalf(state, drawState, x, y, false)) {
-            // 右半分
-            if (isRoot(state)) {
-              // rootの場合
-              return HOVER_STATE_RIGHT
-            } else {
-              if (state.isLeft) {
-                // 左nodeの場合
-                return HOVER_STATE_TOP
-              } else {
-                // 右nodeの場合
-                return HOVER_STATE_RIGHT
-              }
-            }
-          } else {
-            return HOVER_STATE_NONE
-          }
-        }
-
-        const newRootState = updateNodes(
-          rootState,
-          (state) => true,
-          (state) => ({
-            ...state,
-            hoverState: calcHoverState(state, px, py)
-          })
-        )
-        setRootState(newRootState)
+        // GhostとしてNodeをdragして移動中
+        handleMouseMoveForGhost(px, py)
       } else if (dragState.mode === DragMode.BACK) {
-        const dx = e.clientX - dragState.startX
-        const dy = e.clientY - dragState.startY
-
-        setCanvasTranslatePos({ x: dragState.startElementX + dx, y: dragState.startElementY + dy })
+        // 背景をdragして移動中
+        handleMouseMoveForBack(e.clientX, e.clientY)
       }
     } else {
+      // drag中でなかった場合
       const pickedNodeForHandle = findNode(rootState, (state) =>
         containsPosForHandle(state, px, py, drawStateMap)
       )
       if (pickedNodeForHandle != null) {
-        const newRootState = updateNodes(
-          rootState,
-          (state) => true,
-          (state) => ({
-            ...state,
-            handleShown: state.id === pickedNodeForHandle!.id
-          })
-        )
-        setRootState(newRootState)
+        // ハンドルの上でhoverした場合
+        handleMouseMoveForHandleHover(pickedNodeForHandle)
       } else {
-        const handleShownNode = findNode(rootState, (state) => state.handleShown)
-        if (handleShownNode !== null) {
-          const newRootState = updateNodes(
-            rootState,
-            (state) => true,
-            (state) => ({
-              ...state,
-              handleShown: false
-            })
-          )
-          setRootState(newRootState)
-        }
+        // ハンドルの上でhoverしていなかった場合
+        handleMouseMoveForNone()
       }
     }
   }

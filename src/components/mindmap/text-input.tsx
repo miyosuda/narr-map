@@ -64,8 +64,7 @@ export const TextInput = (props: TextInputProps) => {
         if (ta) {
           const start = ta.selectionStart
           const end = ta.selectionEnd
-          const currentText = ta.value
-          const newText = currentText.substring(0, start) + obj.text + currentText.substring(end)
+          const newText = text.substring(0, start) + obj.text + text.substring(end)
           setText(newText)
           // カーソル位置を更新
           setTimeout(() => {
@@ -74,8 +73,15 @@ export const TextInput = (props: TextInputProps) => {
         }
       } else if (execCommands.some((element) => element === arg)) {
         // copy, cut, undo, redo, selectAllの場合は、
-        // documentにコマンドを実行させてtextInput内のundo,redoに対処.
-        document.execCommand(arg)
+        // textareaにフォーカスしてからコマンドを実行する.
+        const ta = textarea.current
+        if (ta) {
+          ta.focus()
+          document.execCommand(arg)
+          if (arg === 'cut') {
+            setText(ta.value)
+          }
+        }
       } else {
         handleDecidedText(text)
       }
@@ -150,7 +156,7 @@ export const TextInput = (props: TextInputProps) => {
     <foreignObject x={x} y={y} width={width} height={height} style={{ display: 'block' }}>
       <textarea
         ref={textarea}
-        defaultValue={text}
+        value={text}
         onKeyDown={handleKeyDown}
         onChange={handleChange}
         onCompositionStart={handleCompositionStart}

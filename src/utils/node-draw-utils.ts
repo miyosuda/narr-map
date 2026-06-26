@@ -131,10 +131,12 @@ type NodeDrawInfoMapType = { [key: number]: NodeDrawInfo }
 const calcDrawInfoMap = (state: NodeState, d: NodeDrawInfoMapType): NodeDrawInfoMapType => {
   let dd = structuredClone(d)
 
-  for (let i = 0; i < state.children.length; i++) {
-    const childState = state.children[i]
-    // 子Nodeのboundsを更新する
-    dd = calcDrawInfoMap(childState, dd)
+  if (!state.folded) {
+    for (let i = 0; i < state.children.length; i++) {
+      const childState = state.children[i]
+      // 子Nodeのboundsを更新する
+      dd = calcDrawInfoMap(childState, dd)
+    }
   }
 
   // このNodeのデフォルト位置を起点として、その位置から子Nodeを含めた上下の範囲を算出.
@@ -251,16 +253,17 @@ const calcDrawStateMapSub = (
     childBaseX = x + width + GAP_X
   }
 
-  const childStartOffsetY = calcChildStartOffsetY(state, drawInfoMap)
+  if (!state.folded) {
+    const childStartOffsetY = calcChildStartOffsetY(state, drawInfoMap)
+    let childBaseY = y + childStartOffsetY
 
-  let childBaseY = y + childStartOffsetY
+    state.children.forEach((childState) => {
+      const { topY, bottomY } = drawInfoMap[childState.id]!
+      dd = calcDrawStateMapSub(childState, rootState, childBaseX, childBaseY, dd, drawInfoMap)
 
-  state.children.forEach((childState) => {
-    const { topY, bottomY } = drawInfoMap[childState.id]!
-    dd = calcDrawStateMapSub(childState, rootState, childBaseX, childBaseY, dd, drawInfoMap)
-
-    childBaseY += bottomY - topY
-  })
+      childBaseY += bottomY - topY
+    })
+  }
 
   return dd
 }

@@ -455,11 +455,6 @@ export function getSavingNodeState(state: NodeState): SavingNodeState {
   return savingState
 }
 
-type NodeStateAndNextId = {
-  nextId: number
-  state: NodeState
-}
-
 const getNodeStateFromSavingSub = (savingState: SavingNodeState): NodeState => {
   const state = getNodeState({
     text: savingState.text,
@@ -489,26 +484,29 @@ const getNodeStateFromSavingSub = (savingState: SavingNodeState): NodeState => {
   return state
 }
 
-const assignNextId = (() => {
+const assignIds = (state: NodeState): NodeState => {
   let nextId = 0
 
   const assignId = (state: NodeState): NodeState => {
     const newId = nextId++
     const newState = { ...state, id: newId, editId: newId }
 
-    newState.children = state.children.map((childState) => assignId(childState))
+    newState.children = state.children.map((childState) => {
+      const newChild = assignId(childState)
+      newChild.parent = newState
+      return newChild
+    })
     newState.accompaniedState =
       state.accompaniedState != null ? assignId(state.accompaniedState) : null
     return newState
   }
 
-  return assignId
-})()
+  return assignId(state)
+}
 
 export function getNodeStateFromSaving(savingState: SavingNodeState): NodeState {
   const stateWithoutId = getNodeStateFromSavingSub(savingState)
-  const state = assignNextId(stateWithoutId)
-  return state
+  return assignIds(stateWithoutId)
 }
 
 export function getMaxNodeId(state: NodeState): number {

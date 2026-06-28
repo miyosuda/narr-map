@@ -2,10 +2,6 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import {
   NodeState,
-  HOVER_STATE_NONE,
-  HOVER_STATE_LEFT,
-  HOVER_STATE_RIGHT,
-  HOVER_STATE_TOP,
   EDIT_STATE_NONE,
   EDIT_STATE_NORMAL,
   EDIT_STATE_INSERT
@@ -20,43 +16,28 @@ import {
   cloneNodeState,
   isRoot,
   isDummy,
-  hasNodeInAncestor,
   calcDepth,
   hasChildren,
   findNode,
   findNodes,
   updateNodes,
   addChildNode,
-  addChildNodeAbove,
   addChildNodeBelow,
-  removeChildNode,
   getLatestNode,
   getLatestVisibleChild,
   getSibling,
   isCopiable,
   splitSymbolFromText
 } from '@/utils/node-utils'
-import {
-  containsPosForHandle,
-  calcDrawStateMap,
-  containsPos,
-  containsPosHalf
-} from '@/utils/node-draw-utils'
+import { calcDrawStateMap } from '@/utils/node-draw-utils'
 import { useHistory } from './hooks/useHistory'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useCanvasTransform } from './hooks/useCanvasTransform'
 import { useMindMapIO } from './hooks/useMindMapIO'
+import { useMouseInteraction } from './hooks/useMouseInteraction'
 import { MoveDirection } from './constants'
-import { NodeDragState, NodeGhostState } from '@/types'
 
 const { nmAPI } = window
-
-export const DragMode = {
-  NODE: 1,
-  GHOST: 2,
-  BACK: 3
-} as const
-
 
 function MindMap() {
   const initialRootState = getNodeState({
@@ -86,8 +67,6 @@ function MindMap() {
 
   const [nextNodeId, setNextNodeId] = useState(2) // Node ID管理 (0,1はrootとdummpyRootで利用)
   const [nextEditId, setNextEditId] = useState(2) // Edit ID管理 (0,1はrootとdummpyRootで利用)
-  const [dragState, setDragState] = useState<NodeDragState | null>(null)
-  const [ghostState, setGhostState] = useState<NodeGhostState | null>(null)
   const [cursorDepth, setCursorDepth] = useState(0)
   const [copyingStates, setCopyingStates] = useState<NodeState[]>([])  
 
@@ -100,12 +79,33 @@ function MindMap() {
     { rootState, drawStateMap, svgRef }
   )
 
+  const {
+    ghostState,
+    handleMouseDown,
+    handleMouseMove,
+    handleDoubleClick,
+    resetDrag
+  } = useMouseInteraction({
+    rootState,
+    setRootState,
+    setRootStateWithHistory,
+    drawStateMap,
+    canvasTranslatePos,
+    setCanvasTranslatePos,
+    nextEditId,
+    setNextEditId,
+    recenter,
+    editText,
+    getLastNode,
+    svgRef,
+    canvasRef
+  })
+
   const resetInteractionState = useCallback(() => {
-    setDragState(null)
-    setGhostState(null)
+    resetDrag()
     setCursorDepth(0)
     setCopyingStates([])
-  }, [])
+  }, [resetDrag])
 
   // IPC（保存・読み込み・補完・テキストインポート）とコマンドルーティング、
   // および darkMode / connecting / トーストなどの UI フラグを管理する。
@@ -136,19 +136,6 @@ function MindMap() {
     resetInteractionState
   })
 
-  // ハンドラー関数をrefに保存（イベントリスナーから最新のstateを参照するため）
-  const handleMouseUpRef = useRef<(e: MouseEvent) => void>(() => {})
-
-  // マウスハンドラの設定（一度だけ実行）
-  useEffect(() => {
-    const mouseUpHandler = (e: MouseEvent) => handleMouseUpRef.current(e)
-    document.addEventListener('mouseup', mouseUpHandler)
-
-    return () => {
-      document.removeEventListener('mouseup', mouseUpHandler)
-    }
-  }, [])
-
   useEffect(() => {
     // 初回render後にrecenterする
     // (SVGのサイズはCSSの flex-grow, h-full で決まり、
@@ -169,9 +156,6 @@ function MindMap() {
 
     return () => observer.disconnect()
   }, [])
-
-  // refを最新のハンドラーで更新
-  handleMouseUpRef.current = handleMouseUp
 
   // キーボードショートカットの定義
   useKeyboardShortcuts([
@@ -238,467 +222,6 @@ function MindMap() {
       preventDefault: false
     }
   ])
-
-  // ハンドルの上でクリックした
-  function handleMouseDownForHandle(px: number, py: number, node: NodeState) {
-    setDragState({
-      startX: px,
-      startY: py,
-      startElementX: node.shiftX,
-      startElementY: node.shiftY,
-      mode: DragMode.NODE
-    })
-
-    const newRootState = updateNodes(
-      rootState,
-      (state) => state.id === node!.id,
-      (state) => ({
-        ...state,
-        handleShown: true
-      })
-    )
-    setRootState(newRootState)
-  }
-
-  // Nodeの上でクリックした
-  function handleMouseDownForNode(px: number, py: number, shiftDown: boolean, pickedNode: NodeState) {
-    let newRootState
-
-    if (shiftDown) {
-      // shift押下時
-      // pickしたnodeをselectedに
-      newRootState = updateNodes(
-        rootState,
-        (state) => state.id === pickedNode!.id,
-        (state) => ({
-          ...state,
-          selected: true,
-          editId: nextEditId
-        })
-      )
-    } else {
-      // pickしたnode以外のselectedをクリア
-      newRootState = updateNodes(
-        rootState,
-        (state) => state.selected,
-        (state) => ({
-          ...state,
-          selected: false
-        })
-      )
-      newRootState = updateNodes(
-        newRootState,
-        (state) => state.id === pickedNode!.id,
-        (state) => ({
-          ...state,
-          selected: true,
-          editId: nextEditId
-        })
-      )
-    }
-
-    setNextEditId(nextEditId + 1)
-    setRootState(newRootState)
-
-    if (!isRoot(pickedNode)) {
-      // GHOST表示
-      const pickedNodeDrawState = drawStateMap[pickedNode!.id]
-      setDragState({
-        startX: px,
-        startY: py,
-        startElementX: pickedNodeDrawState.x,
-        startElementY: pickedNodeDrawState.y,
-        mode: DragMode.GHOST
-      })
-
-      setGhostState({
-        x: pickedNodeDrawState.x,
-        y: pickedNodeDrawState.y,
-        width: pickedNodeDrawState.width,
-        height: pickedNodeDrawState.height,
-        nodeId: pickedNode!.id
-      })
-    }
-  }
-
-  // 背景の上でクリックした
-  function handleMouseDownForBack(clientX: number, clientY: number) {
-    // 1つを除いてNode選択クリア
-    const lastNode = getLastNode()
-    let newRootState = updateNodes(
-      rootState,
-      (state) => state.selected,
-      (state) => ({
-        ...state,
-        selected: false
-      })
-    )
-    newRootState = updateNodes(
-      newRootState,
-      (state) => state.id === lastNode.id,
-      (state) => ({
-        ...state,
-        selected: true,
-        editId: nextEditId
-      })
-    )
-    setNextEditId(nextEditId + 1)
-    setRootState(newRootState)
-
-    setDragState({
-      startX: clientX,
-      startY: clientY,
-      startElementX: canvasTranslatePos.x,
-      startElementY: canvasTranslatePos.y,
-      mode: DragMode.BACK
-    })    
-  }
-
-  function handleMouseDown(e: React.MouseEvent) {
-    if (e.button !== 0) {
-      // 左クリック以外の場合
-      return
-    }
-
-    const editingNodeState = findNode(rootState, (state) => state.editState !== EDIT_STATE_NONE)
-    if (editingNodeState != null) {
-      // textInput表示中なら何もしない
-      return
-    }
-
-    const { x: px, y: py } = getLocalPos(e)
-
-    // マウスが乗ったnodeをpick対象として選ぶ
-    function pickNodeForHandle(state: NodeState): boolean {
-      return containsPosForHandle(state, px, py, drawStateMap)
-    }
-
-    function pickNode(state: NodeState): boolean {
-      return containsPos(state, px, py, drawStateMap)
-    }
-
-    let pickedNodeForHandle = findNode(rootState, pickNodeForHandle)
-    let pickedNode = findNode(rootState, pickNode)
-
-    const shiftDown = e.shiftKey
-
-    if (pickedNodeForHandle != null) {
-      // ハンドルの上でクリックした
-      handleMouseDownForHandle(px, py, pickedNodeForHandle)
-    } else if (pickedNode != null) {
-      // Nodeの上でクリックした
-      handleMouseDownForNode(px, py, shiftDown, pickedNode)
-    } else {
-      // 背景の上でクリックした
-      handleMouseDownForBack(e.clientX, e.clientY)
-    }
-
-    if (document.activeElement === document.body) {
-      e.preventDefault()
-    }
-  }
-
-  // ハンドルをdragして移動中
-  function handleMouseMoveForHandle(px: number, py: number) {
-    const dx = px - dragState.startX
-    const dy = py - dragState.startY
-
-    const draggingNode = findNode(rootState, (state) => state.handleShown)
-    if (draggingNode != null) {
-      const newRootState = updateNodes(
-        rootState,
-        (state) => state.id === draggingNode!.id,
-        (state) => ({
-          ...state,
-          shiftX: dragState.startElementX + dx,
-          shiftY: dragState.startElementY + dy
-        })
-      )
-      setRootState(newRootState)
-    }    
-  }
-
-  function handleMouseMoveForGhost(px: number, py: number) {
-    const dx = px - dragState.startX
-    const dy = py - dragState.startY
-
-    setGhostState({
-      ...ghostState!,
-      x: dragState.startElementX + dx,
-      y: dragState.startElementY + dy
-    })
-
-    const calcHoverState = (state: NodeState, x: number, y: number) => {
-      const drawState = drawStateMap[state.id]
-      if (state.id === ghostState?.nodeId) {
-        return HOVER_STATE_NONE
-      }
-
-      if (isDummy(state)) {
-        return HOVER_STATE_NONE
-      }
-
-      if (containsPosHalf(state, drawState, x, y, true)) {
-        // 左半分
-        if (isRoot(state)) {
-          // rootの場合
-          return HOVER_STATE_LEFT
-        } else {
-          if (state.isLeft) {
-            // 左nodeの場合
-            return HOVER_STATE_LEFT
-          } else {
-            // 右nodeの場合
-            return HOVER_STATE_TOP
-          }
-        }
-      } else if (containsPosHalf(state, drawState, x, y, false)) {
-        // 右半分
-        if (isRoot(state)) {
-          // rootの場合
-          return HOVER_STATE_RIGHT
-        } else {
-          if (state.isLeft) {
-            // 左nodeの場合
-            return HOVER_STATE_TOP
-          } else {
-            // 右nodeの場合
-            return HOVER_STATE_RIGHT
-          }
-        }
-      } else {
-        return HOVER_STATE_NONE
-      }
-    }
-
-    const newRootState = updateNodes(
-      rootState,
-      (state) => true,
-      (state) => ({
-        ...state,
-        hoverState: calcHoverState(state, px, py)
-      })
-    )
-    setRootState(newRootState)
-  }
-
-  // 背景をdragして移動中
-  function handleMouseMoveForBack(clientX: number, clientY: number) {
-    const dx = clientX - dragState.startX
-    const dy = clientY - dragState.startY
-
-    setCanvasTranslatePos({ x: dragState.startElementX + dx, y: dragState.startElementY + dy })    
-  }
-
-  // ハンドルの上でhoverした
-  function handleMouseMoveForHandleHover(node: NodeState) {
-    const newRootState = updateNodes(
-      rootState,
-      (state) => true,
-      (state) => ({
-        ...state,
-        handleShown: state.id === node!.id
-      })
-    )
-    setRootState(newRootState)
-  }
-
-  // ハンドルの上でhoverしていなかった場合
-  function handleMouseMoveForNone() {
-    // 表示していたhandleを非表示に
-    const handleShownNode = findNode(rootState, (state) => state.handleShown)
-    if (handleShownNode !== null) {
-      const newRootState = updateNodes(
-        rootState,
-        (state) => true,
-        (state) => ({
-          ...state,
-          handleShown: false
-        })
-      )
-      setRootState(newRootState)
-    }
-  }
-
-  function handleMouseMove(e: React.MouseEvent) {
-    if (e.button !== 0) {
-      // 左クリック以外の場合
-      return
-    }
-
-    const { x: px, y: py } = getLocalPos(e)
-
-    if (dragState != null) {
-      // drag中だった場合
-      if (dragState.mode === DragMode.NODE) {
-        // Nodeをdragして移動中
-        handleMouseMoveForHandle(px, py)
-      } else if (dragState.mode === DragMode.GHOST) {
-        // GhostとしてNodeをdragして移動中
-        handleMouseMoveForGhost(px, py)
-      } else if (dragState.mode === DragMode.BACK) {
-        // 背景をdragして移動中
-        handleMouseMoveForBack(e.clientX, e.clientY)
-      }
-    } else {
-      // drag中でなかった場合
-      const pickedNodeForHandle = findNode(rootState, (state) =>
-        containsPosForHandle(state, px, py, drawStateMap)
-      )
-      if (pickedNodeForHandle != null) {
-        // ハンドルの上でhoverした場合
-        handleMouseMoveForHandleHover(pickedNodeForHandle)
-      } else {
-        // ハンドルの上でhoverしていなかった場合
-        handleMouseMoveForNone()
-      }
-    }
-  }
-
-  function handleMouseUpForNode() {
-    // ハンドルをdragして移動中だった場合
-    const draggingNode = findNode(rootState, (state) => state.handleShown)
-    if (draggingNode != null) {
-      // 表示していたhandleを非表示に
-      const newRootState = updateNodes(
-        rootState,
-        (state) => state.id === draggingNode!.id,
-        (state) => ({
-          ...state,
-          handleShown: false
-        })
-      )
-      setRootStateWithHistory(newRootState)
-    }
-  }
-
-  function handleMouseUpForGhost() {
-    // ghostをhoverして乗せていた先のnode
-    const ghostTargetState = findNode(
-      rootState,
-      (state) => state.hoverState !== HOVER_STATE_NONE
-    )
-
-    // ghostを出した元のnode
-    const ghostOrgNodeId = ghostState!.nodeId
-    const ghostOrgState = findNode(rootState, (state) => state.id === ghostOrgNodeId)
-
-    // hover stateをクリア
-    const newRootState = updateNodes(
-      rootState,
-      (state) => state.hoverState !== HOVER_STATE_NONE,
-      (state) => ({
-        ...state,
-        hoverState: HOVER_STATE_NONE
-      })
-    )
-    setRootState(newRootState)
-
-    // Ghostを消す
-    setGhostState(null)
-
-    if (ghostTargetState !== null) {
-      // ghostのhover先があった場合
-      let newChildState = ghostOrgState!
-      const targetHoverState = ghostTargetState.hoverState
-
-      // nodeの右側にhoverして離した場合のみ、追加先がdummy nodeとなる.
-      const toAccompanied = targetHoverState === HOVER_STATE_LEFT && isRoot(ghostTargetState)
-      const targetState = toAccompanied ? ghostTargetState.accompaniedState! : ghostTargetState
-
-      if (!hasNodeInAncestor(targetState, newChildState)) {
-        // isLeftを移動先に合わせる
-        if (targetState.isLeft !== newChildState.isLeft) {
-          newChildState = updateNodes(
-            newChildState,
-            (state) => true,
-            (state) => ({ ...state, isLeft: targetState.isLeft })
-          )
-        } else {
-          newChildState = cloneNodeState(newChildState)
-        }
-
-        // 移動元の親から外す
-        const newRootState0 = updateNodes(
-          newRootState,
-          (state) => state.id === newChildState.parent!.id,
-          (state) => removeChildNode(state, newChildState.id)
-        )
-
-        if (targetHoverState === HOVER_STATE_RIGHT || targetHoverState === HOVER_STATE_LEFT) {
-          // 移動先の子として追加
-          const newRootState1 = updateNodes(
-            newRootState0,
-            (state) => state.id === targetState.id,
-            (state) => addChildNode(state, newChildState)
-          )
-          setRootStateWithHistory(newRootState1)
-        } else if (targetHoverState === HOVER_STATE_TOP) {
-          // nodeの上側にhoverして離した
-          // 移動先の上にsiblingとして追加する
-          const newRootState1 = updateNodes(
-            newRootState0,
-            (state) => state.id === targetState.parent!.id,
-            (state) => addChildNodeAbove(state, newChildState, ghostTargetState)
-          )
-          setRootStateWithHistory(newRootState1)
-        }
-      }
-    }
-  }
-
-  function handleMouseUp(e: MouseEvent) {
-    if (e.button !== 0) {
-      // 左クリック以外の場合
-      return
-    }
-
-    if (dragState != null) {
-      if (dragState.mode === DragMode.NODE) {
-        // ハンドルをdragして移動中だった場合
-        handleMouseUpForNode()
-      } else if (dragState.mode === DragMode.GHOST) {
-        // GhostとしてNodeをdragして移動中だった場合
-        handleMouseUpForGhost()
-      }
-
-      // drag stateをクリア
-      setDragState(null)
-    }
-  }
-
-  function handleDoubleClick(e: React.MouseEvent) {
-    /*
-    if( this.textInput.isShown ) {
-      // textInput表示中なら何もしない
-      return;
-    }
-    */
-
-    if (e.button !== 0) {
-      // 左クリック以外の場合
-      return
-    }
-
-    if (e.shiftKey) {
-      return
-    }
-
-    const { x: px, y: py } = getLocalPos(e)
-
-    function pickNode(state: NodeState): boolean {
-      return containsPos(state, px, py, drawStateMap)
-    }
-
-    const pickedNode = findNode(rootState, pickNode)
-    if (pickedNode != null) {
-      editText(pickedNode!)
-    } else {
-      recenter()
-    }
-
-    e.preventDefault()
-  }
 
   function handleDecidedText(text: string) {
     const { symbol, rawText } = splitSymbolFromText(text)
@@ -1079,14 +602,6 @@ function MindMap() {
       )
       setRootState(newRootState1)
     }
-  }
-
-  function getLocalPos(e: React.MouseEvent) {
-    const pos = svgRef.current!.createSVGPoint()
-    pos.x = e.clientX
-    pos.y = e.clientY
-    const canvasLocalPos = pos.matrixTransform(canvasRef.current!.getScreenCTM()!.inverse())
-    return canvasLocalPos
   }
 
   // TextInputのprops用意

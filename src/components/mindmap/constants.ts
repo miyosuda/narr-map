@@ -6,3 +6,11 @@ export const MoveDirection = {
 } as const
 
 export type MoveDirectionType = (typeof MoveDirection)[keyof typeof MoveDirection]
+
+export const DragMode = {
+  NODE: 1,
+  GHOST: 2,
+  BACK: 3
+} as const
+
+export type DragModeType = (typeof DragMode)[keyof typeof DragMode]

@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 
 import {
   NodeState,
-  SavingNodeState,
   HOVER_STATE_NONE,
   HOVER_STATE_LEFT,
   HOVER_STATE_RIGHT,
@@ -35,10 +34,7 @@ import {
   getLatestVisibleChild,
   getSibling,
   isCopiable,
-  splitSymbolFromText,
-  getSavingNodeState,
-  getNodeStateFromSaving,
-  getMaxNodeId
+  splitSymbolFromText
 } from '@/utils/node-utils'
 import {
   containsPosForHandle,
@@ -49,6 +45,7 @@ import {
 import { useHistory } from './hooks/useHistory'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useCanvasTransform } from './hooks/useCanvasTransform'
+import { useMindMapIO } from './hooks/useMindMapIO'
 import { MoveDirection } from './constants'
 import { NodeDragState, NodeGhostState } from '@/types'
 
@@ -89,17 +86,11 @@ function MindMap() {
 
   const [nextNodeId, setNextNodeId] = useState(2) // Node ID管理 (0,1はrootとdummpyRootで利用)
   const [nextEditId, setNextEditId] = useState(2) // Edit ID管理 (0,1はrootとdummpyRootで利用)
-  const [darkMode, setDarkMode] = useState(false)
-  const [connecting, setConnecting] = useState(false)
-  const [copiedToastVisible, setCopiedToastVisible] = useState(false)
-  const [textImportModalOpen, setTextImportModalOpen] = useState(false)
-  const [isTextGenerating, setIsTextGenerating] = useState(false)
   const [dragState, setDragState] = useState<NodeDragState | null>(null)
   const [ghostState, setGhostState] = useState<NodeGhostState | null>(null)
   const [cursorDepth, setCursorDepth] = useState(0)
   const [copyingStates, setCopyingStates] = useState<NodeState[]>([])  
 
-  const toastTimerRef = useRef<number | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const canvasRef = useRef<SVGSVGElement>(null)
 
@@ -108,6 +99,42 @@ function MindMap() {
   const { canvasTranslatePos, setCanvasTranslatePos, canvasTransform, recenter } = useCanvasTransform(
     { rootState, drawStateMap, svgRef }
   )
+
+  const resetInteractionState = useCallback(() => {
+    setDragState(null)
+    setGhostState(null)
+    setCursorDepth(0)
+    setCopyingStates([])
+  }, [])
+
+  // IPC（保存・読み込み・補完・テキストインポート）とコマンドルーティング、
+  // および darkMode / connecting / トーストなどの UI フラグを管理する。
+  const {
+    darkMode,
+    connecting,
+    copiedToastVisible,
+    textImportModalOpen,
+    isTextGenerating,
+    handleTextGenerate,
+    handleTextImportModalClose,
+    handleTextGenerateCancel
+  } = useMindMapIO({
+    rootState,
+    initialRootState,
+    setRootStateWithHistory,
+    resetRootState,
+    commands: {
+      copy: () => copy(),
+      paste: () => paste(),
+      cut: () => cut(),
+      selectAll: () => selectAll(),
+      undo,
+      redo
+    },
+    setNextNodeId,
+    setNextEditId,
+    resetInteractionState
+  })
 
   // ハンドラー関数をrefに保存（イベントリスナーから最新のstateを参照するため）
   const handleMouseUpRef = useRef<(e: MouseEvent) => void>(() => {})
@@ -120,60 +147,6 @@ function MindMap() {
     return () => {
       document.removeEventListener('mouseup', mouseUpHandler)
     }
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current != null) {
-        window.clearTimeout(toastTimerRef.current)
-        toastTimerRef.current = null
-      }
-    }
-  }, [])
-
-  const showCopiedToast = () => {
-    setCopiedToastVisible(true)
-    if (toastTimerRef.current != null) {
-      window.clearTimeout(toastTimerRef.current)
-    }
-    toastTimerRef.current = window.setTimeout(() => {
-      setCopiedToastVisible(false)
-      toastTimerRef.current = null
-    }, 1000)
-  }
-
-  const commandHandlers: Record<string, (obj?: any) => void> = {
-    copy: () => copy(),
-    paste: () => paste(),
-    cut: () => cut(),
-    selectall: () => selectAll(),
-    redo: () => redo(),
-    undo: () => undo(),
-    save: () => save(),
-    load: (obj) => load(obj),
-    export: (obj) => export_(obj),
-    'new-file': () => newFile(),
-    complete: () => complete(),
-    completed: (obj) => completed(obj),
-    'dark-mode': (obj) => setDarkMode(obj),
-    'clipboard-export': (obj) => clipboardExport(obj),
-    'open-text-import-modal': () => setTextImportModalOpen(true),
-    'text-import-complete': (obj) => handleTextImportComplete(obj),
-  }
-
-  function handleCommand(command: string, obj: any) {
-    commandHandlers[command]?.(obj)
-  }
-
-  // メッセージハンドラー用のref
-  const handleMessageRef = useRef<(arg: string, obj: any) => void>(() => {})
-
-  // メッセージハンドラーの設定（一度だけ実行）
-  useEffect(() => {
-    const offFunc = nmAPI.onReceiveMessage((arg: string, obj: any) => {
-      handleMessageRef.current(arg, obj)
-    })
-    return offFunc
   }, [])
 
   useEffect(() => {
@@ -197,108 +170,8 @@ function MindMap() {
     return () => observer.disconnect()
   }, [])
 
-  const save = () => {
-    // TODO: useEffectの利用を検討
-    const savingRootState = getSavingNodeState(rootState)
-    nmAPI.sendMessage('response-save', savingRootState)
-  }
-
-  const export_ = (format: string) => {
-    // TODO: useEffectの利用を検討
-    const savingRootState = getSavingNodeState(rootState)
-    nmAPI.sendMessage('response-export', [savingRootState, format])
-  }
-
-  const clipboardExport = (format: string) => {
-    // TODO: useEffectの利用を検討
-    const savingRootState = getSavingNodeState(rootState)
-    nmAPI.sendMessage('response-clipboard-export', [savingRootState, format])
-    showCopiedToast()
-  }
-
-  const handleTextGenerate = (text: string) => {
-    setIsTextGenerating(true)
-    nmAPI.sendMessage('response-text-generate', text)
-  }
-
-  const handleTextImportComplete = (result: { success: boolean; state?: SavingNodeState; error?: string }) => {
-    setIsTextGenerating(false)
-    setTextImportModalOpen(false)
-    if (result.success && result.state) {
-      load(result.state)
-    } else {
-      // エラーの場合はコンソールにログ出力（必要に応じてUIで表示）
-      console.error('Text import failed:', result.error)
-    }
-  }
-
-  const handleTextImportModalClose = () => {
-    if (!isTextGenerating) {
-      setTextImportModalOpen(false)
-    }
-  }
-
-  const handleTextGenerateCancel = () => {
-    nmAPI.sendMessage('cancel-text-generate', null)
-    setIsTextGenerating(false)
-    setTextImportModalOpen(false)
-  }
-
-  const complete = () => {
-    nmAPI.sendMessage('response-complete', rootState)
-    setConnecting(true)
-  }
-
-  const completed = (newRootState: NodeState) => {
-    setRootStateWithHistory(newRootState)
-    setConnecting(false)
-  }
-
-  const load = (savingState: SavingNodeState) => {
-    const newRootState = getNodeStateFromSaving(savingState)
-    const maxNodeId = getMaxNodeId(newRootState)
-
-    resetRootState(newRootState)
-    setNextNodeId(maxNodeId + 1)
-    setNextEditId(maxNodeId + 1)
-
-    setDragState(null)
-    setGhostState(null)
-    setCursorDepth(0) // TODO: 要確認
-    setCopyingStates([])
-  }
-
-  const newFile = () => {
-    resetRootState(initialRootState)
-    setNextNodeId(2)
-    setNextEditId(2)
-
-    setDragState(null)
-    setGhostState(null)
-    setCursorDepth(0)
-    setCopyingStates([])
-  }
-
   // refを最新のハンドラーで更新
   handleMouseUpRef.current = handleMouseUp
-  handleMessageRef.current = handleMessage
-
-  function handleMessage(arg: string, obj: any) {
-    // textInput表示中かどうか
-    const editingNodeState = findNode(rootState, (state) => state.editState !== EDIT_STATE_NONE)
-    if (editingNodeState != null) {
-      // textInput表示中だった場合はTextInput側が処理する
-    } else if (textImportModalOpen) {
-      // TextImportModal表示中だった場合はTextImportModal側が処理する
-      // ただし、モーダル関連のコマンドは処理する
-      if (arg === 'text-import-complete') {
-        handleCommand(arg, obj)
-      }
-    } else {
-      // textInput表示中でない場合
-      handleCommand(arg, obj)
-    }
-  }
 
   // キーボードショートカットの定義
   useKeyboardShortcuts([

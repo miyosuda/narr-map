@@ -59,7 +59,7 @@ for (let i = 0; i < state.children.length; i++) {
 
 ### 改善案
 
-- `folded` のときは子孫をスキップする
+- `folded` のときは子孫をスキップする (対応済み)
 - `structuredClone` をやめ、1 つの map を mutable に更新する
 - **選択変更では `drawStateMap` を再計算しない**（`selected` / `hoverState` / `editState` はレイアウトに影響しない）
   - レイアウト用 state と UI state を分離する、または `useMemo` の依存を絞る
@@ -175,7 +175,7 @@ node scripts/generate-debug-nm.mjs 1000  # debug/perf-1000-leaves.nm
 
 | 優先度 | 項目 | 理由 |
 |--------|------|------|
-| 高 | `calcDrawStateMap` の fold スキップ + `structuredClone` 除去 | fold 時のキー操作・全操作に効く。diff が小さい |
+| 高 | `calcDrawStateMap` の fold スキップ(対応済み) + `structuredClone` 除去 | fold 時のキー操作・全操作に効く。diff が小さい |
 | 高 | 選択変更時の layout 再計算停止 | 上下キーごとに O(n) レイアウトが走るのを防ぐ |
 | 高 | `selectedNodeId` 分離 + `updateNodes` 1 パス化 | キーボード操作の O(n) を削減 |
 | 中 | visible nodes フラット描画 + `React.memo` | 1000 ノード展開時の描画改善 |
@@ -197,10 +197,10 @@ src/utils/
 ├── node-draw-utils.ts       # calcDrawStateMap, calcDrawInfoMap
 └── node-utils.ts            # updateNodes, findNodes, getSibling
 
-scripts/
+debug/scripts/
 └── generate-debug-nm.mjs    # パフォーマンステスト用 .nm 生成
 
-debug/
+debug/data/
 ├── perf-500-leaves.nm
 └── perf-1000-leaves.nm
 ```

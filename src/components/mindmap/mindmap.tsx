@@ -22,6 +22,7 @@ import { MoveDirection } from './constants'
 const { nmAPI } = window
 
 function MindMap() {
+  // initialRootState は、マインドマップの初期データ構造.
   const initialRootState = getNodeState({
     id: 0,
     text: 'root',
@@ -38,6 +39,8 @@ function MindMap() {
     nmAPI.sendMessage('set-dirty', null)
   }, [])
 
+  // rootState は、マインドマップのデータ構造（ルートノードを頂点に、子ノードが木構造でぶら下がっている状態）.
+  // 「どんなノードがあるか／テキスト／折りたたみ状態／シフト量」といった論理的なデータで、画面上の座標は持っていない.
   const {
     state: rootState,
     setState: setRootState,
@@ -50,8 +53,12 @@ function MindMap() {
   const svgRef = useRef<SVGSVGElement>(null)
   const canvasRef = useRef<SVGSVGElement>(null)
 
+  // drawStateMap は、ノードの描画情報（画面上の座標やサイズ）.
+  // NodeId をキーに、{x, y, width, height} を値としたオブジェクト.
+  // (rootState が変わると再計算される)
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState])
 
+  // canvasTranslatePos は、キャンバスの移動量（画面上の表示位置）.
   const { canvasTranslatePos, setCanvasTranslatePos, canvasTransform, recenter } = useCanvasTransform(
     { rootState, drawStateMap, svgRef }
   )
@@ -81,6 +88,7 @@ function MindMap() {
     setRootStateWithHistory
   })
 
+  // ghostState は、ノードの移動中のゴーストノードの描画情報. ドラッグ中に表示される、ノードの移動先の仮想ノード.
   const {
     ghostState,
     handleMouseDown,
@@ -103,9 +111,10 @@ function MindMap() {
     canvasRef
   })
 
+  // resetInteractionState は、ノードの移動中のゴーストノードの描画情報をリセットする.
   const resetInteractionState = useCallback(() => {
-    resetDrag()
-    resetEditingState()
+    resetDrag() // ノードの移動中のゴーストノードの描画情報をリセット.
+    resetEditingState() // 編集・コピーまわりの一時状態を消す
   }, [resetDrag, resetEditingState])
 
   // IPC（保存・読み込み・補完・テキストインポート）とコマンドルーティング、
@@ -226,9 +235,12 @@ function MindMap() {
 
   // TextInputのprops用意
   let textInputState = null
+  // editingState は、編集中のノードのデータ構造.
   const editingState = findNode(rootState, (state) => state.editState !== EDIT_STATE_NONE)
   if (editingState != null) {
+    // 編集中のノードがあった場合、そのノードの描画情報を取得.
     const editingDrawState = drawStateMap[editingState.id]
+    // TextInputのpropsを作成.
     textInputState = {
       text: editingState.text,
       symbol: editingState.symbol,

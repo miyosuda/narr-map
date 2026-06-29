@@ -53,41 +53,44 @@ export const TextInput = (props: TextInputProps) => {
   const [text, setText] = useState(displayText)
   const [composing, setComposing] = useState(false)
 
-  const textarea = useRef<HTMLTextAreaElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const handlerRef = useRef<(arg: string, obj: any) => void>(() => {})
+
+  handlerRef.current = (arg: string, obj: any) => {
+    if (arg === 'paste' && obj?.text !== undefined) {
+      // pasteコマンドの場合は、クリップボードの内容をtextareaに挿入
+      const ta = textareaRef.current
+      if (ta) {
+        const start = ta.selectionStart
+        const end = ta.selectionEnd
+        const newText = text.substring(0, start) + obj.text + text.substring(end)
+        setText(newText)
+        // カーソル位置を更新
+        setTimeout(() => {
+          ta.setSelectionRange(start + obj.text.length, start + obj.text.length)
+        }, 0)
+      }
+    } else if (execCommands.some((element) => element === arg)) {
+      // copy, cut, undo, redo, selectAllの場合は、
+      // textareaにフォーカスしてからコマンドを実行する.
+      const ta = textareaRef.current
+      if (ta) {
+        ta.focus()
+        document.execCommand(arg)
+        if (arg === 'cut') {
+          setText(ta.value)
+        }
+      }
+    } else {
+      handleDecidedText(text)
+    }
+  }
 
   useEffect(() => {
-    // TODO: 毎描画後に走ってしまっている. 依存stateを適切に設定する.
-    const offFunc = nmAPI.onReceiveMessage((arg: string, obj: any) => {
-      if (arg === 'paste' && obj?.text !== undefined) {
-        // pasteコマンドの場合は、クリップボードの内容をtextareaに挿入
-        const ta = textarea.current
-        if (ta) {
-          const start = ta.selectionStart
-          const end = ta.selectionEnd
-          const newText = text.substring(0, start) + obj.text + text.substring(end)
-          setText(newText)
-          // カーソル位置を更新
-          setTimeout(() => {
-            ta.setSelectionRange(start + obj.text.length, start + obj.text.length)
-          }, 0)
-        }
-      } else if (execCommands.some((element) => element === arg)) {
-        // copy, cut, undo, redo, selectAllの場合は、
-        // textareaにフォーカスしてからコマンドを実行する.
-        const ta = textarea.current
-        if (ta) {
-          ta.focus()
-          document.execCommand(arg)
-          if (arg === 'cut') {
-            setText(ta.value)
-          }
-        }
-      } else {
-        handleDecidedText(text)
-      }
+    return nmAPI.onReceiveMessage((arg: string, obj: any) => {
+      handlerRef.current(arg, obj)
     })
-    return offFunc
-  })
+  }, [])
 
   useEffect(() => {
     setText(displayText)
@@ -96,14 +99,14 @@ export const TextInput = (props: TextInputProps) => {
 
     if (props.textSelected) {
       // テキストをを選択状態に
-      textarea.current!.setSelectionRange(0, displayText.length)
+      textareaRef.current!.setSelectionRange(0, displayText.length)
     } else {
-      textarea.current!.setSelectionRange(0, 0)
+      textareaRef.current!.setSelectionRange(0, 0)
     }
   }, [displayText, props.textSelected])
 
   function focus() {
-    textarea.current!.focus()
+    textareaRef.current!.focus()
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -155,7 +158,7 @@ export const TextInput = (props: TextInputProps) => {
   return (
     <foreignObject x={x} y={y} width={width} height={height} style={{ display: 'block' }}>
       <textarea
-        ref={textarea}
+        ref={textareaRef}
         value={text}
         onKeyDown={handleKeyDown}
         onChange={handleChange}

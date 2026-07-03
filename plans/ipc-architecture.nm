@@ -1,0 +1,863 @@
+{
+  "version": 2,
+  "state": {
+    "text": "ipc",
+    "symbol": null,
+    "shiftX": 0,
+    "shiftY": 0,
+    "selected": false,
+    "folded": false,
+    "isLeft": false,
+    "children": [
+      {
+        "text": "main → Renderer",
+        "symbol": null,
+        "shiftX": -2,
+        "shiftY": -41,
+        "selected": false,
+        "folded": false,
+        "isLeft": false,
+        "children": [
+          {
+            "text": "送信側: webContents.send('request', arg, obj)",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [],
+            "accompaniedState": null
+          },
+          {
+            "text": "受信側: ",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "useMindMapIO.handleMessage",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "text-input",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "text-import-modal",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          },
+          {
+            "text": "ファイル操作",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "save — メニュー/ダイアログ後、Renderer に保存データ送信を依頼",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "export — 形式(uml|yaml|json)を渡し、エクスポートデータ送信を依頼",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "load — .nm/.json または PlantUML 変換後の state を渡す",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "clipboard-export — yaml|json をクリップボード出力依頼",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "open-text-import-modal — テキストインポートモーダルを開く",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          },
+          {
+            "text": "編集コマンド",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "undo / redo / cut / copy / paste / selectall",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [
+                  {
+                    "text": "paste: { nodes, text } を付与",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [
+                      {
+                        "text": "nodes — main の sharedCopiedNodes (SavingNodeState[] | null)",
+                        "symbol": null,
+                        "shiftX": 0,
+                        "shiftY": 0,
+                        "selected": false,
+                        "folded": false,
+                        "isLeft": false,
+                        "children": [],
+                        "accompaniedState": null
+                      },
+                      {
+                        "text": "text — clipboard.readText()（text-input 用）",
+                        "symbol": null,
+                        "shiftX": 0,
+                        "shiftY": 0,
+                        "selected": false,
+                        "folded": false,
+                        "isLeft": false,
+                        "children": [],
+                        "accompaniedState": null
+                      },
+                      {
+                        "text": "useNodeEditing.paste(obj): obj.nodes → getCopyingStatesFromSaving → applyPaste",
+                        "symbol": null,
+                        "shiftX": 0,
+                        "shiftY": 0,
+                        "selected": false,
+                        "folded": false,
+                        "isLeft": false,
+                        "children": [],
+                        "accompaniedState": null
+                      },
+                      {
+                        "text": "obj.nodes が null のときはローカル copyingStates にフォールバック",
+                        "symbol": null,
+                        "shiftX": 0,
+                        "shiftY": 0,
+                        "selected": false,
+                        "folded": false,
+                        "isLeft": false,
+                        "children": [],
+                        "accompaniedState": null
+                      }
+                    ],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "copy / cut",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [
+                      {
+                        "text": "Renderer: isCopiable な NodeState[] → copyingStates（同一ウィンドウ用）",
+                        "symbol": null,
+                        "shiftX": 0,
+                        "shiftY": 0,
+                        "selected": false,
+                        "folded": false,
+                        "isLeft": false,
+                        "children": [],
+                        "accompaniedState": null
+                      },
+                      {
+                        "text": "Renderer→main: response-copy-nodes(getSavingNodeState[])",
+                        "symbol": null,
+                        "shiftX": 0,
+                        "shiftY": 0,
+                        "selected": false,
+                        "folded": false,
+                        "isLeft": false,
+                        "children": [],
+                        "accompaniedState": null
+                      },
+                      {
+                        "text": "cut は copy() のあと deleteSelectedNodes()",
+                        "symbol": null,
+                        "shiftX": 0,
+                        "shiftY": 0,
+                        "selected": false,
+                        "folded": false,
+                        "isLeft": false,
+                        "children": [],
+                        "accompaniedState": null
+                      }
+                    ],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "編集中は text-input が obj.text を優先処理",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  }
+                ],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          },
+          {
+            "text": "AI / UI",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "complete — ノード補完を開始（Renderer→main へ続く）",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "dark-mode — 全ドキュメントウィンドウへテーマ同期",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          }
+        ],
+        "accompaniedState": null
+      },
+      {
+        "text": "Renderer → main",
+        "symbol": null,
+        "shiftX": 0,
+        "shiftY": 0,
+        "selected": false,
+        "folded": false,
+        "isLeft": false,
+        "children": [
+          {
+            "text": "受信: ipc.on('response', (event, arg, obj) => ...)",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "送信元ウィンドウは event.sender から特定",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          },
+          {
+            "text": "ドキュメント状態",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "set-dirty — 未保存フラグ ON、タイトル更新",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "set-root-text — ウィンドウタイトル用ルートテキスト",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          },
+          {
+            "text": "ウィンドウ間コピペ",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "response-copy-nodes — SavingNodeState[] を sharedCopiedNodes に保存",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [
+                  {
+                    "text": "オブジェクトのまま IPC 受け渡し（response-save と同様）",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "preload 新 API なし（paste 時は main が request paste で push）",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  }
+                ],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          },
+          {
+            "text": "save/exportの返答",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "response-save — SavingNodeState → fs.writeFile(.nm)",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "response-export — [state, format] → UML/YAML/JSON 書き出し",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "response-clipboard-export — [state, format] → clipboard.writeText",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          },
+          {
+            "text": "設定ウィンドウ",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "settings-set-dark-mode → electron-store",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "settings-set-openai-api-key",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "settings-set-completion-model",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              },
+              {
+                "text": "settings-set-completion-context",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          }
+        ],
+        "accompaniedState": null
+      },
+      {
+        "text": "Renderer → main → Renderer ",
+        "symbol": null,
+        "shiftX": 0,
+        "shiftY": 46,
+        "selected": true,
+        "folded": true,
+        "isLeft": false,
+        "children": [
+          {
+            "text": "invoke",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "get-settings — settings 起動時に store 値を取得",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [
+                  {
+                    "text": "返却: darkMode, openaiApiKey, completionModel, completionContext",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  }
+                ],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          },
+          {
+            "text": "send + 非同期コールバック（request で返す）",
+            "symbol": null,
+            "shiftX": 0,
+            "shiftY": 0,
+            "selected": false,
+            "folded": false,
+            "isLeft": false,
+            "children": [
+              {
+                "text": "ノード補完（OpenAI）",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [
+                  {
+                    "text": "1. main→Renderer: complete",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "2. Renderer→main: response-complete(rootState)",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "3. main: completeState() 実行（AbortController 対応）",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "4. main→Renderer: completed(completedState)",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  }
+                ],
+                "accompaniedState": null
+              },
+              {
+                "text": "テキスト→マインドマップ生成",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [
+                  {
+                    "text": "1. Renderer→main: response-text-generate(text)",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "2. main: convertTextToMindMap() 実行",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "3. main→Renderer: text-import-complete({ success, state|error })",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "キャンセル: cancel-text-generate → AbortController.abort()",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  }
+                ],
+                "accompaniedState": null
+              },
+              {
+                "text": "保存フロー（ダイアログあり）",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [
+                  {
+                    "text": "1. main: showSaveDialogSync → filePath 確定",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "2. main→Renderer: save",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "3. Renderer→main: response-save(state) → fs.writeFile",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  }
+                ],
+                "accompaniedState": null
+              },
+              {
+                "text": "エクスポートフロー（ダイアログあり）",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [
+                  {
+                    "text": "1. main: showSaveDialogSync → exportFilePath 確定",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "2. main→Renderer: export(format)",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "3. Renderer→main: response-export([state, format])",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  }
+                ],
+                "accompaniedState": null
+              },
+              {
+                "text": "ウィンドウ間ノードコピペ",
+                "symbol": null,
+                "shiftX": 0,
+                "shiftY": 0,
+                "selected": false,
+                "folded": false,
+                "isLeft": false,
+                "children": [
+                  {
+                    "text": "1. main→Renderer(A): request copy",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "2. Renderer(A)→main: response-copy-nodes(SavingNodeState[])",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "3. main→Renderer(B): request paste { nodes, text }",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  },
+                  {
+                    "text": "4. Renderer(B): getCopyingStatesFromSaving → applyPaste",
+                    "symbol": null,
+                    "shiftX": 0,
+                    "shiftY": 0,
+                    "selected": false,
+                    "folded": false,
+                    "isLeft": false,
+                    "children": [],
+                    "accompaniedState": null
+                  }
+                ],
+                "accompaniedState": null
+              }
+            ],
+            "accompaniedState": null
+          }
+        ],
+        "accompaniedState": null
+      }
+    ],
+    "accompaniedState": {
+      "text": "",
+      "symbol": null,
+      "shiftX": 0,
+      "shiftY": 0,
+      "selected": false,
+      "folded": false,
+      "isLeft": true,
+      "children": [],
+      "accompaniedState": null
+    }
+  }
+}

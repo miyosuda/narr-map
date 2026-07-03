@@ -167,6 +167,11 @@ function MindMap() {
     return () => observer.disconnect()
   }, [])
 
+  const isCtrlDown = useCallback((e: KeyboardEvent): boolean => {
+    //return e.ctrlKey || e.metaKey
+    return e.ctrlKey
+  }, [])
+
   // キーボードショートカットの定義
   useKeyboardShortcuts([
     // Tab: 子ノード追加
@@ -176,12 +181,12 @@ function MindMap() {
     },
     // Enter: 兄弟ノード追加
     {
-      condition: (e) => e.key === 'Enter' && !e.ctrlKey && !e.metaKey,
+      condition: (e) => e.key === 'Enter' && !isCtrlDown(e),
       handler: () => addSiblingToLatest()
     },
     // Ctrl+Enter: テキスト編集
     {
-      condition: (e) => e.key === 'Enter' && (e.ctrlKey || e.metaKey),
+      condition: (e) => e.key === 'Enter' && isCtrlDown(e),
       handler: () => editText(getLastNode())
     },
     // Backspace: 選択ノード削除
@@ -192,22 +197,22 @@ function MindMap() {
     },
     // 上移動: ArrowUp または Ctrl+p
     {
-      condition: (e) => e.key === 'ArrowUp' || (e.key === 'p' && (e.ctrlKey || e.metaKey)),
+      condition: (e) => e.key === 'ArrowUp' || (e.key === 'p' && isCtrlDown(e)),
       handler: (e) => move(MoveDirection.UP, e.shiftKey)
     },
     // 下移動: ArrowDown または Ctrl+n
     {
-      condition: (e) => e.key === 'ArrowDown' || (e.key === 'n' && (e.ctrlKey || e.metaKey)),
+      condition: (e) => e.key === 'ArrowDown' || (e.key === 'n' && isCtrlDown(e)),
       handler: (e) => move(MoveDirection.DOWN, e.shiftKey)
     },
     // 右移動: ArrowRight または Ctrl+f
     {
-      condition: (e) => e.key === 'ArrowRight' || (e.key === 'f' && (e.ctrlKey || e.metaKey)),
+      condition: (e) => e.key === 'ArrowRight' || (e.key === 'f' && isCtrlDown(e)),
       handler: (e) => move(MoveDirection.RIGHT, e.shiftKey)
     },
     // 左移動: ArrowLeft または Ctrl+b
     {
-      condition: (e) => e.key === 'ArrowLeft' || (e.key === 'b' && (e.ctrlKey || e.metaKey)),
+      condition: (e) => e.key === 'ArrowLeft' || (e.key === 'b' && isCtrlDown(e)),
       handler: (e) => move(MoveDirection.LEFT, e.shiftKey)
     },
     // F2: テキスト編集
@@ -217,7 +222,7 @@ function MindMap() {
     },
     // Ctrl+i: 挿入モードでテキスト編集
     {
-      condition: (e) => e.key === 'i' && (e.ctrlKey || e.metaKey),
+      condition: (e) => e.key === 'i' && isCtrlDown(e),
       handler: () => editText(getLastNode(), true)
     },
     // Space: 折りたたみ切り替え
@@ -227,7 +232,7 @@ function MindMap() {
     },
     // 英数字キー: 挿入モードでテキスト編集
     {
-      condition: (e) => e.keyCode >= 49 && e.keyCode <= 90 && !(e.ctrlKey || e.metaKey),
+      condition: (e) => e.keyCode >= 49 && e.keyCode <= 90 && !isCtrlDown(e),
       handler: () => editText(getLastNode(), true),
       preventDefault: false
     }

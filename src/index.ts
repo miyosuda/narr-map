@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, MenuItem, IpcMainEvent, Event, Input } from 'electron'
+import { app, BrowserWindow, Menu, MenuItem, IpcMainEvent, Event, Input, WebContents } from 'electron'
 import { ipcMain as ipc } from 'electron'
 import { dialog } from 'electron'
 import { clipboard } from 'electron'
@@ -29,22 +29,108 @@ const CONFIRM_ANSWER_CANCEL = 2
 const DEFAULT_TITLE = 'Unnamed'
 const DATA_VERSION = 2
 
-let editDirty = false
-let filePath: string
-let rootText: string
-let exportFilePath: string
+interface DocumentState {
+  filePath: string | null
+  editDirty: boolean
+  rootText: string | null
+  exportFilePath: string | null
+  onSavedFunction: (() => void) | null
+  completionAbortController: AbortController | null
+}
 
-let completionAbortController: AbortController | null = null
-
-// quit(), requestNewFile(), requestOpen(), requestImport()
-let onSavedFunction: () => void
+const documentStates = new Map<number, DocumentState>()
 
 // アプリ起動前にopen-fileイベントで渡されたファイルパスを保持
 let pendingFilePath: string | null = null
 
-const cancelCompletion = () => {
-  if (completionAbortController != null) {
-    completionAbortController.abort()
+const createInitialDocState = (): DocumentState => ({
+  filePath: null,
+  editDirty: false,
+  rootText: null,
+  exportFilePath: null,
+  onSavedFunction: null,
+  completionAbortController: null
+})
+
+const isDocumentWindow = (win: BrowserWindow): boolean => {
+  return documentStates.has(win.id)
+}
+
+const getDocState = (win: BrowserWindow): DocumentState => {
+  const state = documentStates.get(win.id)
+  if (state == null) {
+    throw new Error(`Document state not found for window ${win.id}`)
+  }
+  return state
+}
+
+const getDocWindowFromSender = (sender: WebContents): BrowserWindow | null => {
+  const win = BrowserWindow.fromWebContents(sender)
+  if (win == null || !isDocumentWindow(win)) {
+    return null
+  }
+  return win
+}
+
+const getDocumentWindows = (): BrowserWindow[] => {
+  return BrowserWindow.getAllWindows().filter(isDocumentWindow)
+}
+
+const getWindowTitle = (docState: DocumentState): string => {
+  if (docState.filePath != null) {
+    const name = path.basename(docState.filePath)
+    return docState.editDirty ? `*${name}` : name
+  }
+  return docState.editDirty ? `*${DEFAULT_TITLE}` : DEFAULT_TITLE
+}
+
+const updateWindowTitle = (win: BrowserWindow, docState: DocumentState): void => {
+  win.setTitle(getWindowTitle(docState))
+}
+
+const findDocumentWindowByPath = (filePath: string): BrowserWindow | null => {
+  for (const win of getDocumentWindows()) {
+    const docState = getDocState(win)
+    if (docState.filePath === filePath) {
+      return win
+    }
+  }
+  return null
+}
+
+const focusDocumentWindow = (win: BrowserWindow): void => {
+  if (win.isMinimized()) {
+    win.restore()
+  }
+  win.show()
+  win.focus()
+}
+
+const getFocusedDocumentWindow = (): BrowserWindow | null => {
+  const focused = BrowserWindow.getFocusedWindow()
+  if (focused != null && isDocumentWindow(focused)) {
+    return focused
+  }
+  const docs = getDocumentWindows()
+  return docs.length > 0 ? docs[docs.length - 1] : null
+}
+
+const resolveDocumentWindow = (browserWindow: BrowserWindow | undefined): BrowserWindow => {
+  if (browserWindow != null && isDocumentWindow(browserWindow)) {
+    return browserWindow
+  }
+  const focused = getFocusedDocumentWindow()
+  if (focused != null) {
+    return focused
+  }
+  return createDocumentWindow()
+}
+
+const cancelCompletionForWindow = (win: BrowserWindow): void => {
+  const docState = getDocState(win)
+  if (docState.completionAbortController != null) {
+    docState.completionAbortController.abort()
+    docState.completionAbortController = null
   }
 }
 
@@ -77,10 +163,7 @@ const schema: Schema<StoreSchema> = {
 const store = new Store({ schema })
 
 const setDarkMode = (darkMode: boolean) => {
-  // TODO: ここは送るのはmain windowだけで良い
-  // TODO: BrowserWindow.fromId()を利用する
-  const windows = BrowserWindow.getAllWindows()
-  windows.forEach((window) => {
+  getDocumentWindows().forEach((window) => {
     window.webContents.send('request', 'dark-mode', darkMode)
   })
 }
@@ -95,256 +178,6 @@ store.onDidChange('darkMode', onDarkModeChanged)
 if (require('electron-squirrel-startup')) {
   app.quit()
 }
-
-const createWindow = (): void => {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 800,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY
-    }
-  })
-
-  mainWindow.on('close', (event: Event) => {
-    if (editDirty) {
-      const quit = () => {
-        app.quit()
-      }
-
-      const ret = showSaveConfirmDialog()
-      if (ret == CONFIRM_ANSWER_SAVE) {
-        // save後にquitを実行する
-        event.preventDefault()
-        save(mainWindow, quit)
-      } else if (ret == CONFIRM_ANSWER_DELETE) {
-        editDirty = false
-      } else {
-        event.preventDefault()
-      }
-    }
-  })
-
-  mainWindow.webContents.on('did-finish-load', () => {
-    setDarkMode(store.get('darkMode'))
-    
-    // アプリ起動前に渡されたファイルがあれば読み込む
-    if (pendingFilePath != null) {
-      load(mainWindow, pendingFilePath)
-      pendingFilePath = null
-    }
-  })
-
-  mainWindow.webContents.on('before-input-event', (event: Event, input: Input) => {
-    if (input.key === 'Escape') {
-      // EscキーにてCompletionをキャンセル
-      cancelCompletion()
-      event.preventDefault()
-    }
-  })
-
-  // and load the index.html of the app.
-  mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
-
-  mainWindow.setTitle(DEFAULT_TITLE)
-}
-
-const openSettings = () => {
-  const settingsWindow = new BrowserWindow({
-    width: 640,
-    height: 390,
-    title: 'Settings',
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: SETTINGS_PRELOAD_WEBPACK_ENTRY
-    }
-  })
-
-  // Load the settings.html of the app.
-  settingsWindow.loadURL(SETTINGS_WEBPACK_ENTRY)
-}
-
-ipc.handle('invoke', async (event: IpcMainEvent, arg: string): Promise<any> => {
-  if (arg === 'get-settings') {
-    const settings = {
-      darkMode: store.get('darkMode'),
-      openaiApiKey: store.get('openaiApiKey'),
-      completionModel: store.get('completionModel'),
-      completionContext: store.get('completionContext')
-    }
-    return settings
-  } else {
-    return null
-  }
-})
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', createWindow)
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  //if (process.platform !== 'darwin') {
-  app.quit()
-  //}
-})
-
-app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
-
-app.on('open-file', (event: Event, path_: string) => {
-  event.preventDefault()
-  
-  // アプリがまだreadyでない場合は、ファイルパスを保持しておく
-  if (!app.isReady()) {
-    pendingFilePath = path_
-    return
-  }
-  
-  // TODO: BrowserWindow.fromId()を利用する
-  const windows = BrowserWindow.getAllWindows()
-  if (windows.length > 0) {
-    // TODO: 複数のwindowが出てきた時は要対応
-    load(windows[0], path_)
-  } else {
-    // ウィンドウがまだない場合はパスを保持
-    pendingFilePath = path_
-  }
-})
-
-ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
-  if (arg == 'settings-set-dark-mode') {
-    const darkMode = obj as boolean
-    store.set('darkMode', darkMode)
-  } else if (arg == 'settings-set-openai-api-key') {
-    const openaiApiKey = obj as string
-    store.set('openaiApiKey', openaiApiKey)
-  } else if (arg == 'settings-set-completion-model') {
-    const completionModel = obj as string
-    store.set('completionModel', completionModel)
-  } else if (arg == 'settings-set-completion-context') {
-    const completionContext = obj as string
-    store.set('completionContext', completionContext)
-  } else if (arg == 'set-dirty') {
-    editDirty = true
-  } else if (arg == 'set-root-text') {
-    rootText = obj
-  } else if (arg == 'response-save') {
-    const mapData = {
-      version: DATA_VERSION,
-      state: obj
-    }
-
-    const json = JSON.stringify(mapData, null, '  ')
-
-    fs.writeFile(filePath, json, (error: NodeJS.ErrnoException) => {
-      if (error != null) {
-        console.log('save error')
-      }
-    })
-
-    editDirty = false
-
-    onSaveFinished()
-  } else if (arg == 'response-export') {
-    const [state, format] = obj as [SavingNodeState, string]
-    const content =
-      format == 'uml'
-        ? convertStateToPlantUML(state)
-        : format == 'json'
-          ? convertStateToJSON(state)
-          : convertStateToYAML(state)
-
-    fs.writeFile(exportFilePath, content, (error: NodeJS.ErrnoException) => {
-      if (error != null) {
-        console.log('save error')
-      }
-    })
-
-    exportFilePath = null
-  } else if (arg == 'response-complete') {
-    const state = obj
-
-    const sender = event.sender
-
-    completionAbortController = new AbortController()
-
-    const openaiApiKey = store.get('openaiApiKey')
-    const completionModel = store.get('completionModel')
-    const completionContext = store.get('completionContext')
-
-    completeState(openaiApiKey, completionModel, state, completionContext, completionAbortController)
-      .then((completedState) => {
-        if (completedState != null) {
-          sender.send('request', 'completed', completedState)
-        } else {
-          sender.send('request', 'completed', state)
-        }
-        completionAbortController = null
-      })
-      .catch((error) => {
-        sender.send('request', 'completed', state)
-        console.error(error)
-        completionAbortController = null
-      })
-  } else if (arg == 'response-clipboard-export') {
-    const [state, format] = obj
-    const content = format === 'json' ? convertStateToJSON(state) : convertStateToYAML(state)
-    clipboard.writeText(content)
-  } else if (arg == 'response-text-generate') {
-    const inputText = obj as string
-    const sender = event.sender
-
-    completionAbortController = new AbortController()
-
-    const openaiApiKey = store.get('openaiApiKey')
-    const completionModel = store.get('completionModel')
-
-    convertTextToMindMap(openaiApiKey, completionModel, inputText, completionAbortController)
-      .then((state) => {
-        if (state != null) {
-          sender.send('request', 'text-import-complete', { success: true, state })
-          editDirty = true
-          filePath = null
-          rootText = null
-          // TODO: BrowserWindow.fromId()を利用する
-          const windows = BrowserWindow.getAllWindows()
-          if (windows.length > 0) {
-            windows[0].setTitle(DEFAULT_TITLE)
-          }
-        } else {
-          sender.send('request', 'text-import-complete', {
-            success: false,
-            error: 'Failed to generate MindMap'
-          })
-        }
-        completionAbortController = null
-      })
-      .catch((error) => {
-        sender.send('request', 'text-import-complete', {
-          success: false,
-          error: error.message || 'An error occurred'
-        })
-        completionAbortController = null
-      })
-  } else if (arg == 'cancel-text-generate') {
-    if (completionAbortController != null) {
-      completionAbortController.abort()
-      completionAbortController = null
-    }
-  }
-})
 
 const showSaveConfirmDialog = () => {
   const ret = dialog.showMessageBoxSync({
@@ -396,78 +229,76 @@ const exportOptionsJSON = {
   ]
 }
 
+const onSaveFinished = (browserWindow: BrowserWindow, docState: DocumentState) => {
+  if (docState.filePath != null) {
+    app.addRecentDocument(docState.filePath)
+  }
+  updateWindowTitle(browserWindow, docState)
+
+  if (docState.onSavedFunction != null) {
+    const fn = docState.onSavedFunction
+    docState.onSavedFunction = null
+    fn()
+  }
+}
+
 const save = (browserWindow: BrowserWindow, onSavedHook: (() => void) | null = null) => {
-  if (filePath == null) {
-    // rootTextを使ってデフォルトファイル名表示
+  const docState = getDocState(browserWindow)
+
+  if (docState.filePath == null) {
     const saveOptions_ = Object.create(saveOptions)
 
-    if (rootText != null) {
-      saveOptions_['defaultPath'] = rootText
+    if (docState.rootText != null) {
+      saveOptions_['defaultPath'] = docState.rootText
     }
 
     const path_ = dialog.showSaveDialogSync(saveOptions_)
     if (path_ != null) {
-      onSavedFunction = onSavedHook
-      // filePathの設定
-      filePath = path_
-      const fileName = path.basename(filePath)
-      browserWindow.setTitle(fileName)
+      docState.onSavedFunction = onSavedHook
+      docState.filePath = path_
+      updateWindowTitle(browserWindow, docState)
       browserWindow.webContents.send('request', 'save')
     }
   } else {
-    onSavedFunction = onSavedHook
+    docState.onSavedFunction = onSavedHook
     browserWindow.webContents.send('request', 'save')
   }
 }
 
 const saveAs = (browserWindow: BrowserWindow) => {
-  // rootTextを使ってデフォルトファイル名表示
+  const docState = getDocState(browserWindow)
   const saveOptions_ = Object.create(saveOptions)
-  if (rootText != null) {
-    saveOptions_['defaultPath'] = rootText
+  if (docState.rootText != null) {
+    saveOptions_['defaultPath'] = docState.rootText
   }
   const path_ = dialog.showSaveDialogSync(saveOptions_)
   if (path_ != null) {
-    // filePathの設定
-    filePath = path_
-    const fileName = path.basename(filePath)
-    browserWindow.setTitle(fileName)
+    docState.filePath = path_
+    updateWindowTitle(browserWindow, docState)
     browserWindow.webContents.send('request', 'save')
   }
 }
 
 const exportAs = (browserWindow: BrowserWindow, format: 'uml' | 'yaml' | 'json') => {
+  const docState = getDocState(browserWindow)
   const exportOptions_ = Object.create(
     format == 'uml' ? exportOptionsUML : format == 'json' ? exportOptionsJSON : exportOptionsYAML
   )
 
-  if (filePath != null) {
-    const baseName = path.basename(filePath, '.nm')
+  if (docState.filePath != null) {
+    const baseName = path.basename(docState.filePath, '.nm')
     exportOptions_['defaultPath'] = baseName
   } else {
-    if (rootText != null) {
-      exportOptions_['defaultPath'] = rootText
+    if (docState.rootText != null) {
+      exportOptions_['defaultPath'] = docState.rootText
     }
   }
 
   const path_ = dialog.showSaveDialogSync(exportOptions_)
 
   if (path_ != null) {
-    // exportFilePathの設定
-    exportFilePath = path_
-    const fileName = path.basename(exportFilePath)
-    browserWindow.setTitle(fileName)
+    docState.exportFilePath = path_
     browserWindow.webContents.send('request', 'export', format)
-  }
-}
-
-const onSaveFinished = () => {
-  // Add to recently used file
-  // (addRecentDocument() should be called after file was created)
-  app.addRecentDocument(filePath)
-
-  if (onSavedFunction != null) {
-    onSavedFunction()
   }
 }
 
@@ -475,6 +306,7 @@ const load = (browserWindow: BrowserWindow, path_: string) => {
   fs.readFile(path_, (error: NodeJS.ErrnoException, buffer: Buffer) => {
     if (error != null) {
       console.log('file open error')
+      return
     }
 
     if (buffer != null) {
@@ -489,15 +321,11 @@ const load = (browserWindow: BrowserWindow, path_: string) => {
 
       browserWindow.webContents.send('request', 'load', state)
 
-      editDirty = false
-
-      // Add to recently used file
+      const docState = getDocState(browserWindow)
+      docState.editDirty = false
+      docState.filePath = path_
       app.addRecentDocument(path_)
-
-      // filePathの設定
-      filePath = path_
-      const fileName = path.basename(filePath)
-      browserWindow.setTitle(fileName)
+      updateWindowTitle(browserWindow, docState)
     }
   })
 }
@@ -506,6 +334,7 @@ const importUML = (browserWindow: BrowserWindow, path_: string) => {
   fs.readFile(path_, (error: NodeJS.ErrnoException, buffer: Buffer) => {
     if (error != null) {
       console.log('file open error')
+      return
     }
 
     if (buffer != null) {
@@ -513,14 +342,341 @@ const importUML = (browserWindow: BrowserWindow, path_: string) => {
       const state = convertPlantUMLToState(uml)
       browserWindow.webContents.send('request', 'load', state)
 
-      editDirty = true
-
-      filePath = null
-      rootText = null
-      browserWindow.setTitle(DEFAULT_TITLE)
+      const docState = getDocState(browserWindow)
+      docState.editDirty = true
+      docState.filePath = null
+      docState.rootText = null
+      updateWindowTitle(browserWindow, docState)
     }
   })
 }
+
+const openDocumentInNewWindow = (path_: string): void => {
+  const existing = findDocumentWindowByPath(path_)
+  if (existing != null) {
+    focusDocumentWindow(existing)
+    return
+  }
+  createDocumentWindow(path_)
+}
+
+const requestQuit = (): void => {
+  const windows = [...getDocumentWindows()]
+  let index = 0
+
+  const processNext = () => {
+    if (index >= windows.length) {
+      app.quit()
+      return
+    }
+
+    const win = windows[index]
+    const docState = getDocState(win)
+
+    if (!docState.editDirty) {
+      index++
+      processNext()
+      return
+    }
+
+    const ret = showSaveConfirmDialog()
+    if (ret == CONFIRM_ANSWER_SAVE) {
+      save(win, () => {
+        index++
+        processNext()
+      })
+    } else if (ret == CONFIRM_ANSWER_DELETE) {
+      docState.editDirty = false
+      index++
+      processNext()
+    }
+  }
+
+  processNext()
+}
+
+const createDocumentWindow = (initialFilePath?: string): BrowserWindow => {
+  const mainWindow = new BrowserWindow({
+    width: 1000,
+    height: 800,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY
+    }
+  })
+
+  documentStates.set(mainWindow.id, createInitialDocState())
+
+  mainWindow.on('closed', () => {
+    const docState = documentStates.get(mainWindow.id)
+    if (docState?.completionAbortController != null) {
+      docState.completionAbortController.abort()
+    }
+    documentStates.delete(mainWindow.id)
+  })
+
+  mainWindow.on('close', (event: Event) => {
+    const docState = getDocState(mainWindow)
+    if (docState.editDirty) {
+      const closeWindow = () => {
+        docState.editDirty = false
+        mainWindow.destroy()
+      }
+
+      const ret = showSaveConfirmDialog()
+      if (ret == CONFIRM_ANSWER_SAVE) {
+        event.preventDefault()
+        save(mainWindow, closeWindow)
+      } else if (ret == CONFIRM_ANSWER_DELETE) {
+        docState.editDirty = false
+      } else {
+        event.preventDefault()
+      }
+    }
+  })
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    setDarkMode(store.get('darkMode'))
+
+    if (initialFilePath != null) {
+      load(mainWindow, initialFilePath)
+    } else if (pendingFilePath != null) {
+      load(mainWindow, pendingFilePath)
+      pendingFilePath = null
+    }
+  })
+
+  mainWindow.webContents.on('before-input-event', (event: Event, input: Input) => {
+    if (input.key === 'Escape') {
+      cancelCompletionForWindow(mainWindow)
+      event.preventDefault()
+    }
+  })
+
+  mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
+  updateWindowTitle(mainWindow, getDocState(mainWindow))
+
+  return mainWindow
+}
+
+const openSettings = () => {
+  const settingsWindow = new BrowserWindow({
+    width: 640,
+    height: 390,
+    title: 'Settings',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: SETTINGS_PRELOAD_WEBPACK_ENTRY
+    }
+  })
+
+  settingsWindow.loadURL(SETTINGS_WEBPACK_ENTRY)
+}
+
+ipc.handle('invoke', async (event: IpcMainEvent, arg: string): Promise<any> => {
+  if (arg === 'get-settings') {
+    const settings = {
+      darkMode: store.get('darkMode'),
+      openaiApiKey: store.get('openaiApiKey'),
+      completionModel: store.get('completionModel'),
+      completionContext: store.get('completionContext')
+    }
+    return settings
+  } else {
+    return null
+  }
+})
+
+app.on('ready', () => {
+  createDocumentWindow()
+})
+
+app.on('window-all-closed', () => {
+  app.quit()
+})
+
+app.on('activate', () => {
+  if (getDocumentWindows().length === 0) {
+    createDocumentWindow()
+  }
+})
+
+app.on('open-file', (event: Event, path_: string) => {
+  event.preventDefault()
+
+  if (!app.isReady()) {
+    pendingFilePath = path_
+    return
+  }
+
+  openDocumentInNewWindow(path_)
+})
+
+ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
+  if (arg == 'settings-set-dark-mode') {
+    const darkMode = obj as boolean
+    store.set('darkMode', darkMode)
+  } else if (arg == 'settings-set-openai-api-key') {
+    const openaiApiKey = obj as string
+    store.set('openaiApiKey', openaiApiKey)
+  } else if (arg == 'settings-set-completion-model') {
+    const completionModel = obj as string
+    store.set('completionModel', completionModel)
+  } else if (arg == 'settings-set-completion-context') {
+    const completionContext = obj as string
+    store.set('completionContext', completionContext)
+  } else if (arg == 'set-dirty') {
+    const win = getDocWindowFromSender(event.sender)
+    if (win == null) {
+      return
+    }
+    const docState = getDocState(win)
+    docState.editDirty = true
+    updateWindowTitle(win, docState)
+  } else if (arg == 'set-root-text') {
+    const win = getDocWindowFromSender(event.sender)
+    if (win == null) {
+      return
+    }
+    getDocState(win).rootText = obj
+  } else if (arg == 'response-save') {
+    const win = getDocWindowFromSender(event.sender)
+    if (win == null) {
+      return
+    }
+    const docState = getDocState(win)
+    if (docState.filePath == null) {
+      return
+    }
+
+    const mapData = {
+      version: DATA_VERSION,
+      state: obj
+    }
+
+    const json = JSON.stringify(mapData, null, '  ')
+
+    fs.writeFile(docState.filePath, json, (error: NodeJS.ErrnoException) => {
+      if (error != null) {
+        console.log('save error')
+      }
+    })
+
+    docState.editDirty = false
+    onSaveFinished(win, docState)
+  } else if (arg == 'response-export') {
+    const win = getDocWindowFromSender(event.sender)
+    if (win == null) {
+      return
+    }
+    const docState = getDocState(win)
+    if (docState.exportFilePath == null) {
+      return
+    }
+
+    const [state, format] = obj as [SavingNodeState, string]
+    const content =
+      format == 'uml'
+        ? convertStateToPlantUML(state)
+        : format == 'json'
+          ? convertStateToJSON(state)
+          : convertStateToYAML(state)
+
+    fs.writeFile(docState.exportFilePath, content, (error: NodeJS.ErrnoException) => {
+      if (error != null) {
+        console.log('save error')
+      }
+    })
+
+    docState.exportFilePath = null
+  } else if (arg == 'response-complete') {
+    const win = getDocWindowFromSender(event.sender)
+    if (win == null) {
+      return
+    }
+    const docState = getDocState(win)
+    const state = obj
+    const sender = event.sender
+
+    cancelCompletionForWindow(win)
+    docState.completionAbortController = new AbortController()
+
+    const openaiApiKey = store.get('openaiApiKey')
+    const completionModel = store.get('completionModel')
+    const completionContext = store.get('completionContext')
+
+    completeState(
+      openaiApiKey,
+      completionModel,
+      state,
+      completionContext,
+      docState.completionAbortController
+    )
+      .then((completedState) => {
+        if (completedState != null) {
+          sender.send('request', 'completed', completedState)
+        } else {
+          sender.send('request', 'completed', state)
+        }
+        docState.completionAbortController = null
+      })
+      .catch((error) => {
+        sender.send('request', 'completed', state)
+        console.error(error)
+        docState.completionAbortController = null
+      })
+  } else if (arg == 'response-clipboard-export') {
+    const [state, format] = obj
+    const content = format === 'json' ? convertStateToJSON(state) : convertStateToYAML(state)
+    clipboard.writeText(content)
+  } else if (arg == 'response-text-generate') {
+    const win = getDocWindowFromSender(event.sender)
+    if (win == null) {
+      return
+    }
+    const docState = getDocState(win)
+    const inputText = obj as string
+    const sender = event.sender
+
+    cancelCompletionForWindow(win)
+    docState.completionAbortController = new AbortController()
+
+    const openaiApiKey = store.get('openaiApiKey')
+    const completionModel = store.get('completionModel')
+
+    convertTextToMindMap(openaiApiKey, completionModel, inputText, docState.completionAbortController)
+      .then((state) => {
+        if (state != null) {
+          sender.send('request', 'text-import-complete', { success: true, state })
+          docState.editDirty = true
+          docState.filePath = null
+          docState.rootText = null
+          updateWindowTitle(win, docState)
+        } else {
+          sender.send('request', 'text-import-complete', {
+            success: false,
+            error: 'Failed to generate MindMap'
+          })
+        }
+        docState.completionAbortController = null
+      })
+      .catch((error) => {
+        sender.send('request', 'text-import-complete', {
+          success: false,
+          error: error.message || 'An error occurred'
+        })
+        docState.completionAbortController = null
+      })
+  } else if (arg == 'cancel-text-generate') {
+    const win = getDocWindowFromSender(event.sender)
+    if (win == null) {
+      return
+    }
+    cancelCompletionForWindow(win)
+  }
+})
 
 // ElectronのMenuの設定
 const templateMenu: Electron.MenuItemConstructorOptions[] = [
@@ -547,11 +703,7 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Quit',
         accelerator: 'CmdOrCtrl+Q',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          const quit = () => {
-            app.quit()
-          }
-
-          quit()
+          requestQuit()
         }
       }
     ]
@@ -563,32 +715,15 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'New',
         accelerator: 'CmdOrCtrl+N',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          const requestNewFile = () => {
-            browserWindow.webContents.send('request', 'new-file')
-            // filePathの設定
-            filePath = null
-            rootText = null
-            editDirty = false
-            browserWindow.setTitle(DEFAULT_TITLE)
-          }
-
-          if (editDirty) {
-            const ret = showSaveConfirmDialog()
-            if (ret == CONFIRM_ANSWER_SAVE) {
-              // save後にnew fileを実行する
-              save(browserWindow, requestNewFile)
-            } else if (ret == CONFIRM_ANSWER_DELETE) {
-              requestNewFile()
-            }
-          } else {
-            requestNewFile()
-          }
+          createDocumentWindow()
         }
       },
       {
         label: 'Open',
         accelerator: 'CmdOrCtrl+O',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: Event) => {
+          const docWindow = resolveDocumentWindow(browserWindow)
+
           const requestOpen = () => {
             const options: Electron.OpenDialogSyncOptions = {
               properties: ['openFile'],
@@ -602,15 +737,20 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
             const pathes = dialog.showOpenDialogSync(options)
             if (pathes != null && pathes.length > 0) {
               const path_ = pathes[0]
-              load(browserWindow, path_)
+              const existing = findDocumentWindowByPath(path_)
+              if (existing != null) {
+                focusDocumentWindow(existing)
+                return
+              }
+              load(docWindow, path_)
             }
           }
 
-          if (editDirty) {
+          const docState = getDocState(docWindow)
+          if (docState.editDirty) {
             const ret = showSaveConfirmDialog()
             if (ret == CONFIRM_ANSWER_SAVE) {
-              // save後にopenする
-              save(browserWindow, requestOpen)
+              save(docWindow, requestOpen)
             } else if (ret == CONFIRM_ANSWER_DELETE) {
               requestOpen()
             }
@@ -636,14 +776,16 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Save',
         accelerator: 'CmdOrCtrl+S',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          save(browserWindow)
+          const docWindow = resolveDocumentWindow(browserWindow)
+          save(docWindow)
         }
       },
       {
         label: 'Save As',
         accelerator: 'CmdOrCtrl+Shift+S',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          saveAs(browserWindow)
+          const docWindow = resolveDocumentWindow(browserWindow)
+          saveAs(docWindow)
         }
       },
       {
@@ -653,21 +795,24 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
             label: 'YAML',
             accelerator: 'CmdOrCtrl+Shift+Y',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-              exportAs(browserWindow, 'yaml')
+              const docWindow = resolveDocumentWindow(browserWindow)
+              exportAs(docWindow, 'yaml')
             }
           },
           {
             label: 'JSON',
             accelerator: 'CmdOrCtrl+Shift+J',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-              exportAs(browserWindow, 'json')
+              const docWindow = resolveDocumentWindow(browserWindow)
+              exportAs(docWindow, 'json')
             }
           },
           {
             label: 'PlantUML',
             accelerator: 'CmdOrCtrl+Shift+E',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-              exportAs(browserWindow, 'uml')
+              const docWindow = resolveDocumentWindow(browserWindow)
+              exportAs(docWindow, 'uml')
             }
           }
         ]
@@ -679,6 +824,8 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
             label: 'PlantUML',
             accelerator: 'CmdOrCtrl+Shift+O',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: Event) => {
+              const docWindow = resolveDocumentWindow(browserWindow)
+
               const requestImport = () => {
                 const options: Electron.OpenDialogSyncOptions = {
                   properties: ['openFile'],
@@ -689,15 +836,15 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
                 const pathes = dialog.showOpenDialogSync(options)
                 if (pathes != null && pathes.length > 0) {
                   const path_ = pathes[0]
-                  importUML(browserWindow, path_)
+                  importUML(docWindow, path_)
                 }
               }
 
-              if (editDirty) {
+              const docState = getDocState(docWindow)
+              if (docState.editDirty) {
                 const ret = showSaveConfirmDialog()
                 if (ret == CONFIRM_ANSWER_SAVE) {
-                  // save後にopenする
-                  save(browserWindow, requestImport)
+                  save(docWindow, requestImport)
                 } else if (ret == CONFIRM_ANSWER_DELETE) {
                   requestImport()
                 }
@@ -710,16 +857,19 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
             label: 'From Text Input',
             accelerator: 'CmdOrCtrl+Shift+T',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: Event) => {
+              const docWindow = resolveDocumentWindow(browserWindow)
+
               const requestTextImport = () => {
-                browserWindow.webContents.send('request', 'open-text-import-modal')
+                docWindow.webContents.send('request', 'open-text-import-modal')
               }
 
-              if (editDirty) {
+              const docState = getDocState(docWindow)
+              if (docState.editDirty) {
                 const ret = showSaveConfirmDialog()
                 if (ret == CONFIRM_ANSWER_SAVE) {
-                  save(browserWindow, requestTextImport)
+                  save(docWindow, requestTextImport)
                 } else if (ret == CONFIRM_ANSWER_DELETE) {
-                  editDirty = false
+                  docState.editDirty = false
                   requestTextImport()
                 }
               } else {
@@ -736,14 +886,16 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
             label: 'YAML',
             accelerator: 'CmdOrCtrl+Y',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-              browserWindow.webContents.send('request', 'clipboard-export', 'yaml')
+              const docWindow = resolveDocumentWindow(browserWindow)
+              docWindow.webContents.send('request', 'clipboard-export', 'yaml')
             }
           },
           {
             label: 'JSON',
             accelerator: 'CmdOrCtrl+J',
             click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-              browserWindow.webContents.send('request', 'clipboard-export', 'json')
+              const docWindow = resolveDocumentWindow(browserWindow)
+              docWindow.webContents.send('request', 'clipboard-export', 'json')
             }
           }
         ]
@@ -757,14 +909,16 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Undo',
         accelerator: 'CmdOrCtrl+Z',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          browserWindow.webContents.send('request', 'undo')
+          const docWindow = resolveDocumentWindow(browserWindow)
+          docWindow.webContents.send('request', 'undo')
         }
       },
       {
         label: 'Redo',
         accelerator: 'CmdOrCtrl+Shift+Z',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          browserWindow.webContents.send('request', 'redo')
+          const docWindow = resolveDocumentWindow(browserWindow)
+          docWindow.webContents.send('request', 'redo')
         }
       },
       {
@@ -774,22 +928,25 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Cut',
         accelerator: 'CmdOrCtrl+X',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          browserWindow.webContents.send('request', 'cut')
+          const docWindow = resolveDocumentWindow(browserWindow)
+          docWindow.webContents.send('request', 'cut')
         }
       },
       {
         label: 'Copy',
         accelerator: 'CmdOrCtrl+C',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          browserWindow.webContents.send('request', 'copy')
+          const docWindow = resolveDocumentWindow(browserWindow)
+          docWindow.webContents.send('request', 'copy')
         }
       },
       {
         label: 'Paste',
         accelerator: 'CmdOrCtrl+V',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+          const docWindow = resolveDocumentWindow(browserWindow)
           const clipboardText = clipboard.readText()
-          browserWindow.webContents.send('request', 'paste', { text: clipboardText })
+          docWindow.webContents.send('request', 'paste', { text: clipboardText })
         }
       },
       {
@@ -799,7 +956,8 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          browserWindow.webContents.send('request', 'selectall')
+          const docWindow = resolveDocumentWindow(browserWindow)
+          docWindow.webContents.send('request', 'selectall')
         }
       },
       {
@@ -809,7 +967,8 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Complete With AI',
         accelerator: 'CmdOrCtrl+M',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
-          browserWindow.webContents.send('request', 'complete')
+          const docWindow = resolveDocumentWindow(browserWindow)
+          docWindow.webContents.send('request', 'complete')
         }
       }
     ]

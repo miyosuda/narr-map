@@ -509,6 +509,11 @@ export function getNodeStateFromSaving(savingState: SavingNodeState): NodeState 
   return assignIds(stateWithoutId)
 }
 
+/** SavingNodeState[] を applyPaste 用の NodeState[] に変換する（ID は applyPaste が振る） */
+export function getCopyingStatesFromSaving(states: SavingNodeState[]): NodeState[] {
+  return states.map((s) => getNodeStateFromSavingSub(s))
+}
+
 export function getMaxNodeId(state: NodeState): number {
   const extendedChildren = getExtendedChildren(state)
   const maxNodeId = extendedChildren

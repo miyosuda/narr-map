@@ -43,6 +43,9 @@ const documentStates = new Map<number, DocumentState>()
 // アプリ起動前にopen-fileイベントで渡されたファイルパスを保持
 let pendingFilePath: string | null = null
 
+// ウィンドウ間コピペ用の共有バッファ
+let sharedCopiedNodes: SavingNodeState[] | null = null
+
 const createInitialDocState = (): DocumentState => ({
   filePath: null,
   editDirty: false,
@@ -627,6 +630,8 @@ ipc.on('response', (event: IpcMainEvent, arg: string, obj: any) => {
         console.error(error)
         docState.completionAbortController = null
       })
+  } else if (arg == 'response-copy-nodes') {
+    sharedCopiedNodes = obj as SavingNodeState[]
   } else if (arg == 'response-clipboard-export') {
     const [state, format] = obj
     const content = format === 'json' ? convertStateToJSON(state) : convertStateToYAML(state)
@@ -945,8 +950,10 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         accelerator: 'CmdOrCtrl+V',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
           const docWindow = resolveDocumentWindow(browserWindow)
-          const clipboardText = clipboard.readText()
-          docWindow.webContents.send('request', 'paste', { text: clipboardText })
+          docWindow.webContents.send('request', 'paste', {
+            nodes: sharedCopiedNodes,
+            text: clipboard.readText()
+          })
         }
       },
       {

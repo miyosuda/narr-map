@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 
 import {
   NodeState,
+  SavingNodeState,
   EDIT_STATE_NONE,
   EDIT_STATE_NORMAL,
   EDIT_STATE_INSERT
@@ -20,7 +21,9 @@ import {
   getSibling,
   isCopiable,
   calcDepth,
-  splitSymbolFromText
+  splitSymbolFromText,
+  getSavingNodeState,
+  getCopyingStatesFromSaving
 } from '@/utils/node-utils'
 import {
   getLastNode as getLastNodePure,
@@ -101,16 +104,25 @@ export function useNodeEditing(params: UseNodeEditingParams) {
   function copy() {
     const copiableStates = findNodes(rootState, (state) => isCopiable(state))
     setCopyingStates(copiableStates)
+    const savingNodes = copiableStates.map(getSavingNodeState)
+    nmAPI.sendMessage('response-copy-nodes', savingNodes)
   }
 
-  function paste() {
+  function paste(obj?: { nodes?: SavingNodeState[] | null }) {
+    const states =
+      obj?.nodes != null ? getCopyingStatesFromSaving(obj.nodes) : copyingStates
+
+    if (states.length === 0) {
+      return
+    }
+
     const targetNode = getLastNode()
 
     const {
       rootState: newRootState,
       nextNodeId: newNextNodeId,
       nextEditId: newNextEditId
-    } = applyPaste(rootState, copyingStates, targetNode, nextNodeId, nextEditId)
+    } = applyPaste(rootState, states, targetNode, nextNodeId, nextEditId)
 
     setNextNodeId(newNextNodeId)
     setNextEditId(newNextEditId)

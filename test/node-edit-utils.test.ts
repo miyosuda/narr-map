@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getNodeState, findNode } from '../src/utils/node-utils'
+import { getNodeState, findNode, getSavingNodeState, getCopyingStatesFromSaving } from '../src/utils/node-utils'
 import {
   getLastNode,
   applyDeleteSelectedNodes,
@@ -185,6 +185,26 @@ describe('applyPaste', () => {
     // 2ノード分のidを消費
     expect(nextNodeId).toBe(12)
     expect(nextEditId).toBe(22)
+  })
+
+  it('pastes nodes restored from SavingNodeState via getCopyingStatesFromSaving', () => {
+    const rootState = buildStandardTree()
+    const copySource = buildTree({
+      id: 0,
+      editId: 0,
+      children: [buildTree({ id: 99, text: 'from-saving', editId: 99 })],
+      accompaniedState: buildTree({ id: 1, isLeft: true, editId: 1 })
+    })
+    const copyingStates = [findById(copySource, 99)!]
+    const savingNodes = copyingStates.map(getSavingNodeState)
+    const restoredStates = getCopyingStatesFromSaving(savingNodes)
+    const targetNode = findById(rootState, 3)!
+
+    const { rootState: newRoot } = applyPaste(rootState, restoredStates, targetNode, 10, 20)
+
+    const pasted = findById(newRoot, 10)!
+    expect(pasted.text).toBe('from-saving')
+    expect(pasted.parent!.id).toBe(3)
   })
 })
 

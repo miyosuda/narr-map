@@ -168,8 +168,11 @@ function MindMap() {
   }, [])
 
   const isCtrlDown = useCallback((e: KeyboardEvent): boolean => {
-    //return e.ctrlKey || e.metaKey
-    return e.ctrlKey
+    return e.ctrlKey 
+  }, [])
+
+  const isCtrlOrMetaDown = useCallback((e: KeyboardEvent): boolean => {
+    return e.ctrlKey || e.metaKey
   }, [])
 
   // キーボードショートカットの定義
@@ -232,7 +235,7 @@ function MindMap() {
     },
     // 英数字キー: 挿入モードでテキスト編集
     {
-      condition: (e) => e.keyCode >= 49 && e.keyCode <= 90 && !isCtrlDown(e),
+      condition: (e) => e.keyCode >= 49 && e.keyCode <= 90 && !isCtrlOrMetaDown(e),
       handler: () => editText(getLastNode(), true),
       preventDefault: false
     }

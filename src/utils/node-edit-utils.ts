@@ -117,8 +117,8 @@ export function applyPaste(
     // TODO: getExtendedChildren()は、accompaniedStateを含んでしまっているのでここでは使えないが、
     // getExtendedChildren()の方を変更することで共通化できる可能性がある.
     const stretchedChildren =
-      isRoot(state) && !isDummy(state)
-        ? [...state.children, ...state.accompaniedState!.children]
+      isRoot(state) && !isDummy(state) && state.accompaniedState != null
+        ? [...state.children, ...state.accompaniedState.children]
         : state.children
 
     return {

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 
 import { NodeState, SavingNodeState, EDIT_STATE_NONE } from '@/types'
+
+type PastePayload = { nodes?: SavingNodeState[] | null; text?: string }
 import {
   getSavingNodeState,
   getNodeStateFromSaving,
@@ -16,7 +18,7 @@ const { nmAPI } = window
  */
 export type MindMapCommands = {
   copy: () => void
-  paste: () => void
+  paste: (obj?: PastePayload) => void
   cut: () => void
   selectAll: () => void
   undo: () => void
@@ -165,7 +167,7 @@ export function useMindMapIO(params: UseMindMapIOParams) {
 
   const commandHandlers: Record<string, (obj?: any) => void> = {
     copy: () => commands.copy(),
-    paste: () => commands.paste(),
+    paste: (obj) => commands.paste(obj),
     cut: () => commands.cut(),
     selectall: () => commands.selectAll(),
     redo: () => commands.redo(),

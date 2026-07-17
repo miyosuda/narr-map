@@ -8,3 +8,6 @@ build:
 
 test:
 	npm test
+
+upload:
+	./scripts/upload.sh

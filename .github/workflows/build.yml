@@ -1,28 +1,18 @@
-name: Build
+name: Create Release Draft
 
 on:
   push:
     branches: [build]
-  pull_request:
-    branches: [build]
 
 jobs:
-  build_on_win:
-    runs-on: windows-latest
+  create_draft:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@master
-        with:
-          node-version: 16
-      - name: install dependencies
-        run: npm install
-      - name: build
-        run: npm run make
-      - name: create release
-        uses: softprops/action-gh-release@v1
+      - uses: actions/checkout@v4
+      - name: Create release draft
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: |
-            out/make/squirrel.windows/x64/*.exe
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -10,4 +10,4 @@ test:
 	npm test
 
 upload:
-	./scripts/upload.sh
+	./scripts/upload_binary.sh

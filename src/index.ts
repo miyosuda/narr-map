@@ -354,12 +354,48 @@ const importUML = (browserWindow: BrowserWindow, path_: string) => {
   })
 }
 
+const isReusableEmptyDocumentWindow = (win: BrowserWindow): boolean => {
+  const docState = getDocState(win)
+  return docState.filePath == null && !docState.editDirty
+}
+
+const findReusableEmptyDocumentWindow = (): BrowserWindow | null => {
+  const focused = BrowserWindow.getFocusedWindow()
+  if (focused != null && isDocumentWindow(focused) && isReusableEmptyDocumentWindow(focused)) {
+    return focused
+  }
+
+  // 設定ウィンドウなどが前面でも、空のドキュメントが1つだけならそれを再利用する
+  const docs = getDocumentWindows()
+  if (docs.length === 1 && isReusableEmptyDocumentWindow(docs[0])) {
+    return docs[0]
+  }
+
+  return null
+}
+
 const openDocumentInNewWindow = (path_: string): void => {
   const existing = findDocumentWindowByPath(path_)
   if (existing != null) {
     focusDocumentWindow(existing)
     return
   }
+
+  const reusable = findReusableEmptyDocumentWindow()
+  if (reusable != null) {
+    const loadIntoReusable = () => {
+      load(reusable, path_)
+      focusDocumentWindow(reusable)
+    }
+
+    if (reusable.webContents.isLoadingMainFrame()) {
+      reusable.webContents.once('did-finish-load', loadIntoReusable)
+    } else {
+      loadIntoReusable()
+    }
+    return
+  }
+
   createDocumentWindow(path_)
 }
 

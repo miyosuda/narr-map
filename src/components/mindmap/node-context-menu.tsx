@@ -57,7 +57,7 @@ export const NodeContextMenu = (props: NodeContextMenuProps) => {
   }
 
   const className =
-    'fixed z-50 min-w-[10rem] py-1 border border-zinc-500 rounded-md shadow-md ' +
+    'fixed z-50 min-w-[10rem] border border-zinc-500 shadow-md ' +
     (darkMode ? 'bg-black text-white' : 'bg-white text-black')
 
   return (

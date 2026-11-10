@@ -3,8 +3,6 @@ import { createRoot } from 'react-dom/client'
 import React, { useState, useEffect } from 'react'
 const { nmAPI } = window
 
-const execCommands = ['copy', 'paste', 'cut', 'undo', 'redo', 'selectall']
-
 const Setting = () => {
   const [darkMode, setDarkMode] = useState(false)
   const [openaiApiKey, setOpenAIApiKey] = useState('')
@@ -19,12 +17,6 @@ const Setting = () => {
       setCompletionModel(settingData.completionModel)
       setCompletionContext(settingData.completionContext)
     }
-
-    nmAPI.onReceiveMessage((arg: string, obj: any) => {
-      if (execCommands.some((element) => element === arg)) {
-        document.execCommand(arg)
-      }
-    })
 
     fetchSettings()
   }, [])
@@ -96,7 +88,12 @@ const Setting = () => {
           <label htmlFor="completion-context" className="text-base w-32">
             Completion context
           </label>
-          <textarea id="completion-context" value={completionContext} onChange={handleCompletionContextChange} className="flex-grow p-1 text-base border border-gray-300 rounded h-40" />
+          <textarea
+            id="completion-context"
+            value={completionContext}
+            onChange={handleCompletionContextChange}
+            className="flex-grow p-1 text-base border border-gray-300 rounded h-40"
+          />
         </div>
       </div>
     </div>

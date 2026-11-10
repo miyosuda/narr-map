@@ -129,6 +129,48 @@ const resolveDocumentWindow = (browserWindow: BrowserWindow | undefined): Browse
   return createDocumentWindow()
 }
 
+type TextEditCommand = 'undo' | 'redo' | 'cut' | 'copy' | 'paste' | 'selectAll'
+
+const runTextEdit = (win: BrowserWindow, command: TextEditCommand): void => {
+  const contents = win.webContents
+  contents.focus()
+  switch (command) {
+    case 'undo':
+      contents.undo()
+      break
+    case 'redo':
+      contents.redo()
+      break
+    case 'cut':
+      contents.cut()
+      break
+    case 'copy':
+      contents.copy()
+      break
+    case 'paste':
+      contents.paste()
+      break
+    case 'selectAll':
+      contents.selectAll()
+      break
+  }
+}
+
+// 設定画面など文書以外では、メニューのショートカットを文書へ回さず入力欄の編集として実行する
+const tryTextEditOnNonDocumentWindow = (
+  browserWindow: BrowserWindow | undefined,
+  command: TextEditCommand
+): boolean => {
+  const candidates = [browserWindow, BrowserWindow.getFocusedWindow()]
+  for (const win of candidates) {
+    if (win != null && !win.isDestroyed() && !isDocumentWindow(win)) {
+      runTextEdit(win, command)
+      return true
+    }
+  }
+  return false
+}
+
 const cancelCompletionForWindow = (win: BrowserWindow): void => {
   const docState = getDocState(win)
   if (docState.completionAbortController != null) {
@@ -510,6 +552,25 @@ const openSettings = () => {
       preload: SETTINGS_PRELOAD_WEBPACK_ENTRY
     }
   })
+
+  settingsWindow.webContents.on(
+    'context-menu',
+    (_event: Event, params: Electron.ContextMenuParams) => {
+      if (!params.isEditable) {
+        return
+      }
+      Menu.buildFromTemplate([
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { type: 'separator' },
+        { role: 'selectAll' }
+      ]).popup({ window: settingsWindow })
+    }
+  )
 
   settingsWindow.loadURL(SETTINGS_WEBPACK_ENTRY)
 }
@@ -950,6 +1011,9 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Undo',
         accelerator: 'CmdOrCtrl+Z',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+          if (tryTextEditOnNonDocumentWindow(browserWindow, 'undo')) {
+            return
+          }
           const docWindow = resolveDocumentWindow(browserWindow)
           docWindow.webContents.send('request', 'undo')
         }
@@ -958,6 +1022,9 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Redo',
         accelerator: 'CmdOrCtrl+Shift+Z',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+          if (tryTextEditOnNonDocumentWindow(browserWindow, 'redo')) {
+            return
+          }
           const docWindow = resolveDocumentWindow(browserWindow)
           docWindow.webContents.send('request', 'redo')
         }
@@ -969,6 +1036,9 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Cut',
         accelerator: 'CmdOrCtrl+X',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+          if (tryTextEditOnNonDocumentWindow(browserWindow, 'cut')) {
+            return
+          }
           const docWindow = resolveDocumentWindow(browserWindow)
           docWindow.webContents.send('request', 'cut')
         }
@@ -977,6 +1047,9 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Copy',
         accelerator: 'CmdOrCtrl+C',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+          if (tryTextEditOnNonDocumentWindow(browserWindow, 'copy')) {
+            return
+          }
           const docWindow = resolveDocumentWindow(browserWindow)
           docWindow.webContents.send('request', 'copy')
         }
@@ -985,6 +1058,9 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Paste',
         accelerator: 'CmdOrCtrl+V',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+          if (tryTextEditOnNonDocumentWindow(browserWindow, 'paste')) {
+            return
+          }
           const docWindow = resolveDocumentWindow(browserWindow)
           docWindow.webContents.send('request', 'paste', {
             nodes: sharedCopiedNodes,
@@ -999,6 +1075,9 @@ const templateMenu: Electron.MenuItemConstructorOptions[] = [
         label: 'Select All',
         accelerator: 'CmdOrCtrl+A',
         click: (menuItem: MenuItem, browserWindow: BrowserWindow, event: KeyboardEvent) => {
+          if (tryTextEditOnNonDocumentWindow(browserWindow, 'selectAll')) {
+            return
+          }
           const docWindow = resolveDocumentWindow(browserWindow)
           docWindow.webContents.send('request', 'selectall')
         }

@@ -1,0 +1,10 @@
+{
+  "id": "story-ideas",
+  "actions": [
+    {
+      "id": "propose",
+      "label": "案を出す",
+      "placement": "node-context-menu"
+    }
+  ]
+}

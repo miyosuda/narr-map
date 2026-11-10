@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useRef, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
 
-import {
-  EDIT_STATE_NONE,
-  EDIT_STATE_INSERT
-} from '@/types'
+import { EDIT_STATE_NONE, EDIT_STATE_INSERT } from '@/types'
 import { Node } from './node'
 import { Rect } from './rect'
 import { TextInput } from './text-input'
 import { Spinner } from './spinner'
 import { TextImportModal } from './text-import-modal'
+import { NodeContextMenu } from './node-context-menu'
 import { getNodeState, isRoot, findNode } from '@/utils/node-utils'
+import { buildPluginNodeContext } from '@/plugins/context'
 import { calcDrawStateMap } from '@/utils/node-draw-utils'
 import { useHistory } from './hooks/useHistory'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -33,7 +32,7 @@ function MindMap() {
       editId: 1,
       isLeft: true
     })
-  })  
+  })
 
   const setDirty = useCallback(() => {
     nmAPI.sendMessage('set-dirty', null)
@@ -52,6 +51,15 @@ function MindMap() {
 
   const svgRef = useRef<SVGSVGElement>(null)
   const canvasRef = useRef<SVGSVGElement>(null)
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    nodeId: number
+  } | null>(null)
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null)
+  }, [])
 
   // drawStateMap は、ノードの描画情報（画面上の座標やサイズ）.
   // NodeId をキーに、{x, y, width, height} を値としたオブジェクト.
@@ -59,9 +67,8 @@ function MindMap() {
   const drawStateMap = useMemo(() => calcDrawStateMap(rootState), [rootState])
 
   // canvasTranslatePos は、キャンバスの移動量（画面上の表示位置）.
-  const { canvasTranslatePos, setCanvasTranslatePos, canvasTransform, recenter } = useCanvasTransform(
-    { rootState, drawStateMap, svgRef }
-  )
+  const { canvasTranslatePos, setCanvasTranslatePos, canvasTransform, recenter } =
+    useCanvasTransform({ rootState, drawStateMap, svgRef })
 
   // ノードの追加・削除・移動・コピー&ペースト・テキスト編集などの操作と、
   // nextNodeId / nextEditId / cursorDepth / copyingStates の状態を管理する。
@@ -81,7 +88,9 @@ function MindMap() {
     move,
     toggleFold,
     addChildToLatest,
-    addSiblingToLatest
+    addSiblingToLatest,
+    selectOnly,
+    addPluginChildren
   } = useNodeEditing({
     rootState,
     setRootState,
@@ -89,27 +98,22 @@ function MindMap() {
   })
 
   // ghostState は、ノードの移動中のゴーストノードの描画情報. ドラッグ中に表示される、ノードの移動先の仮想ノード.
-  const {
-    ghostState,
-    handleMouseDown,
-    handleMouseMove,
-    handleDoubleClick,
-    resetDrag
-  } = useMouseInteraction({
-    rootState,
-    setRootState,
-    setRootStateWithHistory,
-    drawStateMap,
-    canvasTranslatePos,
-    setCanvasTranslatePos,
-    nextEditId,
-    setNextEditId,
-    recenter,
-    editText,
-    getLastNode,
-    svgRef,
-    canvasRef
-  })
+  const { ghostState, handleMouseDown, handleMouseMove, handleDoubleClick, resetDrag, pickNodeAt } =
+    useMouseInteraction({
+      rootState,
+      setRootState,
+      setRootStateWithHistory,
+      drawStateMap,
+      canvasTranslatePos,
+      setCanvasTranslatePos,
+      nextEditId,
+      setNextEditId,
+      recenter,
+      editText,
+      getLastNode,
+      svgRef,
+      canvasRef
+    })
 
   // resetInteractionState は、ノードの移動中のゴーストノードの描画情報をリセットする.
   const resetInteractionState = useCallback(() => {
@@ -127,7 +131,10 @@ function MindMap() {
     isTextGenerating,
     handleTextGenerate,
     handleTextImportModalClose,
-    handleTextGenerateCancel
+    handleTextGenerateCancel,
+    pluginMenuItems,
+    pluginNotice,
+    runPluginAction
   } = useMindMapIO({
     rootState,
     initialRootState,
@@ -139,7 +146,8 @@ function MindMap() {
       cut,
       selectAll,
       undo,
-      redo
+      redo,
+      addPluginChildren
     },
     setNextNodeId,
     setNextEditId,
@@ -168,7 +176,7 @@ function MindMap() {
   }, [])
 
   const isCtrlDown = useCallback((e: KeyboardEvent): boolean => {
-    return e.ctrlKey 
+    return e.ctrlKey
   }, [])
 
   const isCtrlOrMetaDown = useCallback((e: KeyboardEvent): boolean => {
@@ -262,6 +270,17 @@ function MindMap() {
     }
   }
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const picked = pickNodeAt(e)
+    if (picked == null || pluginMenuItems.length === 0) {
+      setContextMenu(null)
+      return
+    }
+    selectOnly(picked)
+    setContextMenu({ x: e.clientX, y: e.clientY, nodeId: picked.id })
+  }
+
   const svgClassName = darkMode ? 'flex-grow h-full bg-black' : 'flex-grow h-full bg-white'
 
   return (
@@ -269,9 +288,15 @@ function MindMap() {
       <svg
         ref={svgRef}
         className={svgClassName}
-        onMouseDown={handleMouseDown}
+        onMouseDown={(e) => {
+          if (e.button === 0) {
+            setContextMenu(null)
+          }
+          handleMouseDown(e)
+        }}
         onMouseMove={handleMouseMove}
         onDoubleClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
       >
         {connecting && <Spinner darkMode={darkMode} />}
 
@@ -311,6 +336,33 @@ function MindMap() {
           )}
         </g>
       </svg>
+      {contextMenu != null && pluginMenuItems.length > 0 && (
+        <NodeContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={pluginMenuItems}
+          darkMode={darkMode}
+          onClose={closeContextMenu}
+          onSelect={(item) => {
+            const node = findNode(rootState, (state) => state.id === contextMenu.nodeId)
+            setContextMenu(null)
+            if (node == null) {
+              return
+            }
+            runPluginAction(item.pluginId, item.actionId, buildPluginNodeContext(rootState, node))
+          }}
+        />
+      )}
+      {pluginNotice != null && (
+        <div
+          className={
+            'fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 rounded-md text-sm border border-zinc-500 ' +
+            (darkMode ? 'bg-black text-white' : 'bg-white text-black')
+          }
+        >
+          {pluginNotice}
+        </div>
+      )}
       {copiedToastVisible && (
         <div
           className={

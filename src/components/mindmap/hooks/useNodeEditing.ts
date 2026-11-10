@@ -33,6 +33,8 @@ import {
   applyToggleFold
 } from '@/utils/node-edit-utils'
 import { MoveDirection } from '../constants'
+import { applyPluginAddChildren } from '@/plugins/apply'
+import { PluginChildSpec } from '@/plugins/types'
 
 const { nmAPI } = window
 
@@ -109,8 +111,7 @@ export function useNodeEditing(params: UseNodeEditingParams) {
   }
 
   function paste(obj?: { nodes?: SavingNodeState[] | null }) {
-    const states =
-      obj?.nodes != null ? getCopyingStatesFromSaving(obj.nodes) : copyingStates
+    const states = obj?.nodes != null ? getCopyingStatesFromSaving(obj.nodes) : copyingStates
 
     if (states.length === 0) {
       return
@@ -249,6 +250,31 @@ export function useNodeEditing(params: UseNodeEditingParams) {
     }
   }
 
+  function selectOnly(node: NodeState) {
+    const newRootState = updateNodes(
+      rootState,
+      (state) => state.selected || state.id === node.id,
+      (state) => ({
+        ...state,
+        selected: state.id === node.id,
+        editId: state.id === node.id ? nextEditId : state.editId
+      })
+    )
+    setNextEditId(nextEditId + 1)
+    setRootState(newRootState)
+  }
+
+  function addPluginChildren(nodeId: number, specs: PluginChildSpec[]) {
+    const applied = applyPluginAddChildren(rootState, nodeId, specs, nextNodeId, nextEditId)
+    if (applied.status !== 'applied') {
+      return applied.status
+    }
+    setNextNodeId(applied.nextNodeId)
+    setNextEditId(applied.nextEditId)
+    setRootStateWithHistory(applied.rootState)
+    return applied.status
+  }
+
   function addChildToLatest() {
     const lastNodeState = getLastNode()
 
@@ -342,6 +368,8 @@ export function useNodeEditing(params: UseNodeEditingParams) {
     move,
     toggleFold,
     addChildToLatest,
-    addSiblingToLatest
+    addSiblingToLatest,
+    selectOnly,
+    addPluginChildren
   }
 }

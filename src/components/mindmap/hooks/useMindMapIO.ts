@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 
 import { NodeState, SavingNodeState, EDIT_STATE_NONE } from '@/types'
+import {
+  PluginActionResponse,
+  PluginChildSpec,
+  PluginMenuEntry,
+  PluginNodeContext
+} from '@/plugins/types'
 
 type PastePayload = { nodes?: SavingNodeState[] | null; text?: string }
 import {
@@ -23,6 +29,7 @@ export type MindMapCommands = {
   selectAll: () => void
   undo: () => void
   redo: () => void
+  addPluginChildren: (nodeId: number, specs: PluginChildSpec[]) => 'applied' | 'empty' | 'missing'
 }
 
 type UseMindMapIOParams = {
@@ -65,8 +72,12 @@ export function useMindMapIO(params: UseMindMapIOParams) {
   const [copiedToastVisible, setCopiedToastVisible] = useState(false)
   const [textImportModalOpen, setTextImportModalOpen] = useState(false)
   const [isTextGenerating, setIsTextGenerating] = useState(false)
+  const [pluginMenuItems, setPluginMenuItems] = useState<PluginMenuEntry[]>([])
+  const [pluginNotice, setPluginNotice] = useState<string | null>(null)
 
   const toastTimerRef = useRef<number | null>(null)
+  const pluginNoticeTimerRef = useRef<number | null>(null)
+  const pluginRequestRef = useRef(0)
 
   useEffect(() => {
     return () => {
@@ -74,8 +85,40 @@ export function useMindMapIO(params: UseMindMapIOParams) {
         window.clearTimeout(toastTimerRef.current)
         toastTimerRef.current = null
       }
+      if (pluginNoticeTimerRef.current != null) {
+        window.clearTimeout(pluginNoticeTimerRef.current)
+        pluginNoticeTimerRef.current = null
+      }
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    nmAPI
+      .invoke('get-plugins')
+      .then((items: PluginMenuEntry[] | null) => {
+        if (!cancelled && Array.isArray(items)) {
+          setPluginMenuItems(items)
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(error)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const showPluginNotice = (message: string) => {
+    setPluginNotice(message)
+    if (pluginNoticeTimerRef.current != null) {
+      window.clearTimeout(pluginNoticeTimerRef.current)
+    }
+    pluginNoticeTimerRef.current = window.setTimeout(() => {
+      setPluginNotice(null)
+      pluginNoticeTimerRef.current = null
+    }, 3500)
+  }
 
   const showCopiedToast = () => {
     setCopiedToastVisible(true)
@@ -165,6 +208,36 @@ export function useMindMapIO(params: UseMindMapIOParams) {
     resetInteractionState()
   }
 
+  const runPluginAction = (pluginId: string, actionId: string, node: PluginNodeContext) => {
+    const requestId = pluginRequestRef.current + 1
+    pluginRequestRef.current = requestId
+    setConnecting(true)
+    setPluginNotice(null)
+    nmAPI.sendMessage('plugin-action', { requestId, pluginId, actionId, node })
+  }
+
+  const handlePluginResult = (message: PluginActionResponse) => {
+    if (message.requestId !== pluginRequestRef.current) {
+      return
+    }
+    setConnecting(false)
+    if (message.ok === false) {
+      if (message.aborted === true) {
+        return
+      }
+      if (typeof message.error === 'string' && message.error !== '') {
+        showPluginNotice(message.error)
+      }
+      return
+    }
+    const status = commands.addPluginChildren(message.nodeId, message.addChildren)
+    if (status === 'empty') {
+      showPluginNotice('No nodes to add')
+    } else if (status === 'missing') {
+      showPluginNotice('The node is no longer available')
+    }
+  }
+
   const commandHandlers: Record<string, (obj?: any) => void> = {
     copy: () => commands.copy(),
     paste: (obj) => commands.paste(obj),
@@ -181,7 +254,14 @@ export function useMindMapIO(params: UseMindMapIOParams) {
     'dark-mode': (obj) => setDarkMode(obj),
     'clipboard-export': (obj) => clipboardExport(obj),
     'open-text-import-modal': () => setTextImportModalOpen(true),
-    'text-import-complete': (obj) => handleTextImportComplete(obj)
+    'text-import-complete': (obj) => handleTextImportComplete(obj),
+    'plugin-action-result': (obj) => handlePluginResult(obj),
+    'async-cancelled': () => {
+      pluginRequestRef.current += 1
+      setConnecting(false)
+      setIsTextGenerating(false)
+      setTextImportModalOpen(false)
+    }
   }
 
   function handleCommand(command: string, obj: any) {
@@ -189,6 +269,11 @@ export function useMindMapIO(params: UseMindMapIOParams) {
   }
 
   function handleMessage(arg: string, obj: any) {
+    if (arg === 'plugin-action-result' || arg === 'async-cancelled') {
+      handleCommand(arg, obj)
+      return
+    }
+
     // textInput表示中かどうか
     const editingNodeState = findNode(rootState, (state) => state.editState !== EDIT_STATE_NONE)
     if (editingNodeState != null) {
@@ -225,6 +310,9 @@ export function useMindMapIO(params: UseMindMapIOParams) {
     isTextGenerating,
     handleTextGenerate,
     handleTextImportModalClose,
-    handleTextGenerateCancel
+    handleTextGenerateCancel,
+    pluginMenuItems,
+    pluginNotice,
+    runPluginAction
   }
 }

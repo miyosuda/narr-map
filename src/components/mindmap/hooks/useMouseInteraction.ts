@@ -7,19 +7,9 @@ import {
   NodeGhostState,
   EDIT_STATE_NONE
 } from '@/types'
-import {
-  isRoot,
-  findNode,
-  updateNodes
-} from '@/utils/node-utils'
-import {
-  containsPosForHandle,
-  containsPos
-} from '@/utils/node-draw-utils'
-import {
-  applyGhostHoverStates,
-  applyGhostDrop
-} from '@/utils/node-interaction-utils'
+import { isRoot, findNode, updateNodes } from '@/utils/node-utils'
+import { containsPosForHandle, containsPos } from '@/utils/node-draw-utils'
+import { applyGhostHoverStates, applyGhostDrop } from '@/utils/node-interaction-utils'
 import { DragMode } from '../constants'
 
 type CanvasPosition = {
@@ -101,7 +91,12 @@ export function useMouseInteraction(params: UseMouseInteractionParams) {
   }
 
   // Nodeの上でクリックした
-  function handleMouseDownForNode(px: number, py: number, shiftDown: boolean, pickedNode: NodeState) {
+  function handleMouseDownForNode(
+    px: number,
+    py: number,
+    shiftDown: boolean,
+    pickedNode: NodeState
+  ) {
     let newRootState
 
     if (shiftDown) {
@@ -256,13 +251,7 @@ export function useMouseInteraction(params: UseMouseInteractionParams) {
       y: dragState!.startElementY + dy
     })
 
-    const newRootState = applyGhostHoverStates(
-      rootState,
-      drawStateMap,
-      ghostState!.nodeId,
-      px,
-      py
-    )
+    const newRootState = applyGhostHoverStates(rootState, drawStateMap, ghostState!.nodeId, px, py)
     setRootState(newRootState)
   }
 
@@ -407,11 +396,24 @@ export function useMouseInteraction(params: UseMouseInteractionParams) {
     }
   }, [])
 
+  const pickNodeAt = useCallback(
+    (e: React.MouseEvent): NodeState | null => {
+      const editingNodeState = findNode(rootState, (state) => state.editState !== EDIT_STATE_NONE)
+      if (editingNodeState != null) {
+        return null
+      }
+      const { x: px, y: py } = getLocalPos(e)
+      return findNode(rootState, (state) => containsPos(state, px, py, drawStateMap))
+    },
+    [rootState, getLocalPos, drawStateMap]
+  )
+
   return {
     ghostState,
     handleMouseDown,
     handleMouseMove,
     handleDoubleClick,
-    resetDrag
+    resetDrag,
+    pickNodeAt
   }
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
+import { findNodesByText, topicNodes } from '@/bridge/topic'
 import { NodeState, SavingNodeState, EDIT_STATE_NONE } from '@/types'
 import {
   PluginActionResponse,
@@ -29,7 +30,13 @@ export type MindMapCommands = {
   selectAll: () => void
   undo: () => void
   redo: () => void
-  addPluginChildren: (nodeId: number, specs: PluginChildSpec[]) => 'applied' | 'empty' | 'missing'
+  addPluginChildren: (
+    nodeId: number,
+    specs: PluginChildSpec[]
+  ) =>
+    | { status: 'applied'; added: { id: number; text: string }[] }
+    | { status: 'empty' }
+    | { status: 'missing' }
 }
 
 type UseMindMapIOParams = {
@@ -48,6 +55,9 @@ type UseMindMapIOParams = {
   setNextEditId: (id: number) => void
   /** drag/ghost/cursor/copy などの一時状態をリセットする（load/newFile で利用） */
   resetInteractionState: () => void
+  /** 話題セット。読み込みで id が振り直されるので、load/newFile では clearTopic する */
+  topicIds: number[]
+  clearTopic: () => void
 }
 
 /**
@@ -64,7 +74,9 @@ export function useMindMapIO(params: UseMindMapIOParams) {
     commands,
     setNextNodeId,
     setNextEditId,
-    resetInteractionState
+    resetInteractionState,
+    topicIds,
+    clearTopic
   } = params
 
   const [darkMode, setDarkMode] = useState(false)
@@ -198,6 +210,7 @@ export function useMindMapIO(params: UseMindMapIOParams) {
     setNextEditId(maxNodeId + 1)
 
     resetInteractionState()
+    clearTopic()
   }
 
   const newFile = () => {
@@ -206,6 +219,7 @@ export function useMindMapIO(params: UseMindMapIOParams) {
     setNextEditId(2)
 
     resetInteractionState()
+    clearTopic()
   }
 
   const runPluginAction = (pluginId: string, actionId: string, node: PluginNodeContext) => {
@@ -230,12 +244,80 @@ export function useMindMapIO(params: UseMindMapIOParams) {
       }
       return
     }
-    const status = commands.addPluginChildren(message.nodeId, message.addChildren)
-    if (status === 'empty') {
+    const applied = commands.addPluginChildren(message.nodeId, message.addChildren)
+    if (applied.status === 'empty') {
       showPluginNotice('No nodes to add')
-    } else if (status === 'missing') {
+    } else if (applied.status === 'missing') {
       showPluginNotice('The node is no longer available')
     }
+  }
+
+  const handleBridgeRequest = (message: {
+    requestId?: unknown
+    method?: unknown
+    params?: unknown
+  }) => {
+    const requestId = message == null ? undefined : message.requestId
+    const reply = (payload: { ok: true; result: unknown } | { ok: false; error: string }) => {
+      if (typeof requestId !== 'number') {
+        return
+      }
+      nmAPI.sendMessage('bridge-result', { requestId, ...payload })
+    }
+
+    if (message == null || typeof message.method !== 'string') {
+      reply({ ok: false, error: 'invalid bridge request' })
+      return
+    }
+
+    const params =
+      message.params != null &&
+      typeof message.params === 'object' &&
+      !Array.isArray(message.params)
+        ? (message.params as Record<string, unknown>)
+        : {}
+
+    if (message.method === 'get_topic') {
+      reply({
+        ok: true,
+        result: {
+          rootText: rootState.text,
+          nodes: topicNodes(rootState, topicIds)
+        }
+      })
+      return
+    }
+
+    if (message.method === 'find_nodes') {
+      if (typeof params.text !== 'string') {
+        reply({ ok: false, error: 'find_nodes requires params.text' })
+        return
+      }
+      reply({ ok: true, result: { nodes: findNodesByText(rootState, params.text) } })
+      return
+    }
+
+    if (message.method === 'add_children') {
+      const nodeId = params.nodeId
+      const children = params.children
+      if (typeof nodeId !== 'number' || !Array.isArray(children)) {
+        reply({ ok: false, error: 'add_children requires nodeId and children' })
+        return
+      }
+      const applied = commands.addPluginChildren(nodeId, children)
+      if (applied.status === 'missing') {
+        reply({ ok: false, error: 'node not found' })
+        return
+      }
+      if (applied.status === 'empty') {
+        reply({ ok: false, error: 'nothing to add' })
+        return
+      }
+      reply({ ok: true, result: { added: applied.added } })
+      return
+    }
+
+    reply({ ok: false, error: `unknown method: ${message.method}` })
   }
 
   const commandHandlers: Record<string, (obj?: any) => void> = {
@@ -269,6 +351,10 @@ export function useMindMapIO(params: UseMindMapIOParams) {
   }
 
   function handleMessage(arg: string, obj: any) {
+    if (arg === 'bridge-request') {
+      handleBridgeRequest(obj)
+      return
+    }
     if (arg === 'plugin-action-result' || arg === 'async-cancelled') {
       handleCommand(arg, obj)
       return

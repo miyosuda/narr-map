@@ -113,15 +113,21 @@ interface TextProps {
   y: number
   hoverState: number
   selected: boolean
+  inTopic: boolean
   darkMode: boolean
 }
 
 const Text = (props: TextProps) => {
   const classList: string[] = []
   if (props.isRoot) {
-    classList.push('border border-zinc-500 rounded-md p-[2px_3px_3px_4px]')
+    classList.push(
+      'border rounded-md p-[2px_3px_3px_4px] ' +
+        (props.inTopic ? 'border-amber-500' : 'border-zinc-500')
+    )
   } else {
-    classList.push('border-b border-zinc-500 p-[0px_3px_0px_4px]')
+    classList.push(
+      'border-b p-[0px_3px_0px_4px] ' + (props.inTopic ? 'border-amber-500' : 'border-zinc-500')
+    )
   }
 
   if (props.darkMode) {
@@ -228,6 +234,7 @@ interface NodeProps {
   edgeStartX: number
   edgeStartY: number
   darkMode: boolean
+  topicIds?: ReadonlySet<number>
   isSingleChild?: boolean
 }
 
@@ -238,6 +245,7 @@ export const Node = (props: NodeProps) => {
     edgeStartX,
     edgeStartY,
     darkMode,
+    topicIds,
     isSingleChild = false
   } = props
 
@@ -269,6 +277,7 @@ export const Node = (props: NodeProps) => {
           edgeStartX={edgeStartX}
           edgeStartY={edgeStartY}
           darkMode={darkMode}
+          topicIds={topicIds}
         />
       )}
       {!state.folded &&
@@ -281,6 +290,7 @@ export const Node = (props: NodeProps) => {
             edgeStartX={childEdgeStartX}
             edgeStartY={childEdgeStartY}
             darkMode={darkMode}
+            topicIds={topicIds}
             isSingleChild={state.children.length === 1 && !isRoot(state)}
           />
         ))}
@@ -294,6 +304,7 @@ export const Node = (props: NodeProps) => {
           y={y}
           hoverState={state.hoverState}
           selected={state.selected}
+          inTopic={topicIds != null && topicIds.has(state.id)}
           darkMode={darkMode}
         ></Text>
       )}

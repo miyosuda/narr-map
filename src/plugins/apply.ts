@@ -5,12 +5,18 @@ import { pluginInsertionTarget } from './context'
 import { normalizeChildren } from './result'
 import { PluginChildSpec } from './types'
 
+export type AddedNode = {
+  id: number
+  text: string
+}
+
 export type ApplyPluginChildrenResult =
   | {
       status: 'applied'
       rootState: NodeState
       nextNodeId: number
       nextEditId: number
+      added: AddedNode[]
     }
   | { status: 'empty' }
   | { status: 'missing' }
@@ -18,6 +24,10 @@ export type ApplyPluginChildrenResult =
 type IdCursor = {
   nextNodeId: number
   nextEditId: number
+}
+
+function listAdded(node: NodeState): AddedNode[] {
+  return [{ id: node.id, text: node.text }, ...node.children.flatMap(listAdded)]
 }
 
 function buildAddedNode(spec: PluginChildSpec, isLeft: boolean, ids: IdCursor): NodeState {
@@ -84,6 +94,7 @@ export function applyPluginAddChildren(
     status: 'applied',
     rootState: newRootState,
     nextNodeId: ids.nextNodeId,
-    nextEditId: ids.nextEditId
+    nextEditId: ids.nextEditId,
+    added: added.flatMap(listAdded)
   }
 }

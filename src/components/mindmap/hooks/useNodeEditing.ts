@@ -267,12 +267,12 @@ export function useNodeEditing(params: UseNodeEditingParams) {
   function addPluginChildren(nodeId: number, specs: PluginChildSpec[]) {
     const applied = applyPluginAddChildren(rootState, nodeId, specs, nextNodeId, nextEditId)
     if (applied.status !== 'applied') {
-      return applied.status
+      return applied
     }
     setNextNodeId(applied.nextNodeId)
     setNextEditId(applied.nextEditId)
     setRootStateWithHistory(applied.rootState)
-    return applied.status
+    return { status: 'applied' as const, added: applied.added }
   }
 
   function addChildToLatest() {

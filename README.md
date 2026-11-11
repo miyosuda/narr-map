@@ -62,6 +62,42 @@ An intuitive and user-friendly mind map editor with a FreeMind-compatible interf
 
 
 
+## Use from an MCP client
+
+The app includes an MCP server. Keep narr-map open, copy its connection settings, and paste them into your MCP client. You do not install Node.js or clone this repository. The open map is what the client reads and edits.
+
+### Connect
+
+1. Start narr-map and leave it running.
+2. In the narr-map menu, choose **Copy MCP Configuration**.
+3. Paste the copied JSON into your MCP client's server settings.
+
+The paths in the JSON are filled in for the app you are running. They look like this:
+
+```json
+{
+  "mcpServers": {
+    "narr-map": {
+      "command": "/Applications/narr-map.app/Contents/MacOS/narr-map",
+      "args": ["/Applications/narr-map.app/Contents/Resources/mcp.cjs"],
+      "env": {
+        "ELECTRON_RUN_AS_NODE": "1"
+      }
+    }
+  }
+}
+```
+
+### Pin nodes, then ask
+
+1. Right-click a node and choose **話題に追加**. The node's underline turns amber, and a chip appears at the top of the window. Click a chip to select that node. **×** removes it from the topic.
+2. In the MCP client, refer to the pinned nodes as 「この2つ」 or 「話題」. To add children under a heading that is already on the map, name that heading.
+
+Example: pin 「予算」 and 「日程」, then ask 「この2つについて、先に決めることを3つ、検討の子として足して」.
+
+Added nodes can be undone in narr-map.
+
+
 ## Development
 
 ### Initial Setup

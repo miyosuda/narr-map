@@ -88,5 +88,8 @@ typings/
 # Electron-Forge
 out/
 
+# Bundled MCP server
+mcp/dist/
+
 # Claude code
 .claude/settings.local.json

@@ -134,6 +134,11 @@ describe('plugin context and apply', () => {
     expect(node!.children[2].children[0].parent?.id).toBe(node!.children[2].id)
     expect(applied.nextNodeId).toBe(13)
     expect(applied.nextEditId).toBe(13)
+    expect(applied.added).toEqual([
+      { id: 10, text: '仕事を失った' },
+      { id: 11, text: '親案' },
+      { id: 12, text: '子案' }
+    ])
   })
 
   it('adds to the left side when the root already has children', () => {

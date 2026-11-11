@@ -7,7 +7,9 @@ import { TextInput } from './text-input'
 import { Spinner } from './spinner'
 import { TextImportModal } from './text-import-modal'
 import { NodeContextMenu } from './node-context-menu'
-import { getNodeState, isRoot, findNode } from '@/utils/node-utils'
+import { TopicBar } from './topic-bar'
+import { getNodeState, isRoot, isDummy, findNode } from '@/utils/node-utils'
+import { pruneTopicIds, topicNodes } from '@/bridge/topic'
 import { buildPluginNodeContext } from '@/plugins/context'
 import { calcDrawStateMap } from '@/utils/node-draw-utils'
 import { useHistory } from './hooks/useHistory'
@@ -56,9 +58,24 @@ function MindMap() {
     y: number
     nodeId: number
   } | null>(null)
+  const [topicIds, setTopicIds] = useState<number[]>([])
 
   const closeContextMenu = useCallback(() => {
     setContextMenu(null)
+  }, [])
+
+  const clearTopic = useCallback(() => {
+    setTopicIds([])
+  }, [])
+
+  const toggleTopic = useCallback((nodeId: number) => {
+    setTopicIds((ids) =>
+      ids.includes(nodeId) ? ids.filter((id) => id !== nodeId) : [...ids, nodeId]
+    )
+  }, [])
+
+  const removeTopic = useCallback((nodeId: number) => {
+    setTopicIds((ids) => ids.filter((id) => id !== nodeId))
   }, [])
 
   // drawStateMap は、ノードの描画情報（画面上の座標やサイズ）.
@@ -151,7 +168,9 @@ function MindMap() {
     },
     setNextNodeId,
     setNextEditId,
-    resetInteractionState
+    resetInteractionState,
+    topicIds,
+    clearTopic
   })
 
   useEffect(() => {
@@ -273,13 +292,29 @@ function MindMap() {
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     const picked = pickNodeAt(e)
-    if (picked == null || pluginMenuItems.length === 0) {
+    if (picked == null || isDummy(picked)) {
       setContextMenu(null)
       return
     }
     selectOnly(picked)
     setContextMenu({ x: e.clientX, y: e.clientY, nodeId: picked.id })
   }
+
+  const topicSummaries = topicNodes(rootState, topicIds)
+  const topicIdSet = new Set(pruneTopicIds(topicIds, rootState))
+  const menuItems =
+    contextMenu == null
+      ? []
+      : [
+          {
+            key: 'topic',
+            label: topicIdSet.has(contextMenu.nodeId) ? '話題から外す' : '話題に追加'
+          },
+          ...pluginMenuItems.map((item) => ({
+            key: `plugin:${item.pluginId}:${item.actionId}`,
+            label: item.label
+          }))
+        ]
 
   const svgClassName = darkMode ? 'flex-grow h-full bg-black' : 'flex-grow h-full bg-white'
 
@@ -309,6 +344,7 @@ function MindMap() {
               edgeStartX={0}
               edgeStartY={0}
               darkMode={darkMode}
+              topicIds={topicIdSet}
             />
           </g>
           {ghostState && (
@@ -336,23 +372,48 @@ function MindMap() {
           )}
         </g>
       </svg>
-      {contextMenu != null && pluginMenuItems.length > 0 && (
+      {contextMenu != null && (
         <NodeContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
-          items={pluginMenuItems}
+          items={menuItems}
           darkMode={darkMode}
           onClose={closeContextMenu}
-          onSelect={(item) => {
+          onSelect={(key) => {
             const node = findNode(rootState, (state) => state.id === contextMenu.nodeId)
             setContextMenu(null)
             if (node == null) {
               return
             }
-            runPluginAction(item.pluginId, item.actionId, buildPluginNodeContext(rootState, node))
+            if (key === 'topic') {
+              toggleTopic(node.id)
+              return
+            }
+            if (!key.startsWith('plugin:')) {
+              return
+            }
+            const rest = key.slice('plugin:'.length)
+            const splitAt = rest.indexOf(':')
+            if (splitAt <= 0) {
+              return
+            }
+            const pluginId = rest.slice(0, splitAt)
+            const actionId = rest.slice(splitAt + 1)
+            runPluginAction(pluginId, actionId, buildPluginNodeContext(rootState, node))
           }}
         />
       )}
+      <TopicBar
+        nodes={topicSummaries}
+        darkMode={darkMode}
+        onFocus={(id) => {
+          const node = findNode(rootState, (state) => state.id === id)
+          if (node != null) {
+            selectOnly(node)
+          }
+        }}
+        onRemove={removeTopic}
+      />
       {pluginNotice != null && (
         <div
           className={

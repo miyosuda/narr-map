@@ -1,13 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
-import { PluginMenuEntry } from '@/plugins/types'
+export type ContextMenuEntry = {
+  key: string
+  label: string
+}
 
 type NodeContextMenuProps = {
   x: number
   y: number
-  items: PluginMenuEntry[]
+  items: ContextMenuEntry[]
   darkMode: boolean
-  onSelect: (item: PluginMenuEntry) => void
+  onSelect: (key: string) => void
   onClose: () => void
 }
 
@@ -64,14 +67,14 @@ export const NodeContextMenu = (props: NodeContextMenuProps) => {
     <div ref={menuRef} className={className} style={{ left: pos.x, top: pos.y }} role="menu">
       {items.map((item) => (
         <button
-          key={`${item.pluginId}:${item.actionId}`}
+          key={item.key}
           type="button"
           role="menuitem"
           className={
             'block w-full px-3 py-1.5 text-left text-sm whitespace-nowrap ' +
             (darkMode ? 'hover:bg-zinc-800' : 'hover:bg-zinc-200')
           }
-          onClick={() => onSelect(item)}
+          onClick={() => onSelect(item.key)}
         >
           {item.label}
         </button>

@@ -23,18 +23,18 @@ export const TopicBar = (props: TopicBarProps) => {
   return (
     <div className={barClass}>
       {nodes.map((node) => (
-        <span key={node.id} className="flex items-center border border-amber-500">
+        <span key={node.id} className="flex items-center border border-red-500">
           <button
             type="button"
             className="max-w-[12rem] truncate px-2 py-0.5 text-left text-sm"
             onClick={() => onFocus(node.id)}
           >
-            {node.text === '' ? '（無題）' : node.text}
+            {node.text === '' ? '(untitled)' : node.text}
           </button>
           <button
             type="button"
             className="px-1.5 py-0.5 text-sm"
-            aria-label={`${node.text === '' ? '（無題）' : node.text} を話題から外す`}
+            aria-label={`Remove ${node.text === '' ? '(untitled)' : node.text} from topic`}
             onClick={() => onRemove(node.id)}
           >
             ×

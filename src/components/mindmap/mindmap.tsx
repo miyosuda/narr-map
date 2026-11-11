@@ -308,7 +308,7 @@ function MindMap() {
       : [
           {
             key: 'topic',
-            label: topicIdSet.has(contextMenu.nodeId) ? '話題から外す' : '話題に追加'
+            label: topicIdSet.has(contextMenu.nodeId) ? 'Remove from topic' : 'Add to topic'
           },
           ...pluginMenuItems.map((item) => ({
             key: `plugin:${item.pluginId}:${item.actionId}`,

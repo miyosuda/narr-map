@@ -122,11 +122,11 @@ const Text = (props: TextProps) => {
   if (props.isRoot) {
     classList.push(
       'border rounded-md p-[2px_3px_3px_4px] ' +
-        (props.inTopic ? 'border-amber-500' : 'border-zinc-500')
+        (props.inTopic ? 'border-red-500' : 'border-zinc-500')
     )
   } else {
     classList.push(
-      'border-b p-[0px_3px_0px_4px] ' + (props.inTopic ? 'border-amber-500' : 'border-zinc-500')
+      'border-b p-[0px_3px_0px_4px] ' + (props.inTopic ? 'border-red-500' : 'border-zinc-500')
     )
   }
 

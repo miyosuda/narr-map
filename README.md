@@ -90,10 +90,10 @@ The paths in the JSON are filled in for the app you are running. They look like 
 
 ### Pin nodes, then ask
 
-1. Right-click a node and choose **話題に追加**. The node's underline turns amber, and a chip appears at the top of the window. Click a chip to select that node. **×** removes it from the topic.
-2. In the MCP client, refer to the pinned nodes as 「この2つ」 or 「話題」. To add children under a heading that is already on the map, name that heading.
+1. Right-click a node and choose **Add to topic**. The node's underline turns red, and a chip appears at the top of the window. Click a chip to select that node. **×** removes it from the topic.
+2. In the MCP client, refer to the pinned nodes as "these two" or "the topic". To add children under a heading that is already on the map, name that heading.
 
-Example: pin 「予算」 and 「日程」, then ask 「この2つについて、先に決めることを3つ、検討の子として足して」.
+Example: pin "Budget" and "Schedule", then ask "Add three decisions to make first for these two, as children of Review."
 
 Added nodes can be undone in narr-map.
 

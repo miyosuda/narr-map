@@ -32,7 +32,7 @@ if (process.env['APPLEIDENTITY'] != null) {
 const config: ForgeConfig = {
   packagerConfig: {
     icon: 'build/icon.icns',
-    extraResource: ['plugins', 'mcp/dist/mcp.cjs'],
+    extraResource: ['mcp/dist/mcp.cjs'],
     extendInfo: {
       CFBundleDocumentTypes: [
         {

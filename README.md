@@ -98,6 +98,78 @@ Example: pin "Budget" and "Schedule", then ask "Add three decisions to make firs
 Added nodes can be undone in narr-map.
 
 
+## Plugins
+
+A plugin adds commands to the node context menu. Each plugin is a directory with `manifest.json` and `index.js`. narr-map reads them when it starts. A plugin that fails to load is skipped.
+
+See `plugins/story-ideas` for a working example.
+
+### Where to put a plugin
+
+Put the plugin directory here. The folder name can differ from the `id` in the manifest.
+
+| How you run narr-map | Plugin directory |
+| ---- | ---- |
+| Installed app on macOS | `~/Library/Application Support/narr-map/plugins/<name>/` |
+| `npm start` from this repository | `plugins/<name>/` |
+
+The installed app does not ship plugins inside the `.app` bundle. On first launch it creates `~/Library/Application Support/narr-map/plugins`. On Windows that directory is `%APPDATA%\narr-map\plugins`, and on Linux it is `~/.config/narr-map/plugins`.
+
+If two plugins share the same manifest `id`, the one in the user data directory is the one that runs.
+
+### manifest.json
+
+```json
+{
+  "id": "my-plugin",
+  "actions": [
+    {
+      "id": "propose",
+      "label": "案を出す",
+      "placement": "node-context-menu"
+    }
+  ]
+}
+```
+
+- `id` is a non-empty string that identifies the plugin.
+- `actions` lists the commands. Each entry needs a non-empty `id`, a non-empty `label`, and `"placement": "node-context-menu"`. Other placements are ignored.
+- The menu shows `label`. The action `id` must be the name of a function exported from `index.js`.
+
+### index.js
+
+`index.js` is loaded with Node's `require`. Export an object whose keys are the action ids:
+
+```js
+module.exports = {
+  async propose(ctx) {
+    const answer = await ctx.ai.complete('Write three short headings.')
+    return {
+      addChildren: answer
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line !== '')
+        .map((text) => ({ text }))
+    }
+  }
+}
+```
+
+`ctx.node` is the node that was right-clicked:
+
+| Field | Meaning |
+| ---- | ---- |
+| `id` | Node id |
+| `text` | Node text |
+| `symbol` | Symbol string, or `null` |
+| `children` | `{ text }` of the children this action would add next to |
+| `ancestors` | `{ text }` from the root down to the parent. The clicked node is not included |
+
+`ctx.ai.complete(prompt)` returns the model's text. It uses the OpenAI API key and completion model already set in narr-map. It rejects when the API key is missing.
+
+Return `{ addChildren: [...] }`. Each item is `{ text, children? }`. `text` is trimmed, and blank items are dropped. `children` is the same shape, so a plugin can add a small tree. The new nodes are appended under the right-clicked node. On the root, when it already has children, they are added on the left, the same place as Tab. Any other return value adds nothing. A thrown error is reported and adds nothing.
+
+
 ## Development
 
 ### Initial Setup

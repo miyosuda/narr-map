@@ -93,3 +93,7 @@ mcp/dist/
 
 # Claude code
 .claude/settings.local.json
+
+
+# Development docs
+dev-docs/
